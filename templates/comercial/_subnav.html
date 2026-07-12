@@ -1,6 +1,6 @@
 {% set ep = (request.endpoint or '') %}
 <nav class="crm-module-nav comercial-module-nav" aria-label="Área comercial">
   <a href="{{ url_for('comercial_dashboard') }}" class="crm-module-nav__link{% if ep in ('comercial_dashboard', 'comercial_op_new', 'comercial_op_edit', 'comercial_op_delete', 'comercial_op_chat', 'comercial_op_stage') %} crm-module-nav__link--active{% endif %}">Meus leads</a>
-  <a href="{{ url_for('comercial_orgaos_publicos') }}" class="crm-module-nav__link{% if ep in ('comercial_orgaos_publicos', 'comercial_orgao_publico_contato', 'comercial_clientes_sugeridos') %} crm-module-nav__link--active{% endif %}">Órgãos públicos</a>
+  <a href="{{ url_for('comercial_orgaos_publicos') }}" class="crm-module-nav__link{% if ep in ('comercial_orgaos_publicos', 'comercial_orgao_publico_contato', 'comercial_clientes_sugeridos') %} crm-module-nav__link--active{% endif %}">Prospecção</a>
   <a href="{{ url_for('comercial_financeiro') }}" class="crm-module-nav__link{% if ep in ('comercial_financeiro', 'comercial_financeiro_novo', 'comercial_financeiro_anexo', 'comercial_financeiro_status', 'comercial_financeiro_anexo_excluir') %} crm-module-nav__link--active{% endif %}">Financeiro</a>
 </nav>

@@ -6,7 +6,10 @@
 <header class="comercial-hero">
   <div class="comercial-hero__main">
     <p class="comercial-hero__eyebrow">Área comercial{% if rep.is_admin %} · Administrador{% endif %}</p>
-    <h1 class="comercial-hero__title">{% if rep.is_admin %}Leads — visão administrador{% else %}Meus leads{% endif %}</h1>
+    <div class="comercial-hero__title-row">
+      <h1 class="comercial-hero__title">{% if rep.is_admin %}Leads — visão administrador{% else %}Meus leads{% endif %}</h1>
+      <a class="btn btn--primary comercial-hero__cta" href="{{ url_for('comercial_op_new') }}">Registrar captação</a>
+    </div>
     <p class="comercial-hero__lead">Olá, <strong>{{ rep.name }}</strong>{% if rep.is_admin %} — você vê todos os leads e também acessa o Painel e o CRM{% else %} — oportunidades atribuídas a você no funil comercial{% endif %}.</p>
   </div>
   <div class="comercial-hero__kpis">
@@ -21,68 +24,64 @@
   </div>
 </header>
 
-<div class="comercial-layout">
-  <section class="comercial-main">
-    <div class="crm-filters comercial-filters" role="navigation" aria-label="Filtrar por estágio">
-      <a href="{{ url_for('comercial_dashboard') }}" class="{{ 'active' if not filter_stage else '' }}">Todas</a>
-      {% for key, label in stages %}
-      <a href="{{ url_for('comercial_dashboard', stage=key) }}" class="{{ 'active' if filter_stage == key else '' }}">{{ label }}</a>
-      {% endfor %}
-    </div>
+<section class="comercial-main">
+  <div class="crm-filters comercial-filters" role="navigation" aria-label="Filtrar por estágio">
+    <a href="{{ url_for('comercial_dashboard') }}" class="{{ 'active' if not filter_stage else '' }}">Todas</a>
+    {% for key, label in stages %}
+    <a href="{{ url_for('comercial_dashboard', stage=key) }}" class="{{ 'active' if filter_stage == key else '' }}">{{ label }}</a>
+    {% endfor %}
+  </div>
 
-    <div class="crm-table-card">
-      <div class="table-wrap">
-        <table class="data comercial-leads-table">
-          <thead>
-            <tr>
-              <th>Título</th>
-              <th>Organização / CNPJ</th>
-              <th>Contato</th>
-              <th>Valor (R$)</th>
-              <th>Estágio</th>
-              <th>Conta cliente</th>
-              {% if rep.is_admin %}<th>Representante</th>{% endif %}
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for o in opportunities %}
-            <tr>
-              <td><strong>{{ o.title }}</strong></td>
-              <td>{{ o.organization or '—' }}{% if o.cnpj %}<br><span class="meta">CNPJ: {{ o.cnpj }}</span>{% endif %}</td>
-              <td class="meta">{{ o.contact_name or '—' }}<br>{{ o.email or '' }}{% if o.phone %}<br>{{ o.phone }}{% endif %}</td>
-              <td class="comercial-leads-table__value">{% if o.value_brl is not none %}{{ o.value_brl|float|brl }}{% else %}—{% endif %}</td>
-              <td>
-                <form method="post" action="{{ url_for('comercial_op_stage', opp_id=o.id) }}" class="comercial-stage-form">
-                  <select name="stage" class="comercial-stage-select" onchange="this.form.submit()">
-                    {% for key, label in stages %}
-                    <option value="{{ key }}" {% if o.stage == key %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                  </select>
-                </form>
-              </td>
-              <td class="meta">{% if o.portal_client %}{{ o.portal_client.email }}{% else %}—{% endif %}</td>
-              {% if rep.is_admin %}
-              <td class="meta">{% if o.sales_rep %}{{ o.sales_rep.name }}{% else %}—{% endif %}</td>
-              {% endif %}
-              <td class="comercial-leads-table__actions">
-                <a href="{{ url_for('comercial_op_edit', opp_id=o.id) }}">Abrir</a>
-                <a href="{{ url_for('comercial_op_delete', opp_id=o.id) }}" class="comercial-leads-table__danger">Excluir</a>
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="{{ 8 if rep.is_admin else 7 }}" class="comercial-empty">
-                {% if rep.is_admin %}Nenhum lead cadastrado ainda.{% else %}Nenhum lead atribuído a você. Peça ao gestor para vincular oportunidades ao seu usuário no CRM (campo “Representante comercial”).{% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+  <div class="crm-table-card">
+    <div class="table-wrap">
+      <table class="data comercial-leads-table">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Organização / CNPJ</th>
+            <th>Contato</th>
+            <th>Valor (R$)</th>
+            <th>Estágio</th>
+            <th>Conta cliente</th>
+            {% if rep.is_admin %}<th>Representante</th>{% endif %}
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in opportunities %}
+          <tr>
+            <td><strong>{{ o.title }}</strong></td>
+            <td>{{ o.organization or '—' }}{% if o.cnpj %}<br><span class="meta">CNPJ: {{ o.cnpj }}</span>{% endif %}</td>
+            <td class="meta">{{ o.contact_name or '—' }}<br>{{ o.email or '' }}{% if o.phone %}<br>{{ o.phone }}{% endif %}</td>
+            <td class="comercial-leads-table__value">{% if o.value_brl is not none %}{{ o.value_brl|float|brl }}{% else %}—{% endif %}</td>
+            <td>
+              <form method="post" action="{{ url_for('comercial_op_stage', opp_id=o.id) }}" class="comercial-stage-form">
+                <select name="stage" class="comercial-stage-select" onchange="this.form.submit()">
+                  {% for key, label in stages %}
+                  <option value="{{ key }}" {% if o.stage == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td class="meta">{% if o.portal_client %}{{ o.portal_client.email }}{% else %}—{% endif %}</td>
+            {% if rep.is_admin %}
+            <td class="meta">{% if o.sales_rep %}{{ o.sales_rep.name }}{% else %}—{% endif %}</td>
+            {% endif %}
+            <td class="comercial-leads-table__actions">
+              <a href="{{ url_for('comercial_op_edit', opp_id=o.id) }}">Abrir</a>
+              <a href="{{ url_for('comercial_op_delete', opp_id=o.id) }}" class="comercial-leads-table__danger">Excluir</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="{{ 8 if rep.is_admin else 7 }}" class="comercial-empty">
+              {% if rep.is_admin %}Nenhum lead cadastrado ainda.{% else %}Nenhum lead atribuído a você. Peça ao gestor para vincular oportunidades ao seu usuário no CRM (campo “Representante comercial”).{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  </section>
-
-  {% include "comercial/_sidebar.html" %}
-</div>
+  </div>
+</section>
 {% endblock %}
