@@ -28,8 +28,9 @@
     </div>
   </header>
 
-  <form method="post" class="lead-form-layout" enctype="multipart/form-data" novalidate>
+  <div class="lead-form-layout">
     <div class="lead-form-main">
+      <form method="post" id="lead-main-form" class="lead-form-main-form" enctype="multipart/form-data" novalidate>
       <section class="lead-form-card" aria-labelledby="lead-sec-ident">
         <h2 class="lead-form-card__title" id="lead-sec-ident">Identificação</h2>
         <div class="lead-form-fields lead-form-fields--2col">
@@ -221,20 +222,44 @@
         <button type="submit" class="btn btn--primary">Salvar lead</button>
         <a class="btn btn--ghost" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">Cancelar</a>
       </div>
+      </form>
     </div>
 
     <aside class="lead-form-aside">
+      {% if opp %}
+      <section class="lead-form-card lead-form-card--chat lead-form-card--aside-chat">
+        <h2 class="lead-form-card__title">Chat com o cliente</h2>
+        <p class="lead-form-card__desc">Visível na área do cliente. Envio independente do botão Salvar.</p>
+        <div class="lead-chat__thread lead-chat__thread--crm lead-chat__thread--bounded">
+          {% if chat_messages %}
+          {% for m in chat_messages %}
+          {{ lead_chat_bubble(m, client_area=false, allow_delete=true) }}
+          {% endfor %}
+          {% else %}
+          <p class="meta" style="margin:0">Sem mensagens ainda.</p>
+          {% endif %}
+        </div>
+        <form method="post" action="{{ chat_form_action }}" class="lead-chat__form lead-chat__form--compact" enctype="multipart/form-data">
+          <textarea id="crm-chat-body" name="chat_body" rows="2" placeholder="Mensagem…"></textarea>
+          <div class="lead-chat__form-row">
+            <input id="crm-chat-files" type="file" name="attachments" multiple accept="image/*,.pdf,.doc,.docx">
+            <button type="submit" class="btn btn--primary btn--compact">Enviar</button>
+          </div>
+        </form>
+      </section>
+      {% endif %}
+
       <div class="lead-form-sticky">
         <div class="lead-sale-total-card lead-sale-total-card--aside" id="lead_sale_total_wrap">
           <span class="lead-sale-total-card__label">Valor total da venda</span>
           <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">
             {% if opp and opp.value_brl is not none %}{{ opp.value_brl|float|brl }}{% else %}—{% endif %}
           </p>
-          <input type="hidden" id="value_brl" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
+          <input type="hidden" id="value_brl" form="lead-main-form" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
           <p class="lead-sale-total-card__hint">Base do cálculo da comissão</p>
         </div>
         <div class="lead-form-actions lead-form-actions--desktop">
-          <button type="submit" class="btn btn--primary btn--block">Salvar lead</button>
+          <button type="submit" class="btn btn--primary btn--block" form="lead-main-form">Salvar lead</button>
           <a class="btn btn--ghost btn--block" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">Cancelar</a>
         </div>
         {% if opp and opp.catalog_lines %}
@@ -249,7 +274,7 @@
         {% endif %}
       </div>
     </aside>
-  </form>
+  </div>
 
   {% if opp %}
   <div class="lead-form-bottom">
@@ -267,27 +292,6 @@
       </p>
     </section>
     {% endif %}
-
-    <section class="lead-form-card lead-form-card--chat">
-      <h2 class="lead-form-card__title">Chat com o cliente</h2>
-      <p class="lead-form-card__desc">Visível na área do cliente. Envio independente do botão Salvar.</p>
-      <div class="lead-chat__thread lead-chat__thread--crm lead-chat__thread--bounded">
-        {% if chat_messages %}
-        {% for m in chat_messages %}
-        {{ lead_chat_bubble(m, client_area=false, allow_delete=true) }}
-        {% endfor %}
-        {% else %}
-        <p class="meta" style="margin:0">Sem mensagens ainda.</p>
-        {% endif %}
-      </div>
-      <form method="post" action="{{ chat_form_action }}" class="lead-chat__form lead-chat__form--compact" enctype="multipart/form-data">
-        <textarea id="crm-chat-body" name="chat_body" rows="2" placeholder="Mensagem…"></textarea>
-        <div class="lead-chat__form-row">
-          <input id="crm-chat-files" type="file" name="attachments" multiple accept="image/*,.pdf,.doc,.docx">
-          <button type="submit" class="btn btn--primary btn--compact">Enviar</button>
-        </div>
-      </form>
-    </section>
 
     <section class="lead-form-card lead-form-card--danger">
       <h2 class="lead-form-card__title lead-form-card__title--danger">Zona de risco</h2>
