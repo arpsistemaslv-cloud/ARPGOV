@@ -67,6 +67,16 @@
         <a href="{{ url_for('cliente_entrar') }}">Área do cliente</a>
         {% endif %}
         {% endif %}
+        {% if session.rep_id and not request.path.startswith('/admin') and not request.path.startswith('/crm') and not request.path.startswith('/comercial') %}
+        <a href="{{ url_for('comercial_dashboard') }}" class="nav__comercial" title="Área comercial" aria-label="Área comercial">
+          <svg class="nav__comercial-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 7.5V19a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            <path d="M8 11h8M8 15h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            <path d="M7 7.5 9 3h6l2 4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="nav__comercial-label">Comercial</span>
+        </a>
+        {% endif %}
         <a href="{{ url_for('arps') }}" class="nav__cta">Consultar atas</a>
         {% for pg in nav_site_pages %}
         <a href="{{ url_for('site_page_public', slug=pg.slug) }}">{{ pg.nav_label or pg.title }}</a>

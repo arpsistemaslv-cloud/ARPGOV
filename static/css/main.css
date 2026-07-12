@@ -1158,6 +1158,53 @@ main,
   color: var(--gov-blue-70);
 }
 
+.nav a.nav__comercial {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.7rem;
+  background: var(--gov-blue-10);
+  border: 1px solid rgba(19, 81, 180, 0.22);
+  color: var(--gov-blue-70) !important;
+  line-height: 1;
+}
+
+.nav a.nav__comercial:hover {
+  background: rgba(19, 81, 180, 0.14);
+  color: var(--gov-blue-90) !important;
+}
+
+.nav__comercial-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+
+.nav__comercial-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+@media (min-width: 960px) {
+  .nav__comercial-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .nav a.nav__comercial {
+    position: relative;
+    padding: 0.48rem;
+  }
+}
+
 .carrinho-list {
   display: flex;
   flex-direction: column;
