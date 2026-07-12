@@ -27,16 +27,15 @@
       {% endif %}
     </div>
     <div class="lead-form-header__actions">
-      <div class="lead-sale-total-card lead-sale-total-card--header" id="lead_sale_total_wrap">
-        <span class="lead-sale-total-card__label">Valor total da venda</span>
-        <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">
-          {% if opp and opp.value_brl is not none %}{{ opp.value_brl|float|brl }}{% else %}—{% endif %}
-        </p>
-        <input type="hidden" id="value_brl" form="lead-main-form" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
-        <p class="lead-sale-total-card__hint">Base do cálculo da comissão</p>
-      </div>
-      <div class="lead-form-actions lead-form-actions--header">
-        <button type="submit" class="btn btn--primary btn--block" form="lead-main-form">Salvar lead</button>
+      <div class="lead-form-header__toolbar">
+        <div class="lead-sale-total-card lead-sale-total-card--header" id="lead_sale_total_wrap">
+          <span class="lead-sale-total-card__label">Valor total</span>
+          <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">
+            {% if opp and opp.value_brl is not none %}{{ opp.value_brl|float|brl }}{% else %}—{% endif %}
+          </p>
+          <input type="hidden" id="value_brl" form="lead-main-form" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
+        </div>
+        <button type="submit" class="btn btn--primary lead-form-header__save" form="lead-main-form">Salvar</button>
       </div>
     </div>
   </header>
@@ -241,8 +240,8 @@
       {% if opp %}
       <section class="lead-form-card lead-form-card--chat lead-form-card--aside-chat">
         <h2 class="lead-form-card__title">Chat com o cliente</h2>
-        <p class="lead-form-card__desc">Visível na área do cliente. Envio independente do botão Salvar.</p>
-        <div class="lead-chat__thread lead-chat__thread--crm lead-chat__thread--bounded">
+        <p class="lead-form-card__desc lead-form-card__desc--tight">Visível na área do cliente.</p>
+        <div class="lead-chat__thread lead-chat__thread--crm lead-chat__thread--aside{% if not chat_messages %} lead-chat__thread--empty{% endif %}">
           {% if chat_messages %}
           {% for m in chat_messages %}
           {{ lead_chat_bubble(m, client_area=false, allow_delete=true) }}
@@ -271,30 +270,36 @@
         </ul>
       </div>
       {% endif %}
+
+      {% if opp and comercial_subnav %}
+      <section class="lead-form-card lead-form-card--compact lead-form-card--aside-compact" aria-label="Comissionamento">
+        <h2 class="lead-form-card__title">Comissionamento</h2>
+        {% if opp.rep_commission_brl is not none %}
+        <p class="meta lead-form-aside-meta">Comissão: <strong>{{ opp.rep_commission_brl|float|brl }}</strong></p>
+        {% else %}
+        <p class="meta lead-form-aside-meta">Sem comissão definida.</p>
+        {% endif %}
+        <p class="meta lead-form-aside-meta lead-form-aside-meta--links">
+          <a href="{{ url_for('comercial_financeiro_novo') }}?oportunidade={{ opp.id }}">Anexar documento</a>
+          · <a href="{{ url_for('comercial_financeiro') }}">Financeiro</a>
+        </p>
+      </section>
+
+      <section class="lead-form-card lead-form-card--danger lead-form-card--aside-compact lead-form-card--aside-danger">
+        <h2 class="lead-form-card__title lead-form-card__title--danger">Zona de risco</h2>
+        <p class="lead-form-card__desc lead-form-card__desc--tight">Remove o lead e o chat. Lançamentos financeiros permanecem.</p>
+        <a href="{{ url_for('comercial_op_delete', opp_id=opp.id) }}" class="btn btn--danger btn--compact btn--block">Excluir lead…</a>
+      </section>
+      {% endif %}
     </aside>
   </div>
 
-  {% if opp %}
+  {% if opp and not comercial_subnav %}
   <div class="lead-form-bottom">
-    {% if comercial_subnav %}
-    <section class="lead-form-card lead-form-card--compact" aria-label="Comissionamento">
-      <h2 class="lead-form-card__title">Comissionamento</h2>
-      {% if opp.rep_commission_brl is not none %}
-      <p class="meta">Comissão: <strong>{{ opp.rep_commission_brl|float|brl }}</strong></p>
-      {% else %}
-      <p class="meta">Nenhum valor de comissão definido ainda.</p>
-      {% endif %}
-      <p class="meta" style="margin-bottom:0">
-        <a href="{{ url_for('comercial_financeiro_novo') }}?oportunidade={{ opp.id }}">Anexar documento</a>
-        · <a href="{{ url_for('comercial_financeiro') }}">Meu financeiro</a>
-      </p>
-    </section>
-    {% endif %}
-
     <section class="lead-form-card lead-form-card--danger">
       <h2 class="lead-form-card__title lead-form-card__title--danger">Zona de risco</h2>
       <p class="lead-form-card__desc">Remove o lead, chat e vínculos com produtos. Lançamentos financeiros permanecem sem oportunidade.</p>
-      <a href="{% if comercial_subnav is defined and comercial_subnav %}/comercial/oportunidade/{{ opp.id }}/excluir{% else %}/crm/oportunidade/{{ opp.id }}/excluir{% endif %}" class="btn btn--danger btn--compact">Excluir lead…</a>
+      <a href="/crm/oportunidade/{{ opp.id }}/excluir" class="btn btn--danger btn--compact">Excluir lead…</a>
     </section>
   </div>
   {% endif %}
