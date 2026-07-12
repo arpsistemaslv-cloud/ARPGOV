@@ -131,20 +131,62 @@ sudo systemctl restart arpgov
 
 ---
 
-## Atualizações (rotina)
+## Atualizações (rotina) — processo que funciona
 
-**No PC:**
+### 1. No PC (Windows) — enviar código ao GitHub
 
 ```powershell
+cd "C:\Users\Victor Hugo\Desktop\PortalGovCRM"
 git add .
-git commit -m "sua alteração"
+git commit -m "descrição da alteração"
 git push origin main
 ```
 
-**No VPS:**
+### 2. No VPS — publicar no site
+
+**Não use `sudo` no PowerShell do Windows.** Os comandos abaixo são só **dentro do SSH no servidor Linux**.
+
+Conectar (PowerShell):
+
+```powershell
+ssh deploy@85.31.60.61
+```
+
+Se `deploy` não entrar, use `ssh root@85.31.60.61` e depois `su - deploy`.
+
+No servidor (como usuário **deploy**):
 
 ```bash
-/var/www/arpgov/deploy.sh
+cd /var/www/arpgov
+git fetch origin main
+git reset --hard origin/main
+git log -1 --oneline
+bash deploy.sh
+```
+
+O `git log` deve mostrar o commit mais recente do GitHub. O `deploy.sh` puxa dependências e reinicia o serviço `arpgov`.
+
+### 3. No navegador
+
+Abra o site e pressione **Ctrl+F5** (recarregar sem cache), principalmente após mudanças em CSS/JS.
+
+---
+
+### Erros comuns
+
+| Problema | Solução |
+|----------|---------|
+| `sudo` não funciona no Windows | Conecte via SSH e rode os comandos **no servidor** |
+| `dubious ownership` ao usar **root** | Use `su - deploy` e rode o deploy como **deploy**, ou: `git config --global --add safe.directory /var/www/arpgov` |
+| Site não mudou após pull | Rode `bash deploy.sh` e **Ctrl+F5** no navegador |
+| `Connection reset` no SSH | Conecte de novo e repita a partir do `git fetch` |
+
+---
+
+### Atalho (se já estiver logado como deploy)
+
+```bash
+cd /var/www/arpgov && git fetch origin main && git reset --hard origin/main && bash deploy.sh
 ```
 
 ---
@@ -216,5 +258,7 @@ Copie `arpgov.service` e `nginx-arpgov.conf` ajustando porta e pasta.
 sudo systemctl status arpgov    # status do app
 sudo journalctl -u arpgov -f    # logs em tempo real
 sudo nginx -t                   # testar Nginx
-/var/www/arpgov/deploy.sh       # atualizar do GitHub
+cd /var/www/arpgov && bash deploy.sh   # atualizar do GitHub (como usuário deploy)
 ```
+
+**Produção ARPGOV:** IP `85.31.60.61` · domínio `https://arpgov.com` · pasta `/var/www/arpgov`

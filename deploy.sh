@@ -12,7 +12,8 @@ cd "$APP_DIR"
 echo ">>> Atualizando código ($BRANCH)..."
 git fetch origin "$BRANCH"
 git checkout "$BRANCH"
-git pull origin "$BRANCH"
+git reset --hard "origin/$BRANCH"
+git log -1 --oneline
 
 echo ">>> Dependências Python..."
 if [ ! -d ".venv" ]; then
