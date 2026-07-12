@@ -1660,6 +1660,25 @@
   margin-bottom: 1.25rem;
 }
 
+.crm-module-nav__link--cta {
+  background: var(--gov-blue-70, #1351b4);
+  color: #fff;
+  border-color: var(--gov-blue-70, #1351b4);
+}
+
+.crm-module-nav__link--cta:hover {
+  background: var(--gov-blue-80, #0c3268);
+  border-color: var(--gov-blue-80, #0c3268);
+  color: #fff;
+  text-decoration: none;
+}
+
+.crm-module-nav__link--cta.crm-module-nav__link--active {
+  background: var(--gov-blue-90, #071d41);
+  border-color: var(--gov-blue-90, #071d41);
+  color: #fff;
+}
+
 .comercial-hero {
   display: flex;
   flex-wrap: wrap;
