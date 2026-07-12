@@ -82,7 +82,7 @@
       </header>
       <p class="meta finance-rateio-section__desc">Leads com parcelas ainda não quitadas. Clique em <strong>+</strong> para ver todos os beneficiários.</p>
       <div class="crm-table-card">
-        {{ finance_rateio_groups(lead_groups_open, 'Nenhum rateio em aberto.') }}
+        {{ finance_rateio_groups(lead_groups_open, 'Nenhum rateio em aberto.', payout_statuses) }}
       </div>
     </section>
 
@@ -93,7 +93,7 @@
       </header>
       <p class="meta finance-rateio-section__desc">Leads com todas as parcelas marcadas como <strong>Pago</strong>.</p>
       <div class="crm-table-card">
-        {{ finance_rateio_groups(lead_groups_paid, 'Nenhum lead totalmente quitado ainda.') }}
+        {{ finance_rateio_groups(lead_groups_paid, 'Nenhum lead totalmente quitado ainda.', payout_statuses) }}
       </div>
     </section>
 
