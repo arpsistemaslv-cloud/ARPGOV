@@ -1,73 +1,220 @@
-# Deploy ARPGOV — GitHub → VPS Hostinger
+# Deploy ARPGOV — Hostinger VPS KVM4 + GitHub
 
-## Fluxo
+Repositório: **https://github.com/arpsistemaslv-cloud/ARPGOV**
 
-1. Alterações locais → `git push` para o GitHub
-2. No VPS: `./deploy.sh` **ou** deploy automático via GitHub Actions
+## Arquitetura no VPS
 
-## Primeira vez no PC
-
-```powershell
-cd "C:\Users\Victor Hugo\Desktop\PortalGovCRM"
-git remote add origin https://github.com/SEU_USUARIO/arpgov-portal.git
-git push -u origin main
+```
+Internet → Nginx :443 → Gunicorn 127.0.0.1:8001 → ARPGOV (Flask)
 ```
 
-Crie o repositório vazio no GitHub antes do `push`.
+Outros projetos podem usar portas `8002`, `8003`, etc., cada um com domínio próprio.
 
-## Primeira vez no VPS
+---
+
+## Pré-requisitos
+
+1. VPS KVM4 ativo na Hostinger (Ubuntu)
+2. Acesso SSH como **root** (painel Hostinger → VPS → SSH)
+3. Domínio com registro **A** apontando para o **IP do VPS**
+4. Código já no GitHub (branch `main`)
+
+---
+
+## Instalação automática no VPS (recomendado)
+
+Conecte no VPS:
 
 ```bash
-sudo mkdir -p /var/www
-sudo chown deploy:deploy /var/www
-cd /var/www
-git clone https://github.com/SEU_USUARIO/arpgov-portal.git arpgov
-cd arpgov
-chmod +x deploy.sh
-
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-cp .env.example .env
-nano .env   # preencher senhas e PUBLIC_BASE_URL
-
-# Copiar banco e uploads do PC (só uma vez):
-# scp instance/portal.db deploy@IP:/var/www/arpgov/instance/
-# scp -r static/uploads deploy@IP:/var/www/arpgov/static/
+ssh root@SEU_IP_DO_VPS
 ```
 
-Configure `systemd` (`arpgov.service`) e Nginx conforme documentação do projeto.
+Execute (substitua domínio e e-mail):
 
-## Atualizações
+```bash
+curl -fsSL https://raw.githubusercontent.com/arpsistemaslv-cloud/ARPGOV/main/deploy/hostinger/setup-vps.sh | bash -s -- \
+  --domain arpgov.seudominio.com.br \
+  --email admin@seudominio.com.br
+```
+
+O script instala: Python, Nginx, Certbot, clona o GitHub, cria `.env`, systemd e HTTPS.
+
+Depois edite as senhas:
+
+```bash
+nano /var/www/arpgov/.env
+# PAINEL_ADMIN_PASSWORD e CRM_ADMIN_PASSWORD
+systemctl restart arpgov
+```
+
+---
+
+## Instalação manual (passo a passo)
+
+### 1. Pacotes e usuário
+
+```bash
+apt update && apt upgrade -y
+apt install -y python3 python3-venv python3-pip nginx certbot python3-certbot-nginx git ufw
+adduser deploy
+ufw allow OpenSSH && ufw allow 'Nginx Full' && ufw enable
+```
+
+### 2. Clonar o projeto
+
+```bash
+mkdir -p /var/www && chown deploy:deploy /var/www
+su - deploy
+cd /var/www
+git clone https://github.com/arpsistemaslv-cloud/ARPGOV.git arpgov
+cd arpgov
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+chmod +x deploy.sh
+```
+
+### 3. Ambiente de produção
+
+```bash
+cp deploy/hostinger/env.production.example .env
+nano .env
+```
+
+Substitua `ARPGOV_DOMAIN` pelo domínio real e defina senhas fortes.
+
+### 4. systemd + Nginx
+
+Como **root**:
+
+```bash
+cp /var/www/arpgov/deploy/hostinger/arpgov.service /etc/systemd/system/
+systemctl daemon-reload && systemctl enable arpgov && systemctl start arpgov
+
+sed 's/ARPGOV_DOMAIN/seu-dominio.com.br/g' /var/www/arpgov/deploy/hostinger/nginx-arpgov.conf \
+  > /etc/nginx/sites-available/arpgov
+ln -s /etc/nginx/sites-available/arpgov /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+nginx -t && systemctl reload nginx
+
+certbot --nginx -d seu-dominio.com.br
+```
+
+### 5. Permissão para deploy.sh
+
+```bash
+cp /var/www/arpgov/deploy/hostinger/sudoers-deploy /etc/sudoers.d/arpgov-deploy
+chmod 440 /etc/sudoers.d/arpgov-deploy
+```
+
+---
+
+## Migrar dados do PC (primeira vez)
+
+No **Windows** (PowerShell na pasta do projeto):
+
+```powershell
+.\scripts\upload-data-to-vps.ps1 -VpsHost SEU_IP_DO_VPS -VpsUser deploy
+```
+
+Ou manualmente:
+
+```powershell
+scp "instance\portal.db" deploy@SEU_IP:/var/www/arpgov/instance/
+scp -r "static\uploads" deploy@SEU_IP:/var/www/arpgov/static/
+```
+
+No VPS:
+
+```bash
+sudo systemctl restart arpgov
+```
+
+---
+
+## Atualizações (rotina)
+
+**No PC:**
 
 ```powershell
 git add .
-git commit -m "sua mensagem"
+git commit -m "sua alteração"
 git push origin main
 ```
 
-No VPS (manual):
+**No VPS:**
 
 ```bash
 /var/www/arpgov/deploy.sh
 ```
 
-## GitHub Actions (opcional)
+---
 
-No repositório GitHub → **Settings → Secrets and variables → Actions**, crie:
+## GitHub Actions (deploy automático)
 
-| Secret | Exemplo |
-|--------|---------|
-| `VPS_HOST` | `123.45.67.89` |
+Em **GitHub → Settings → Secrets → Actions**:
+
+| Secret | Valor |
+|--------|--------|
+| `VPS_HOST` | IP do VPS |
 | `VPS_USER` | `deploy` |
-| `VPS_SSH_KEY` | conteúdo da chave privada SSH |
+| `VPS_SSH_KEY` | chave privada SSH |
 | `VPS_APP_PATH` | `/var/www/arpgov` |
 
-Após configurar, cada `push` na `main` executa o deploy automaticamente.
+Cada `push` na `main` executa o deploy.
 
-## O que NÃO vai no Git
+---
 
-- `.env` — senhas (só no VPS)
-- `instance/portal.db` — banco SQLite
-- `static/uploads/` — imagens e anexos
+## URLs após deploy
+
+| Área | URL |
+|------|-----|
+| Site | `https://seu-dominio/` |
+| Painel admin | `https://seu-dominio/admin` |
+| CRM | `https://seu-dominio/crm` |
+| Comercial (vendedor) | `https://seu-dominio/comercial/entrar` |
+| Parceiros | `https://seu-dominio/parceiro/entrar` |
+
+---
+
+## O que NÃO vai no GitHub
+
+| Item | Onde fica |
+|------|-----------|
+| `.env` | Só no VPS |
+| `instance/portal.db` | Só no VPS |
+| `static/uploads/` | Só no VPS |
+
+---
+
+## Arquivos de configuração no repositório
+
+```
+deploy/hostinger/
+  setup-vps.sh          # instalação automática
+  arpgov.service        # systemd
+  nginx-arpgov.conf     # Nginx
+  env.production.example
+  sudoers-deploy
+```
+
+---
+
+## Vários projetos no mesmo KVM4
+
+| Projeto | Pasta | Porta | Domínio |
+|---------|-------|-------|---------|
+| ARPGOV | `/var/www/arpgov` | 8001 | `arpgov...` |
+| Outro | `/var/www/outro` | 8002 | `app2...` |
+
+Copie `arpgov.service` e `nginx-arpgov.conf` ajustando porta e pasta.
+
+---
+
+## Comandos úteis no VPS
+
+```bash
+sudo systemctl status arpgov    # status do app
+sudo journalctl -u arpgov -f    # logs em tempo real
+sudo nginx -t                   # testar Nginx
+/var/www/arpgov/deploy.sh       # atualizar do GitHub
+```

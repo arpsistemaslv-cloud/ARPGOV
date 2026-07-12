@@ -1,0 +1,6 @@
+# Permite o usuário deploy reiniciar só o serviço ARPGOV (para deploy.sh).
+# Instalar: sudo cp deploy/hostinger/sudoers-deploy /etc/sudoers.d/arpgov-deploy
+#           sudo chmod 440 /etc/sudoers.d/arpgov-deploy
+#           sudo visudo -c
+
+deploy ALL=(ALL) NOPASSWD: /bin/systemctl restart arpgov, /bin/systemctl status arpgov
