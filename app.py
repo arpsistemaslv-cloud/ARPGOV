@@ -6440,6 +6440,7 @@ def comercial_op_edit(opp_id):
         "crm/op_form.html",
         opp=opp,
         stages=STAGES,
+        stage_normalize_fn=normalize_stage_key,
         catalog_choices=catalog_choices,
         sales_reps=None,
         clients=clients,
