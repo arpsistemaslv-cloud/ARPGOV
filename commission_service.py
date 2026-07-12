@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 SELLER_SHARE_OF_TOTAL = Decimal("30")
 STAKEHOLDER_POOL_SHARE_OF_TOTAL = Decimal("70")
+# Retirada automática do rateio bruto dos sócios para reserva da empresa.
+SOCIO_CASHFLOW_RESERVE_PERCENT = Decimal("10")
 TIER_PERCENTS = [Decimal("0.5"), Decimal("1"), Decimal("1.5"), Decimal("2"), Decimal("2.5"), Decimal("3")]
 
 
@@ -106,7 +108,7 @@ def compute_split_rows(
                 "label": sh.name,
             }
         )
-    return rows
+    return apply_socio_cashflow_reserve_rows(rows, stakeholders)
 
 
 def compute_split_rows_for_project(
@@ -160,7 +162,7 @@ def compute_split_rows_for_project(
                     "label": line.label,
                 }
             )
-    return rows
+    return apply_socio_cashflow_reserve_rows(rows, stakeholders)
 
 
 def sync_tier_splits(
@@ -305,6 +307,150 @@ def active_stakeholders():
         .order_by(CompanyStakeholder.sort_order.asc(), CompanyStakeholder.id.asc())
         .all()
     )
+
+
+def _stakeholder_roles_by_id(
+    stakeholders: list | None = None,
+) -> dict[int, str]:
+    if stakeholders is None:
+        stakeholders = active_stakeholders()
+    return {int(s.id): (s.role_key or "socio") for s in stakeholders}
+
+
+def _is_socio_stakeholder_row(row: dict, roles_by_id: dict[int, str]) -> bool:
+    if row.get("recipient_kind") != "stakeholder":
+        return False
+    sh_id = row.get("stakeholder_id")
+    if sh_id is None:
+        return True
+    return roles_by_id.get(int(sh_id), "socio") == "socio"
+
+
+def _is_fluxo_stakeholder_row(row: dict, roles_by_id: dict[int, str]) -> bool:
+    if row.get("recipient_kind") != "stakeholder":
+        return False
+    sh_id = row.get("stakeholder_id")
+    if sh_id is None:
+        return False
+    return roles_by_id.get(int(sh_id)) == "fluxo_caixa"
+
+
+def apply_socio_cashflow_reserve_rows(
+    rows: list[dict],
+    stakeholders: list | None = None,
+) -> list[dict]:
+    """Retira % do rateio dos sócios e destina ao fluxo de caixa da empresa."""
+    if not rows or SOCIO_CASHFLOW_RESERVE_PERCENT <= 0:
+        return rows
+    if stakeholders is None:
+        stakeholders = active_stakeholders()
+    roles_by_id = _stakeholder_roles_by_id(stakeholders)
+    reserve_factor = SOCIO_CASHFLOW_RESERVE_PERCENT / Decimal("100")
+    out: list[dict] = []
+    fluxo_row: dict | None = None
+    reserve_pct = Decimal("0")
+
+    for row in rows:
+        if _is_fluxo_stakeholder_row(row, roles_by_id):
+            fluxo_row = dict(row)
+            continue
+        if _is_socio_stakeholder_row(row, roles_by_id):
+            pct = Decimal(str(row.get("share_percent") or 0))
+            cut = _q4(pct * reserve_factor)
+            if cut > 0:
+                reserve_pct += cut
+                updated = dict(row)
+                updated["share_percent"] = _q4(pct - cut)
+                out.append(updated)
+                continue
+        out.append(dict(row))
+
+    if reserve_pct <= 0:
+        if fluxo_row is not None:
+            out.append(fluxo_row)
+        return out
+
+    fluxo_sh = next(
+        (s for s in stakeholders if s.is_active and s.role_key == "fluxo_caixa"),
+        None,
+    )
+    if fluxo_row is not None:
+        fluxo_row["share_percent"] = _q4(
+            Decimal(str(fluxo_row.get("share_percent") or 0)) + reserve_pct
+        )
+        out.append(fluxo_row)
+    else:
+        out.append(
+            {
+                "recipient_kind": "stakeholder",
+                "stakeholder_id": fluxo_sh.id if fluxo_sh else None,
+                "share_percent": reserve_pct,
+                "label": (fluxo_sh.name if fluxo_sh else "Fluxo de caixa"),
+            }
+        )
+    return out
+
+
+def apply_socio_cashflow_reserve_amounts(
+    rows: list[dict],
+    stakeholders: list | None = None,
+) -> list[dict]:
+    """Aplica a reserva de fluxo de caixa em valores em R$ (projeção de metas)."""
+    if not rows or SOCIO_CASHFLOW_RESERVE_PERCENT <= 0:
+        return rows
+    if stakeholders is None:
+        stakeholders = active_stakeholders()
+    roles_by_id = _stakeholder_roles_by_id(stakeholders)
+    reserve_factor = SOCIO_CASHFLOW_RESERVE_PERCENT / Decimal("100")
+    out: list[dict] = []
+    fluxo_row: dict | None = None
+    reserve_total = Decimal("0")
+
+    for row in rows:
+        if _is_fluxo_stakeholder_row(row, roles_by_id):
+            fluxo_row = dict(row)
+            continue
+        updated = dict(row)
+        amount = updated.get("amount_brl")
+        if (
+            _is_socio_stakeholder_row(row, roles_by_id)
+            and amount is not None
+        ):
+            amt = Decimal(str(amount))
+            cut = _q2(amt * reserve_factor)
+            if cut > 0:
+                reserve_total += cut
+                updated["amount_brl"] = _q2(amt - cut)
+                pct = Decimal(str(updated.get("share_percent") or 0))
+                updated["share_percent"] = _q4(pct * (Decimal("1") - reserve_factor))
+        out.append(updated)
+
+    if reserve_total <= 0:
+        if fluxo_row is not None:
+            out.append(fluxo_row)
+        return out
+
+    fluxo_sh = next(
+        (s for s in stakeholders if s.is_active and s.role_key == "fluxo_caixa"),
+        None,
+    )
+    if fluxo_row is not None:
+        base = fluxo_row.get("amount_brl")
+        fluxo_row["amount_brl"] = _q2(
+            (Decimal(str(base)) if base is not None else Decimal("0")) + reserve_total
+        )
+        out.append(fluxo_row)
+    else:
+        out.append(
+            {
+                "recipient_kind": "stakeholder",
+                "stakeholder_id": fluxo_sh.id if fluxo_sh else None,
+                "share_percent": Decimal("0"),
+                "label": (fluxo_sh.name if fluxo_sh else "Fluxo de caixa"),
+                "amount_brl": _q2(reserve_total),
+            }
+        )
+    return out
 
 
 def add_tier_to_project(

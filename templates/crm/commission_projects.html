@@ -15,7 +15,7 @@
     <section class="crm-table-card">
       <header style="padding:1rem 1.1rem;border-bottom:1px solid var(--border, #e2e8f0)">
         <h2 style="font-size:1.05rem;margin:0">Sócios e fluxo de caixa</h2>
-        <p class="meta" style="margin:0.35rem 0 0">Edite nome e percentual de cada sócio livremente. Quando a soma chegar a 100%, as faixas de comissão são recalculadas automaticamente.</p>
+        <p class="meta" style="margin:0.35rem 0 0">Edite nome e percentual de cada sócio livremente. Do rateio dos sócios, <strong>10%</strong> são reservados automaticamente para o fluxo de caixa da empresa. Quando a soma chegar a 100%, as faixas de comissão são recalculadas.</p>
       </header>
       <form method="post" action="{{ url_for('crm.crm_commission_stakeholder_add') }}" style="padding:1rem 1.1rem;display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;border-bottom:1px solid var(--border, #e2e8f0)">
         <div>

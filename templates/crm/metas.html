@@ -108,6 +108,7 @@
             {% if goal_commission.project %}{{ goal_commission.project.title }} · {{ tier_label_fn(goal_commission.tier) }}{% endif %}
             — meta de vendas: {{ goal_commission.monthly_value_brl|brl }} (mês) · {{ goal_commission.annual_value_brl|brl }} (período {{ goals_ctx.period_label_short }})
             · comissão bruta {{ goal_commission.tier_total_percent|float }}% = {{ goal_commission.totals.monthly_commission_gross_brl|brl }}/mês
+            · reserva fluxo de caixa ({{ goal_commission.cashflow_reserve_percent|int }}% dos sócios) incluída na tabela
             · líquido após {{ goal_commission.tax_percent|int }}% imposto = {{ goal_commission.totals.monthly_commission_brl|brl }}/mês
           </p>
           <div class="table-wrap">
@@ -141,6 +142,13 @@
                   <td class="meta">− {{ goal_commission.totals.annual_tax_brl|brl }}</td>
                   <td class="meta">− {{ goal_commission.totals.monthly_tax_brl|brl }}</td>
                 </tr>
+                {% if goal_commission.totals.annual_cashflow_reserve_brl and goal_commission.totals.annual_cashflow_reserve_brl > 0 %}
+                <tr>
+                  <td colspan="3" class="meta">Reserva fluxo de caixa ({{ goal_commission.cashflow_reserve_percent|int }}% retirado dos sócios)</td>
+                  <td class="meta">{{ goal_commission.totals.annual_cashflow_reserve_brl|brl }}</td>
+                  <td class="meta">{{ goal_commission.totals.monthly_cashflow_reserve_brl|brl }}</td>
+                </tr>
+                {% endif %}
                 <tr>
                   <td colspan="3"><strong>Total líquido</strong></td>
                   <td><strong>{{ goal_commission.totals.annual_commission_brl|brl }}</strong></td>

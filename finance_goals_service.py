@@ -6,7 +6,12 @@ from decimal import Decimal
 
 from sqlalchemy import extract, func
 
-from commission_service import amounts_from_splits
+from commission_service import (
+    SOCIO_CASHFLOW_RESERVE_PERCENT,
+    amounts_from_splits,
+    apply_socio_cashflow_reserve_amounts,
+    active_stakeholders,
+)
 
 # Imposto sobre o valor total da comissão (representação comercial).
 COMMISSION_TAX_PERCENT = Decimal("5")
@@ -279,11 +284,17 @@ def goal_commission_projection(goal, tier) -> dict | None:
 
     annual_rows = amounts_from_splits(splits, annual_value)
     monthly_rows = amounts_from_splits(splits, monthly_value)
+    stakeholders = active_stakeholders()
+    roles_by_id = {int(s.id): (s.role_key or "socio") for s in stakeholders}
+    annual_rows = apply_socio_cashflow_reserve_amounts(annual_rows, stakeholders)
+    monthly_rows = apply_socio_cashflow_reserve_amounts(monthly_rows, stakeholders)
     monthly_by_key = {_split_key(row): row for row in monthly_rows}
 
     recipients: list[dict] = []
     annual_commission_gross = Decimal("0")
     monthly_commission_gross = Decimal("0")
+    annual_cashflow_reserve = Decimal("0")
+    monthly_cashflow_reserve = Decimal("0")
     for row in annual_rows:
         key = _split_key(row)
         monthly_row = monthly_by_key.get(key, {})
@@ -294,8 +305,16 @@ def goal_commission_projection(goal, tier) -> dict | None:
         annual_net = _q2(annual_gross * COMMISSION_NET_FACTOR)
         monthly_net = _q2(monthly_gross * COMMISSION_NET_FACTOR)
         kind = row.get("recipient_kind")
+        sh_id = row.get("stakeholder_id")
+        role_key = roles_by_id.get(int(sh_id), "socio") if sh_id else None
         if kind == "seller":
             role = "Vendedor"
+        elif role_key == "fluxo_caixa" or (
+            (row.get("label") or "").strip().lower() == "fluxo de caixa"
+        ):
+            role = "Fluxo de caixa"
+            annual_cashflow_reserve += annual_gross
+            monthly_cashflow_reserve += monthly_gross
         elif kind == "stakeholder":
             role = "Sócio"
         else:
@@ -329,12 +348,15 @@ def goal_commission_projection(goal, tier) -> dict | None:
         "monthly_value_brl": monthly_value,
         "tier_total_percent": _q2(tier_total_pct),
         "tax_percent": COMMISSION_TAX_PERCENT,
+        "cashflow_reserve_percent": SOCIO_CASHFLOW_RESERVE_PERCENT,
         "recipients": recipients,
         "totals": {
             "annual_commission_gross_brl": annual_commission_gross,
             "monthly_commission_gross_brl": monthly_commission_gross,
             "annual_tax_brl": annual_tax,
             "monthly_tax_brl": monthly_tax,
+            "annual_cashflow_reserve_brl": _q2(annual_cashflow_reserve),
+            "monthly_cashflow_reserve_brl": _q2(monthly_cashflow_reserve),
             "annual_commission_brl": annual_commission_net,
             "monthly_commission_brl": monthly_commission_net,
         },
