@@ -26,6 +26,19 @@
       <p class="lead-form-header__meta">Preencha os dados, vincule produtos e defina a comissão.</p>
       {% endif %}
     </div>
+    <div class="lead-form-header__actions">
+      <div class="lead-sale-total-card lead-sale-total-card--header" id="lead_sale_total_wrap">
+        <span class="lead-sale-total-card__label">Valor total da venda</span>
+        <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">
+          {% if opp and opp.value_brl is not none %}{{ opp.value_brl|float|brl }}{% else %}—{% endif %}
+        </p>
+        <input type="hidden" id="value_brl" form="lead-main-form" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
+        <p class="lead-sale-total-card__hint">Base do cálculo da comissão</p>
+      </div>
+      <div class="lead-form-actions lead-form-actions--header">
+        <button type="submit" class="btn btn--primary btn--block" form="lead-main-form">Salvar lead</button>
+      </div>
+    </div>
   </header>
 
   <div class="lead-form-layout">
@@ -219,7 +232,6 @@
       </section>
 
       <div class="lead-form-actions lead-form-actions--mobile">
-        <button type="submit" class="btn btn--primary">Salvar lead</button>
         <a class="btn btn--ghost" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">Cancelar</a>
       </div>
       </form>
@@ -249,30 +261,16 @@
       </section>
       {% endif %}
 
-      <div class="lead-form-sticky">
-        <div class="lead-sale-total-card lead-sale-total-card--aside" id="lead_sale_total_wrap">
-          <span class="lead-sale-total-card__label">Valor total da venda</span>
-          <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">
-            {% if opp and opp.value_brl is not none %}{{ opp.value_brl|float|brl }}{% else %}—{% endif %}
-          </p>
-          <input type="hidden" id="value_brl" form="lead-main-form" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
-          <p class="lead-sale-total-card__hint">Base do cálculo da comissão</p>
-        </div>
-        <div class="lead-form-actions lead-form-actions--desktop">
-          <button type="submit" class="btn btn--primary btn--block" form="lead-main-form">Salvar lead</button>
-          <a class="btn btn--ghost btn--block" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">Cancelar</a>
-        </div>
-        {% if opp and opp.catalog_lines %}
-        <div class="lead-form-aside-summary">
-          <span class="lead-form-aside-summary__label">Produtos vinculados</span>
-          <ul class="lead-form-aside-summary__list">
-            {% for ln in opp.catalog_lines %}
-            <li>{% if ln.catalog_item %}{{ ln.catalog_item.title[:48] }}{% if ln.catalog_item.title|length > 48 %}…{% endif %}{% else %}#{{ ln.catalog_item_id }}{% endif %} <strong>×{{ ln.quantity }}</strong></li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
+      {% if opp and opp.catalog_lines %}
+      <div class="lead-form-aside-summary">
+        <span class="lead-form-aside-summary__label">Produtos vinculados</span>
+        <ul class="lead-form-aside-summary__list">
+          {% for ln in opp.catalog_lines %}
+          <li>{% if ln.catalog_item %}{{ ln.catalog_item.title[:48] }}{% if ln.catalog_item.title|length > 48 %}…{% endif %}{% else %}#{{ ln.catalog_item_id }}{% endif %} <strong>×{{ ln.quantity }}</strong></li>
+          {% endfor %}
+        </ul>
       </div>
+      {% endif %}
     </aside>
   </div>
 

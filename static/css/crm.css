@@ -1277,7 +1277,67 @@
 }
 
 .lead-form-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem 1.25rem;
   margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.lead-form-header__main {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.lead-form-header__actions {
+  flex: 0 0 240px;
+  width: 100%;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lead-sale-total-card--header {
+  padding: 0.7rem 0.85rem;
+  text-align: center;
+  margin: 0;
+}
+
+.lead-sale-total-card--header .lead-sale-total {
+  font-size: 1.2rem;
+  margin: 0.15rem 0 0;
+}
+
+.lead-sale-total-card--header .lead-sale-total-card__hint {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.lead-sale-total-card--header .lead-sale-total-card__label {
+  font-size: 0.68rem;
+}
+
+.lead-form-actions--header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.lead-form-actions--header .btn {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 640px) {
+  .lead-form-header__actions {
+    flex: 1 1 100%;
+    max-width: none;
+  }
 }
 
 .lead-form-back {
@@ -1527,14 +1587,17 @@
   display: none;
 }
 
+.lead-form-actions--header {
+  display: flex;
+}
+
 .lead-form-actions--mobile {
   margin-top: 0.25rem;
 }
 
 @media (min-width: 900px) {
   .lead-form-actions--desktop {
-    display: flex;
-    flex-direction: column;
+    display: none;
   }
 
   .lead-form-actions--mobile {
