@@ -6,7 +6,14 @@
 <header class="comercial-hero">
   <div class="comercial-hero__main">
     <p class="comercial-hero__eyebrow">Área comercial{% if rep.is_admin %} · Administrador{% endif %}</p>
-    <h1 class="comercial-hero__title">{% if rep.is_admin %}Leads — visão administrador{% else %}Meus leads{% endif %}</h1>
+    <div class="comercial-hero__title-row">
+      <h1 class="comercial-hero__title">{% if rep.is_admin %}Leads — visão administrador{% else %}Meus leads{% endif %}</h1>
+      <a href="{{ url_for('comercial_op_new') }}" class="comercial-hero__add" title="Novo lead" aria-label="Novo lead">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/>
+        </svg>
+      </a>
+    </div>
     <p class="comercial-hero__lead">Olá, <strong>{{ rep.name }}</strong>{% if rep.is_admin %} — você vê todos os leads e também acessa o Painel e o CRM{% else %} — oportunidades atribuídas a você no funil comercial{% endif %}.</p>
   </div>
   <div class="comercial-hero__kpis">

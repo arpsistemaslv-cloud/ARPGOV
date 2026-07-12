@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/catalog_product_picker.html" import catalog_product_picker %}
-{% block title %}Nova captação — comercial{% endblock %}
+{% block title %}Novo lead — comercial{% endblock %}
 {% block body %}
 {% include "comercial/_subnav.html" %}
 
@@ -9,8 +9,8 @@
     <div class="comercial-page-header__back">
       <a class="comercial-back-btn" href="{{ url_for('comercial_dashboard') }}">Meus leads</a>
     </div>
-    <h1 class="comercial-page-header__title">Registrar captação de adesão</h1>
-    <p class="comercial-page-header__lead">Demanda que <strong>você captou</strong>. Selecione ao menos um produto do catálogo — a oportunidade fica vinculada ao seu usuário.</p>
+    <h1 class="comercial-page-header__title">Novo lead</h1>
+    <p class="comercial-page-header__lead">Registre uma demanda que você captou e vincule ao produto do site — fica atribuída ao seu usuário.</p>
   </div>
 </header>
 
@@ -73,7 +73,7 @@
       <textarea id="notes" name="notes" placeholder="Contexto da captação, próximos passos…">{{ request.form.notes or '' }}</textarea>
     </div>
     <div class="comercial-form__actions comercial-form__full">
-      <button type="submit" class="btn btn--primary">Registrar oportunidade</button>
+      <button type="submit" class="btn btn--primary">Criar lead</button>
       <a class="btn btn--ghost" href="{{ url_for('comercial_dashboard') }}">Cancelar</a>
     </div>
   </form>
