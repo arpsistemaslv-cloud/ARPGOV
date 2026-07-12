@@ -50,7 +50,7 @@
         </div>
       </div>
       {% else %}
-      <div class="produto-gallery-main" style="display:flex;align-items:center;justify-content:center;min-height:240px;background:var(--gov-blue-10);color:var(--muted)">
+      <div class="produto-gallery-main produto-gallery-main--empty">
         Sem imagem cadastrada
       </div>
       {% endif %}
@@ -81,7 +81,7 @@
         <dd>{{ item.warranty }}</dd>
         {% endif %}
         <dt>Valor unitário</dt>
-        <dd style="font-size:1.35rem;color:var(--gov-blue-70)">{{ item.unit_price|brl }}</dd>
+        <dd class="produto-price">{{ item.unit_price|brl }}</dd>
       </dl>
 
       <p class="meta produto-cta-hint">Interessado em aderir a esta ata? Adicione à solicitação ou envie diretamente — nossa equipe orienta sobre documentação e prazos.</p>

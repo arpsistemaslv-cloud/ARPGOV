@@ -1,125 +1,170 @@
 {% extends "base.html" %}
 {% block title %}Atas de registro de preço{% endblock %}
 {% block body %}
-<div class="page-shell" style="padding-top:2rem;padding-bottom:3rem">
+<div class="page-shell page-shell--arps">
   <header class="loja-page-head">
-    <nav class="breadcrumb" aria-label="Navegação" style="margin-bottom:0.75rem">
+    <nav class="breadcrumb" aria-label="Navegação">
       <a href="{{ url_for('home') }}">Início</a>
       <span class="breadcrumb__sep">/</span>
       <span>Atas de registro de preço</span>
     </nav>
-    <h1 style="margin-top:0">Atas de registro de preço</h1>
-    <p class="meta" style="margin:0">Consulte o catálogo completo. Filtre por categoria, esfera administrativa e fabricante — no padrão de transparência do mercado público.</p>
+    <h1>Atas de registro de preço</h1>
+    <p class="meta loja-page-head__lead">Consulte o catálogo completo. Filtre por categoria, esfera administrativa e fabricante.</p>
   </header>
 
   <div class="loja-layout">
     <aside class="loja-sidebar" aria-label="Filtros do catálogo">
-      <div class="loja-toolbar">
-        <div class="filters-block filters-block--catalog">
-          <span class="filters-block__label">Catálogo</span>
-          <label class="visually-hidden" for="loja_cat_search">Buscar categoria</label>
-          <input
-            type="search"
-            id="loja_cat_search"
-            class="loja-cat-search"
-            placeholder="Buscar categoria…"
-            autocomplete="off"
-            spellcheck="false"
-          >
-          <div class="loja-cat-list-wrap" id="loja_cat_list_wrap">
-            <div class="filters filters--stack loja-cat-accordion" id="loja_cat_filters">
-              <a href="{{ arps_url(categoria='') }}" class="loja-cat-link loja-cat-link--all {{ 'active' if not filter_categoria else '' }}">Todos</a>
-              {% for root in category_roots %}
-              {% set child_slugs = root.children|map(attribute='slug')|list %}
-              <details
-                class="loja-cat-group"
-                data-cat-parent="{{ root.id }}"
-                {% if filter_categoria == root.slug or filter_categoria in child_slugs %}open{% endif %}
-              >
-                <summary class="loja-cat-group__summary">
-                  <span class="loja-cat-group__label">{{ root.name }}</span>
-                </summary>
-                <div class="loja-cat-group__children">
-                  {% for ch in root.children %}
-                  <a
-                    href="{{ arps_url(categoria=ch.slug) }}"
-                    class="loja-cat-link loja-cat-link--child {{ 'active' if filter_categoria == ch.slug else '' }}"
-                    data-cat-parent="{{ root.id }}"
-                  >{{ ch.name }}</a>
-                  {% endfor %}
-                </div>
-              </details>
+      <details class="loja-filters-panel" id="loja-filters-panel" open>
+        <summary class="loja-filters-panel__summary">
+          <span>Filtros do catálogo</span>
+          {% if filter_categoria or filter_sphere or filter_fabricante %}
+          <span class="loja-filters-panel__badge">Ativos</span>
+          {% endif %}
+        </summary>
+        <div class="loja-toolbar">
+          <div class="filters-block filters-block--catalog">
+            <span class="filters-block__label">Catálogo</span>
+            <label class="visually-hidden" for="loja_cat_search">Buscar categoria</label>
+            <input
+              type="search"
+              id="loja_cat_search"
+              class="loja-cat-search"
+              placeholder="Buscar categoria…"
+              autocomplete="off"
+              spellcheck="false"
+            >
+            <div class="loja-cat-list-wrap" id="loja_cat_list_wrap">
+              <div class="filters filters--stack loja-cat-accordion" id="loja_cat_filters">
+                <a href="{{ arps_url(categoria='') }}" class="loja-cat-link loja-cat-link--all {{ 'active' if not filter_categoria else '' }}">Todos</a>
+                {% for root in category_roots %}
+                {% set child_slugs = root.children|map(attribute='slug')|list %}
+                <details
+                  class="loja-cat-group"
+                  data-cat-parent="{{ root.id }}"
+                  {% if filter_categoria == root.slug or filter_categoria in child_slugs %}open{% endif %}
+                >
+                  <summary class="loja-cat-group__summary">
+                    <span class="loja-cat-group__label">{{ root.name }}</span>
+                  </summary>
+                  <div class="loja-cat-group__children">
+                    {% for ch in root.children %}
+                    <a
+                      href="{{ arps_url(categoria=ch.slug) }}"
+                      class="loja-cat-link loja-cat-link--child {{ 'active' if filter_categoria == ch.slug else '' }}"
+                      data-cat-parent="{{ root.id }}"
+                    >{{ ch.name }}</a>
+                    {% endfor %}
+                  </div>
+                </details>
+                {% endfor %}
+              </div>
+              <p class="loja-cat-search-empty meta" id="loja_cat_search_empty" hidden>Nenhuma categoria encontrada.</p>
+            </div>
+          </div>
+
+          <div class="filters-block">
+            <span class="filters-block__label">Esfera</span>
+            <div class="filters filters--stack">
+              <a href="{{ arps_url(sphere='') }}" class="{{ 'active' if not filter_sphere else '' }}">Todas</a>
+              {% for s in sphere_labels %}
+              <a href="{{ arps_url(sphere=s) }}" class="{{ 'active' if filter_sphere == s else '' }}">{{ s }}</a>
               {% endfor %}
             </div>
-            <p class="loja-cat-search-empty meta" id="loja_cat_search_empty" hidden>Nenhuma categoria encontrada.</p>
           </div>
-        </div>
 
-        <div class="filters-block">
-          <span class="filters-block__label">Esfera</span>
-          <div class="filters filters--stack">
-            <a href="{{ arps_url(sphere='') }}" class="{{ 'active' if not filter_sphere else '' }}">Todas</a>
-            {% for s in sphere_labels %}
-            <a href="{{ arps_url(sphere=s) }}" class="{{ 'active' if filter_sphere == s else '' }}">{{ s }}</a>
-            {% endfor %}
+          {% if manufacturer_labels %}
+          <div class="filters-block">
+            <span class="filters-block__label">Fabricante</span>
+            <div class="filters filters--stack">
+              <a href="{{ arps_url(fabricante='') }}" class="{{ 'active' if not filter_fabricante else '' }}">Todos</a>
+              {% for m in manufacturer_labels %}
+              <a href="{{ arps_url(fabricante=m) }}" class="{{ 'active' if filter_fabricante == m else '' }}">{{ m }}</a>
+              {% endfor %}
+            </div>
           </div>
-        </div>
+          {% endif %}
 
-        {% if manufacturer_labels %}
-        <div class="filters-block">
-          <span class="filters-block__label">Fabricante</span>
-          <div class="filters filters--stack">
-            <a href="{{ arps_url(fabricante='') }}" class="{{ 'active' if not filter_fabricante else '' }}">Todos</a>
-            {% for m in manufacturer_labels %}
-            <a href="{{ arps_url(fabricante=m) }}" class="{{ 'active' if filter_fabricante == m else '' }}">{{ m }}</a>
-            {% endfor %}
-          </div>
+          <p class="meta loja-sidebar__clear"><a href="{{ url_for('arps') }}">Limpar todos os filtros</a></p>
         </div>
-        {% endif %}
-
-        <p class="meta loja-sidebar__clear"><a href="{{ url_for('arps') }}">Limpar todos os filtros</a></p>
-      </div>
+      </details>
     </aside>
 
     <div class="loja-main">
-  <div class="card-grid">
-    {% for item in items %}
-    <article class="card card--catalog">
-      {% if item.image_paths %}
-      <a href="{{ url_for('produto', slug=item.slug) }}" class="card__thumb"><img src="{{ url_for('static', filename=item.image_paths[0]) }}" alt="" loading="lazy"></a>
-      {% endif %}
-      <div class="card__body">
-        <span class="pill">{{ item.section }}</span>
-        <h3><a href="{{ url_for('produto', slug=item.slug) }}">{{ item.title }}</a></h3>
-      {% if item.category %}
-      <p class="meta">{% if item.category.parent %}{{ item.category.parent.name }} › {{ item.category.name }}{% else %}{{ item.category.name }}{% endif %}</p>
-      {% endif %}
-      {% if item.manufacturer %}
-      <p class="meta">Fabricante: <strong>{{ item.manufacturer }}</strong></p>
-      {% endif %}
-      <p class="meta">Esfera: <strong>{{ item.sphere }}</strong> · Qtd: <strong>{{ item.quantity }}</strong></p>
-      {% if item.valid_until %}
-      <p class="meta">Validade: <strong>{{ item.valid_until.strftime('%d/%m/%Y') }}</strong></p>
-      {% endif %}
-      <p class="price">{{ item.unit_price|brl }}</p>
-        <div class="card__actions">
+      <p class="loja-results-bar" aria-live="polite">
+        <strong>{{ items|length }}</strong> {{ 'item' if items|length == 1 else 'itens' }} encontrado{{ '' if items|length == 1 else 's' }}
+        {% if filter_categoria or filter_sphere or filter_fabricante %}
+        <span class="loja-results-bar__filters">· filtros aplicados</span>
+        {% endif %}
+      </p>
+      <div class="card-grid card-grid--catalog">
+        {% for item in items %}
+        <article class="card card--catalog">
+          {% if item.image_paths %}
+          <a href="{{ url_for('produto', slug=item.slug) }}" class="card__thumb"><img src="{{ url_for('static', filename=item.image_paths[0]) }}" alt="" loading="lazy"></a>
+          {% endif %}
+          <div class="card__body">
+            <span class="pill">{{ item.section }}</span>
+            <h3><a href="{{ url_for('produto', slug=item.slug) }}">{{ item.title }}</a></h3>
+            {% if item.category %}
+            <p class="meta">{% if item.category.parent %}{{ item.category.parent.name }} › {{ item.category.name }}{% else %}{{ item.category.name }}{% endif %}</p>
+            {% endif %}
+            {% if item.manufacturer %}
+            <p class="meta">Fabricante: <strong>{{ item.manufacturer }}</strong></p>
+            {% endif %}
+            <p class="meta">Esfera: <strong>{{ item.sphere }}</strong> · Qtd: <strong>{{ item.quantity }}</strong></p>
+            {% if item.valid_until %}
+            <p class="meta">Validade: <strong>{{ item.valid_until.strftime('%d/%m/%Y') }}</strong></p>
+            {% endif %}
+            <p class="price">{{ item.unit_price|brl }}</p>
+            <div class="card__actions">
           <form method="post" action="{{ url_for('carrinho_adicionar', slug=item.slug) }}" class="loja-cart-form">
-            <label class="loja-cart-form__qty-label" for="loja-qty-{{ item.id }}">Qtd.</label>
-            <input id="loja-qty-{{ item.id }}" class="loja-cart-form__qty" type="number" name="quantity" min="1" step="1" value="1">
+            <div class="loja-cart-form__qty-row">
+              <label class="loja-cart-form__qty-label" for="loja-qty-{{ item.id }}">Qtd.</label>
+              <input id="loja-qty-{{ item.id }}" class="loja-cart-form__qty" type="number" name="quantity" min="1" step="1" value="1">
+            </div>
             <button type="submit" class="btn btn--ghost btn--block">+ Adicionar à solicitação</button>
           </form>
-          <a class="btn btn--primary btn--block" href="{{ url_for('contato', produto=item.slug) }}">Quero aderir</a>
-        </div>
+              <a class="btn btn--primary btn--block" href="{{ url_for('contato', produto=item.slug) }}">Quero aderir</a>
+            </div>
+          </div>
+        </article>
+        {% else %}
+        <p class="meta">Nenhum item com estes filtros. <a href="{{ url_for('arps') }}">Limpar filtros</a> ou <a href="{{ url_for('admin_catalog_list') }}">cadastrar produtos</a>.</p>
+        {% endfor %}
       </div>
-    </article>
-    {% else %}
-    <p class="meta">Nenhum item com estes filtros. <a href="{{ url_for('arps') }}">Limpar filtros</a> ou <a href="{{ url_for('admin_catalog_list') }}">cadastrar produtos</a>.</p>
-    {% endfor %}
-  </div>
     </div>
   </div>
 </div>
 {% endblock %}
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/loja-category-search.js') }}?v={{ loja_cat_js_v }}" defer></script>
+<script>
+(function () {
+  var panel = document.getElementById('loja-filters-panel');
+  if (!panel) return;
+  var mq = window.matchMedia('(max-width: 900px)');
+  function syncFiltersPanel() {
+    if (mq.matches) {
+      var hasActiveFilters = !!panel.querySelector('.loja-filters-panel__badge');
+      if (hasActiveFilters) {
+        panel.setAttribute('open', '');
+      } else if (!panel.dataset.userToggled) {
+        panel.removeAttribute('open');
+      }
+    } else {
+      panel.setAttribute('open', '');
+      panel.dataset.userToggled = '';
+    }
+  }
+  panel.addEventListener('toggle', function () {
+    if (mq.matches) panel.dataset.userToggled = '1';
+  });
+  if (typeof mq.addEventListener === 'function') {
+    mq.addEventListener('change', syncFiltersPanel);
+  } else if (typeof mq.addListener === 'function') {
+    mq.addListener(syncFiltersPanel);
+  }
+  syncFiltersPanel();
+})();
+</script>
 {% endblock %}

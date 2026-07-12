@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Minha solicitação de adesão{% endblock %}
 {% block body %}
-<div class="page-shell page-shell--narrow" style="padding-top:2rem;padding-bottom:3rem">
+<div class="page-shell page-shell--narrow page-shell--cart">
   <nav class="breadcrumb" aria-label="Navegação">
     <a href="{{ url_for('home') }}">Início</a>
     <span class="breadcrumb__sep">/</span>
@@ -37,9 +37,7 @@
           {% endif %}
         </div>
       </div>
-      <form method="post" action="{{ url_for('carrinho_remover', item_id=item.id) }}">
-        <button type="submit" class="btn btn--ghost btn--danger">Remover</button>
-      </form>
+      <button type="submit" class="btn btn--ghost btn--danger carrinho-item__remove" formaction="{{ url_for('carrinho_remover', item_id=item.id) }}" formmethod="post">Remover</button>
     </article>
     {% endfor %}
     {% if cart_total_brl and cart_total_brl > 0 %}
@@ -58,8 +56,8 @@
     </form>
   </div>
   {% else %}
-  <div class="card" style="padding:1.5rem;margin-top:1.25rem;text-align:center">
-    <p class="meta" style="margin:0 0 1rem">Nenhum produto na solicitação.</p>
+  <div class="card carrinho-empty">
+    <p class="meta carrinho-empty__text">Nenhum produto na solicitação.</p>
     <a class="btn btn--primary" href="{{ url_for('arps') }}">Consultar atas de registro de preço</a>
   </div>
   {% endif %}
