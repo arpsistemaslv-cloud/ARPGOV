@@ -1,17 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Representante comercial — entrar{% endblock %}
 {% block body %}
-<h1 style="margin-top:0">Área do representante</h1>
-<p class="meta">Use o e-mail e a senha cadastrados pelo administrador. Usuários <strong>administradores</strong> do Comercial também acessam o Painel e o CRM com o mesmo login.</p>
-<form method="post" class="form-grid" style="max-width:360px;margin-top:1rem">
-  <div>
-    <label for="email">E-mail</label>
-    <input id="email" name="email" type="email" required autocomplete="email" maxlength="120">
+<section class="staff-login staff-login--comercial" aria-labelledby="comercial-login-title">
+  <div class="staff-login__brand">
+    <div class="staff-login__brand-inner">
+      <img class="staff-login__logo" src="{{ url_for('static', filename='images/arpgov-mark.svg') }}" width="56" height="56" alt="">
+      <p class="staff-login__brand-name">
+        {% if site_settings and site_settings.site_brand_primary %}{{ site_settings.site_brand_primary }}{% else %}ARP{% endif %}<span>{% if site_settings and site_settings.site_brand_accent %}{{ site_settings.site_brand_accent }}{% else %}GOV{% endif %}</span>
+      </p>
+      <p class="staff-login__brand-tag">Área do representante comercial</p>
+
+      <blockquote class="staff-login__quote">
+        <p>Prospecte órgãos, registre captações e acompanhe o funil até a comissão.</p>
+      </blockquote>
+
+      <ul class="staff-login__benefits">
+        <li>Leads vinculados ao seu usuário com produtos do catálogo</li>
+        <li>Diretório nacional de órgãos públicos para prospecção</li>
+        <li>Financeiro para envio de NF e acompanhamento de comissões</li>
+      </ul>
+    </div>
   </div>
-  <div>
-    <label for="password">Senha</label>
-    <input id="password" name="password" type="password" required autocomplete="current-password">
+
+  <div class="staff-login__panel">
+    <div class="staff-login__card">
+      <h1 class="staff-login__title" id="comercial-login-title">Entrar na área comercial</h1>
+      <p class="staff-login__lead">Use o e-mail e a senha cadastrados pelo administrador. Usuários <strong>administradores</strong> também acessam o Painel e o CRM com o mesmo login.</p>
+
+      <form method="post" class="staff-login__form">
+        <div class="staff-login__field">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" required autocomplete="email" maxlength="120" placeholder="seu@email.com">
+        </div>
+        <div class="staff-login__field">
+          <label for="password">Senha</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn--primary btn--block staff-login__submit">Acessar comercial</button>
+      </form>
+
+      <p class="staff-login__note"><a href="{{ url_for('home') }}">← Voltar ao site público</a></p>
+    </div>
   </div>
-  <button type="submit" class="btn btn--primary">Entrar</button>
-</form>
+</section>
 {% endblock %}

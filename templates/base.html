@@ -19,7 +19,7 @@
   <style id="site-custom-css">{{ site_settings.custom_css|safe }}</style>
   {% endif %}
 </head>
-<body class="{% if request.path.startswith('/admin') %}portal-backoffice portal-backoffice--admin{% elif request.path.startswith('/crm') %}portal-backoffice portal-backoffice--crm{% elif request.path.startswith('/comercial') or request.path.startswith('/parceiro') %}portal-backoffice{% else %}portal-site{% endif %}{% if request.endpoint in ('admin_login', 'crm.crm_login') %} portal-backoffice--login{% endif %}">
+<body class="{% if request.path.startswith('/admin') %}portal-backoffice portal-backoffice--admin{% elif request.path.startswith('/crm') %}portal-backoffice portal-backoffice--crm{% elif request.path.startswith('/comercial') %}portal-backoffice portal-backoffice--comercial{% elif request.path.startswith('/parceiro') %}portal-backoffice{% else %}portal-site{% endif %}{% if request.endpoint in ('admin_login', 'crm.crm_login', 'comercial_login') %} portal-backoffice--login{% endif %}">
   {% set is_backoffice = request.path.startswith('/admin') or request.path.startswith('/crm') %}
   {% set is_staff_login = request.endpoint in ('admin_login', 'crm.crm_login') %}
   {% if not is_backoffice and not request.path.startswith('/comercial') and not request.path.startswith('/parceiro') %}
@@ -75,7 +75,8 @@
     </div>
   </header>
   {% endif %}
-  <main class="site-main{% if is_backoffice %} site-main--backoffice{% endif %}">
+  {% set is_comercial_area = request.path.startswith('/comercial') %}
+  <main class="site-main{% if is_backoffice or is_comercial_area %} site-main--backoffice{% endif %}">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="flash-container">
@@ -88,7 +89,14 @@
     {% if request.path.startswith('/admin') and not is_staff_login %}
     <div class="crm-shell"><div class="crm-shell__inner">
     {% endif %}
+    {% set is_comercial_logged = is_comercial_area and request.endpoint != 'comercial_login' %}
+    {% if is_comercial_logged %}
+    <div class="crm-shell comercial-shell"><div class="crm-shell__inner">
+    {% endif %}
     {% block body %}{% endblock %}
+    {% if is_comercial_logged %}
+    </div></div>
+    {% endif %}
     {% if request.path.startswith('/admin') and not is_staff_login %}
     </div></div>
     {% endif %}

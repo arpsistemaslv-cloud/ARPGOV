@@ -3,70 +3,79 @@
 {% block title %}Nova captação — comercial{% endblock %}
 {% block body %}
 {% include "comercial/_subnav.html" %}
-<h1 style="margin-top:0">Registrar oportunidade de adesão</h1>
-<p class="meta">Demanda que <strong>você captou</strong>. Busque e selecione <strong>ao menos um produto</strong> do catálogo. A oportunidade fica automaticamente atribuída a você.</p>
+
+<header class="comercial-page-header comercial-page-header--compact">
+  <div class="comercial-page-header__main">
+    <p class="comercial-page-header__back"><a href="{{ url_for('comercial_dashboard') }}">← Meus leads</a></p>
+    <h1 class="comercial-page-header__title">Registrar captação de adesão</h1>
+    <p class="comercial-page-header__lead">Demanda que <strong>você captou</strong>. Selecione ao menos um produto do catálogo — a oportunidade fica vinculada ao seu usuário.</p>
+  </div>
+</header>
+
 {% set sel_cat = request.form.getlist('catalog_item_id') %}
 
-<form method="post" class="form-grid form-grid--wide" style="max-width:720px" novalidate>
-  <div>
-    <label for="title">Título / resumo da demanda *</label>
-    <input id="title" name="title" required placeholder="Ex.: Adesão ATA veículos — Prefeitura X" value="{{ request.form.title or request.args.get('title', '') }}">
-  </div>
-  <div>
-    <label for="organization">Órgão / empresa</label>
-    <input id="organization" name="organization" value="{{ request.form.organization or request.args.get('organization', '') }}" placeholder="Cliente ou órgão interessado">
-  </div>
-  <div>
-    <label for="cnpj">CNPJ</label>
-    <input id="cnpj" name="cnpj" maxlength="22" autocomplete="off" value="{{ request.form.cnpj or request.args.get('cnpj', '') }}" placeholder="Opcional">
-  </div>
-  <div>
-    <label for="contact_name">Nome do contato</label>
-    <input id="contact_name" name="contact_name" value="{{ request.form.contact_name or request.args.get('contact_name', '') }}">
-  </div>
-  <div>
-    <label for="email">E-mail</label>
-    <input id="email" name="email" type="email" value="{{ request.form.email or request.args.get('email', '') }}">
-  </div>
-  <div>
-    <label for="phone">Telefone</label>
-    <input id="phone" name="phone" value="{{ request.form.phone or request.args.get('phone', '') }}">
-  </div>
-  <div>
-    <label for="sphere">Esfera</label>
-    <input id="sphere" name="sphere" placeholder="Federal, Estadual, Municipal…" value="{{ request.form.sphere or request.args.get('sphere', '') }}">
-  </div>
-  <div style="grid-column:1/-1">
-    <label>Produto(s) do site *</label>
-    {{ catalog_product_picker(
-      selected_lines=sel_cat_lines if sel_cat_lines is defined else [],
-      required=true,
-      hint='Busque pelo nome ou fabricante, adicione os itens e informe a quantidade de adesão.'
-    ) }}
-  </div>
-  <div class="lead-sale-total-card" id="lead_sale_total_wrap" style="grid-column:1/-1">
-    <label>Valor total da venda</label>
-    <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">—</p>
-    <input type="hidden" id="value_brl" value="">
-    <p class="meta" style="margin:0.35rem 0 0">Calculado automaticamente pelos produtos selecionados.</p>
-  </div>
-  <div>
-    <label for="stage">Estágio inicial</label>
-    <select id="stage" name="stage">
-      {% for key, label in stages %}
-              <option value="{{ key }}" {% if (request.form.stage or 'novo') == key %}selected{% elif not request.form.stage and key == 'novo' %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div>
-    <label for="notes">Observações</label>
-    <textarea id="notes" name="notes" placeholder="Contexto da captação, próximos passos…">{{ request.form.notes or '' }}</textarea>
-  </div>
-  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-    <button type="submit" class="btn btn--primary">Registrar oportunidade</button>
-    <a class="btn btn--ghost" href="{{ url_for('comercial_dashboard') }}">Cancelar</a>
-  </div>
-</form>
+<div class="comercial-form-card comercial-form-card--wide">
+  <form method="post" class="form-grid form-grid--wide comercial-form" novalidate>
+    <div class="comercial-form__full">
+      <label for="title">Título / resumo da demanda *</label>
+      <input id="title" name="title" required placeholder="Ex.: Adesão ATA veículos — Prefeitura X" value="{{ request.form.title or request.args.get('title', '') }}">
+    </div>
+    <div>
+      <label for="organization">Órgão / empresa</label>
+      <input id="organization" name="organization" value="{{ request.form.organization or request.args.get('organization', '') }}" placeholder="Cliente ou órgão interessado">
+    </div>
+    <div>
+      <label for="cnpj">CNPJ</label>
+      <input id="cnpj" name="cnpj" maxlength="22" autocomplete="off" value="{{ request.form.cnpj or request.args.get('cnpj', '') }}" placeholder="Opcional">
+    </div>
+    <div>
+      <label for="contact_name">Nome do contato</label>
+      <input id="contact_name" name="contact_name" value="{{ request.form.contact_name or request.args.get('contact_name', '') }}">
+    </div>
+    <div>
+      <label for="email">E-mail</label>
+      <input id="email" name="email" type="email" value="{{ request.form.email or request.args.get('email', '') }}">
+    </div>
+    <div>
+      <label for="phone">Telefone</label>
+      <input id="phone" name="phone" value="{{ request.form.phone or request.args.get('phone', '') }}">
+    </div>
+    <div>
+      <label for="sphere">Esfera</label>
+      <input id="sphere" name="sphere" placeholder="Federal, Estadual, Municipal…" value="{{ request.form.sphere or request.args.get('sphere', '') }}">
+    </div>
+    <div class="comercial-form__full">
+      <label>Produto(s) do site *</label>
+      {{ catalog_product_picker(
+        selected_lines=sel_cat_lines if sel_cat_lines is defined else [],
+        required=true,
+        hint='Busque pelo nome ou fabricante, adicione os itens e informe a quantidade de adesão.'
+      ) }}
+    </div>
+    <div class="lead-sale-total-card comercial-form__full" id="lead_sale_total_wrap">
+      <label>Valor total da venda</label>
+      <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">—</p>
+      <input type="hidden" id="value_brl" value="">
+      <p class="meta comercial-form__hint">Calculado automaticamente pelos produtos selecionados.</p>
+    </div>
+    <div>
+      <label for="stage">Estágio inicial</label>
+      <select id="stage" name="stage">
+        {% for key, label in stages %}
+        <option value="{{ key }}" {% if (request.form.stage or 'novo') == key %}selected{% elif not request.form.stage and key == 'novo' %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="comercial-form__full">
+      <label for="notes">Observações</label>
+      <textarea id="notes" name="notes" placeholder="Contexto da captação, próximos passos…">{{ request.form.notes or '' }}</textarea>
+    </div>
+    <div class="comercial-form__actions comercial-form__full">
+      <button type="submit" class="btn btn--primary">Registrar oportunidade</button>
+      <a class="btn btn--ghost" href="{{ url_for('comercial_dashboard') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
 {% endblock %}
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/catalog-product-picker.js') }}?v={{ catalog_picker_js_v }}" defer></script>

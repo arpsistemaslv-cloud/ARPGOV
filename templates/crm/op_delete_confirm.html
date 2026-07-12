@@ -3,9 +3,30 @@
 {% block body %}
 {% if delete_nav_area is defined and delete_nav_area == 'comercial' %}
 {% include "comercial/_subnav.html" %}
+<header class="comercial-page-header comercial-page-header--compact">
+  <div class="comercial-page-header__main">
+    <p class="comercial-page-header__back"><a href="{{ url_for('comercial_op_edit', opp_id=opp.id) }}">← Voltar ao lead</a></p>
+    <h1 class="comercial-page-header__title" style="color:#c0392b">Excluir lead</h1>
+    <p class="comercial-page-header__lead">Esta ação não pode ser desfeita. Serão removidos o registro, mensagens do chat e vínculos com produtos.</p>
+  </div>
+</header>
+<div class="comercial-form-card">
+  <p style="margin:0 0 0.5rem"><strong>{{ opp.title }}</strong></p>
+  {% if opp.organization %}<p class="meta" style="margin:0">{{ opp.organization }}</p>{% endif %}
+  {% if opp.contact_name %}<p class="meta" style="margin:0.25rem 0 0">{{ opp.contact_name }}</p>{% endif %}
+  <form method="post" action="" class="form-grid" style="margin-top:1.25rem">
+    <div class="comercial-form__full">
+      <label for="confirm">Digite <strong>excluir</strong> ou <strong>EXCLUIR</strong> para confirmar</label>
+      <input id="confirm" name="confirm" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required placeholder="excluir">
+    </div>
+    <div class="comercial-form__actions comercial-form__full">
+      <button type="submit" class="btn btn--danger">Excluir definitivamente</button>
+      <a href="{{ url_for('comercial_op_edit', opp_id=opp.id) }}" class="btn btn--ghost">Cancelar</a>
+    </div>
+  </form>
+</div>
 {% else %}
 {% include "crm/_subnav.html" %}
-{% endif %}
 <div style="max-width:560px">
   <h1 style="margin-top:0;color:#c0392b">Excluir lead</h1>
   <p class="meta">Esta ação não pode ser desfeita. Serão removidos o registro da oportunidade, todas as mensagens do chat (e arquivos anexados) e os vínculos com itens do catálogo.</p>
@@ -21,12 +42,9 @@
     </div>
     <div>
       <button type="submit" class="btn btn--danger">Excluir definitivamente</button>
-      {% if delete_nav_area is defined and delete_nav_area == 'comercial' %}
-      <a href="{{ url_for('comercial_op_edit', opp_id=opp.id) }}" class="btn" style="margin-left:0.5rem">Cancelar</a>
-      {% else %}
       <a href="{{ url_for('crm.crm_op_edit', opp_id=opp.id) }}" class="btn" style="margin-left:0.5rem">Cancelar</a>
-      {% endif %}
     </div>
   </form>
 </div>
+{% endif %}
 {% endblock %}

@@ -6234,12 +6234,14 @@ def comercial_dashboard():
         .order_by(Opportunity.updated_at.desc())
         .all()
     )
+    lead_total = _comercial_opportunities_query(rep).count()
     return render_template(
         "comercial/dashboard.html",
         opportunities=opportunities,
         stages=STAGES,
         filter_stage=stage,
         rep=rep,
+        lead_total=lead_total,
     )
 
 

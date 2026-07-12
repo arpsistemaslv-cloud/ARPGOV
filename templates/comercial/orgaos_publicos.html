@@ -2,20 +2,35 @@
 {% block title %}Órgãos públicos — comercial{% endblock %}
 {% block body %}
 {% include "comercial/_subnav.html" %}
-<h1 style="margin-top:0">Órgãos públicos (diretório nacional)</h1>
-<p class="meta">Base para prospecção: <strong>prefeituras</strong> (IBGE), <strong>administração estadual</strong>, <strong>Sistema S</strong> e <strong>órgãos sincronizados do PNCP</strong>. Filtre por UF e região; <strong>habitantes</strong> usam estimativa IBGE quando sincronizado no painel{% if ano_pop_ibge %} (referência {{ ano_pop_ibge }}){% endif %}. O <strong>potencial de orçamento anual</strong> é uma <strong>estimativa de ordem de grandeza</strong> para B2G (não substitui LOA/LDO). Atualize <strong>e-mail, telefone e contato</strong> quando localizar os dados.</p>
+
+<header class="comercial-page-header">
+  <div class="comercial-page-header__main">
+    <p class="comercial-page-header__eyebrow">Prospecção</p>
+    <h1 class="comercial-page-header__title">Órgãos públicos</h1>
+    <p class="comercial-page-header__lead">Diretório nacional para encontrar órgãos com potencial de adesão. Consulte contatos e, ao fechar interesse, cadastre o lead manualmente em <a href="{{ url_for('comercial_op_new') }}">Registrar captação</a>.</p>
+  </div>
+  <div class="comercial-page-header__actions">
+    <a class="btn btn--primary" href="{{ url_for('comercial_op_new') }}">Nova captação</a>
+  </div>
+</header>
+
+<div class="comercial-info-callout">
+  <p>Base: <strong>prefeituras</strong> (IBGE), <strong>administração estadual</strong>, <strong>Sistema S</strong> e <strong>órgãos PNCP</strong>. Habitantes usam estimativa IBGE{% if ano_pop_ibge %} (ref. {{ ano_pop_ibge }}){% endif %}. O <strong>potencial de orçamento</strong> é estimativa B2G — não substitui LOA/LDO.</p>
+</div>
+
 {% if total == 0 %}
-<p class="flash flash--error" style="display:block">Ainda não há registros no diretório. No <strong>Painel do site</strong> (administrador), abra <strong>Órgãos públicos BR</strong> e execute as importações (municípios IBGE, estados, Sistema S; opcionalmente copie os órgãos já sincronizados do PNCP).</p>
+<p class="flash flash--error">Ainda não há registros no diretório. No <strong>Painel do site</strong>, abra <strong>Órgãos públicos BR</strong> e execute as importações.</p>
 {% endif %}
+
 {% if regiao_filter and pop_regiao %}
-<p class="meta"><strong>População da região {{ regiao_filter }}</strong> (soma das UFs, referência IBGE): ~{{ "{:,}".format(pop_regiao|int).replace(",", ".") }} habitantes.</p>
+<p class="comercial-stats-line"><strong>População da região {{ regiao_filter }}</strong> (soma das UFs, IBGE): ~{{ "{:,}".format(pop_regiao|int).replace(",", ".") }} habitantes.</p>
 {% endif %}
 {% if uf_filter and pop_uf %}
-<p class="meta"><strong>População de {{ uf_filter }}</strong> (referência IBGE): ~{{ "{:,}".format(pop_uf|int).replace(",", ".") }} habitantes.</p>
+<p class="comercial-stats-line"><strong>População de {{ uf_filter }}</strong> (IBGE): ~{{ "{:,}".format(pop_uf|int).replace(",", ".") }} habitantes.</p>
 {% endif %}
-<form method="get" class="filters-block" style="margin-top:1rem">
-  <span class="filters-block__label">Filtros</span>
-  <div class="form-grid form-grid--wide" style="max-width:960px;grid-template-columns:1fr repeat(3, minmax(0, 140px)) auto;align-items:end;gap:0.75rem">
+
+<div class="comercial-filter-card">
+  <form method="get" class="comercial-filter-form">
     <div>
       <label for="q">Buscar</label>
       <input id="q" name="q" value="{{ q }}" placeholder="Nome, município, CNPJ, e-mail…">
@@ -47,67 +62,75 @@
         {% endfor %}
       </select>
     </div>
-    <button type="submit" class="btn btn--primary">Aplicar</button>
-  </div>
-</form>
-<p class="meta">{{ total }} registro(s){% if total > per_page %} — página {{ page }} de {{ total_pages }}{% endif %}.</p>
-<div class="table-wrap">
-  <table class="data">
-    <thead>
-      <tr>
-        <th>Órgão</th>
-        <th>Tipo</th>
-        <th>UF / região</th>
-        <th>População (ref.)</th>
-        <th>Potencial orç. /ano (est.)</th>
-        <th>Contato</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in rows %}
-      {% set pop_row = row.populacao_ibge if row.populacao_ibge is not none else (row.populacao_local if row.populacao_local else (pop_uf_map.get(row.uf) if row.tipo == 'orgao_estadual' and row.uf else none)) %}
-      {% set sphere = 'Municipal' if row.tipo == 'prefeitura' else ('Estadual' if row.tipo in ('orgao_estadual', 'autarquia_estadual') else ('Federal — Executivo' if row.tipo == 'federal_executivo' else ('Federal — Autarquia' if row.tipo == 'autarquia_federal' else ('Federal' if row.tipo in ('federal',) else ('Poder Judiciário / MP' if row.tipo == 'orgao_juridico' else ('Justiça do Trabalho / MPT' if row.tipo == 'justica_trabalho' else ('Poder Legislativo' if row.tipo == 'orgao_legislativo' else ('Segurança pública / polícia e bombeiros' if row.tipo == 'seguranca_publica' else ('Educação / ensino superior e órgãos educacionais' if row.tipo == 'educacao_instituicoes' else ('Sistema S' if row.tipo == 'sistema_s' else ('Serviços SENAR/SEBRAE/SENAT/SESCOOP' if row.tipo == 'servico_aprendizagem' else 'Órgão público'))))))))))) %}
-      {% set org_label = row.nome ~ (' — ' ~ row.nome_unidade if row.nome_unidade else '') %}
-      <tr>
-        <td>
-          <strong>{{ row.nome }}</strong>
-          {% if row.nome_unidade %}<br><span class="meta">{{ row.nome_unidade }}</span>{% endif %}
-          {% if row.municipio_nome %}<br><span class="meta">{{ row.municipio_nome }}</span>{% endif %}
-          {% if row.cnpj %}<br><span class="meta">CNPJ {{ format_cnpj(row.cnpj) }}</span>{% endif %}
-        </td>
-        <td class="meta">{{ tipo_labels.get(row.tipo, row.tipo) }}</td>
-        <td class="meta">
-          {% if row.uf %}{{ row.uf }}{% else %}—{% endif %}
-          {% if row.regiao %}<br>{{ row.regiao }}{% endif %}
-        </td>
-        <td class="meta">{% if pop_row is not none %}{{ "{:,}".format(pop_row|int).replace(",", ".") }}{% else %}—{% endif %}</td>
-        <td class="meta">{{ format_currency_brl(row.potencial_orcamento_anual_brl) }}{% if row.orcamento_metodo %}<br><span class="meta" style="font-size:0.75rem;opacity:0.85">{{ row.orcamento_metodo }}</span>{% endif %}</td>
-        <td class="meta">
-          {% if row.email_contato %}{{ row.email_contato }}<br>{% endif %}
-          {% if row.telefone_contato %}{{ row.telefone_contato }}<br>{% endif %}
-          {% if row.nome_contato %}<span>{{ row.nome_contato }}</span><br>{% endif %}
-          {% if row.contato_obs %}<span style="white-space:pre-wrap">{{ row.contato_obs[:100] }}{% if row.contato_obs|length > 100 %}…{% endif %}</span>{% elif not row.email_contato and not row.telefone_contato and not row.nome_contato %}—{% endif %}
-        </td>
-        <td style="white-space:nowrap">
-          <a href="{{ url_for('comercial_orgao_publico_contato', org_id=row.id, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter, page=page) }}">Contato</a>
-          <a class="btn btn--primary" style="padding:0.35rem 0.55rem;font-size:0.8rem;margin-left:0.35rem" href="{{ url_for('comercial_op_new', organization=org_label, cnpj=format_cnpj(row.cnpj) if row.cnpj else '', sphere=sphere, contact_name=row.nome_contato or '', email=row.email_contato or '', phone=row.telefone_contato or '') }}">Nova captação</a>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="7" class="meta">Nada para exibir com estes filtros.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <div class="comercial-filter-form__submit">
+      <button type="submit" class="btn btn--primary">Aplicar filtros</button>
+    </div>
+  </form>
 </div>
+
+<p class="comercial-results-meta">{{ total }} registro(s){% if total > per_page %} — página {{ page }} de {{ total_pages }}{% endif %}</p>
+
+<div class="crm-table-card">
+  <div class="table-wrap">
+    <table class="data comercial-orgaos-table">
+      <thead>
+        <tr>
+          <th>Órgão</th>
+          <th>Tipo</th>
+          <th>UF / região</th>
+          <th>População</th>
+          <th>Potencial orç.</th>
+          <th>Contato</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        {% set pop_row = row.populacao_ibge if row.populacao_ibge is not none else (row.populacao_local if row.populacao_local else (pop_uf_map.get(row.uf) if row.tipo == 'orgao_estadual' and row.uf else none)) %}
+        {% set sphere = 'Municipal' if row.tipo == 'prefeitura' else ('Estadual' if row.tipo in ('orgao_estadual', 'autarquia_estadual') else ('Federal — Executivo' if row.tipo == 'federal_executivo' else ('Federal — Autarquia' if row.tipo == 'autarquia_federal' else ('Federal' if row.tipo in ('federal',) else ('Poder Judiciário / MP' if row.tipo == 'orgao_juridico' else ('Justiça do Trabalho / MPT' if row.tipo == 'justica_trabalho' else ('Poder Legislativo' if row.tipo == 'orgao_legislativo' else ('Segurança pública' if row.tipo == 'seguranca_publica' else ('Educação' if row.tipo == 'educacao_instituicoes' else ('Sistema S' if row.tipo == 'sistema_s' else ('Serviços SENAR/SEBRAE' if row.tipo == 'servico_aprendizagem' else 'Órgão público'))))))))))) %}
+        {% set org_label = row.nome ~ (' — ' ~ row.nome_unidade if row.nome_unidade else '') %}
+        <tr>
+          <td>
+            <strong>{{ row.nome }}</strong>
+            {% if row.nome_unidade %}<br><span class="meta">{{ row.nome_unidade }}</span>{% endif %}
+            {% if row.municipio_nome %}<br><span class="meta">{{ row.municipio_nome }}</span>{% endif %}
+            {% if row.cnpj %}<br><span class="meta">CNPJ {{ format_cnpj(row.cnpj) }}</span>{% endif %}
+          </td>
+          <td class="meta">{{ tipo_labels.get(row.tipo, row.tipo) }}</td>
+          <td class="meta">
+            {% if row.uf %}{{ row.uf }}{% else %}—{% endif %}
+            {% if row.regiao %}<br>{{ row.regiao }}{% endif %}
+          </td>
+          <td class="meta">{% if pop_row is not none %}{{ "{:,}".format(pop_row|int).replace(",", ".") }}{% else %}—{% endif %}</td>
+          <td class="meta">{{ format_currency_brl(row.potencial_orcamento_anual_brl) }}{% if row.orcamento_metodo %}<br><span class="comercial-orgaos-table__method">{{ row.orcamento_metodo }}</span>{% endif %}</td>
+          <td class="meta">
+            {% if row.email_contato %}{{ row.email_contato }}<br>{% endif %}
+            {% if row.telefone_contato %}{{ row.telefone_contato }}<br>{% endif %}
+            {% if row.nome_contato %}<span>{{ row.nome_contato }}</span><br>{% endif %}
+            {% if row.contato_obs %}<span class="comercial-orgaos-table__obs">{{ row.contato_obs[:100] }}{% if row.contato_obs|length > 100 %}…{% endif %}</span>{% elif not row.email_contato and not row.telefone_contato and not row.nome_contato %}—{% endif %}
+          </td>
+          <td class="comercial-orgaos-table__actions">
+            <a href="{{ url_for('comercial_orgao_publico_contato', org_id=row.id, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter, page=page) }}">Contato</a>
+            <a class="btn btn--primary btn--compact" href="{{ url_for('comercial_op_new', organization=org_label, cnpj=format_cnpj(row.cnpj) if row.cnpj else '', sphere=sphere, contact_name=row.nome_contato or '', email=row.email_contato or '', phone=row.telefone_contato or '') }}">Captar</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="comercial-empty">Nada para exibir com estes filtros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 {% if total_pages > 1 %}
-<p class="meta" style="margin-top:1rem">
+<nav class="comercial-pagination" aria-label="Paginação">
   {% if page > 1 %}
   <a href="{{ url_for('comercial_orgaos_publicos', page=page-1, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter) }}">← Anterior</a>
   {% endif %}
+  <span class="comercial-pagination__info">Página {{ page }} de {{ total_pages }}</span>
   {% if page < total_pages %}
-  <a href="{{ url_for('comercial_orgaos_publicos', page=page+1, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter) }}" style="margin-left:0.75rem">Próxima →</a>
+  <a href="{{ url_for('comercial_orgaos_publicos', page=page+1, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter) }}">Próxima →</a>
   {% endif %}
-</p>
+</nav>
 {% endif %}
 {% endblock %}

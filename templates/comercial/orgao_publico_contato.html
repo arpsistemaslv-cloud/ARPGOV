@@ -2,36 +2,46 @@
 {% block title %}Atualizar contato — comercial{% endblock %}
 {% block body %}
 {% include "comercial/_subnav.html" %}
-<p class="meta" style="margin-top:0"><a href="{{ url_for('comercial_orgaos_publicos', q=back_params.q, uf=back_params.uf, regiao=back_params.regiao, tipo=back_params.tipo, page=back_params.page) }}">← Voltar ao diretório</a></p>
-<h1 style="margin-top:0">Contato do órgão</h1>
-<p class="meta"><strong>{{ org.nome }}</strong>{% if org.nome_unidade %} — {{ org.nome_unidade }}{% endif %}{% if org.uf %} ({{ org.uf }}){% endif %} · {{ tipos_org.get(org.tipo, org.tipo) }}</p>
-{% if org.cnpj %}<p class="meta">CNPJ {{ format_cnpj(org.cnpj) }}</p>{% endif %}
 
-<form method="post" class="form-grid form-grid--wide" style="max-width:560px;margin-top:1.25rem">
-  <input type="hidden" name="ret_q" value="{{ back_params.q }}">
-  <input type="hidden" name="ret_uf" value="{{ back_params.uf }}">
-  <input type="hidden" name="ret_regiao" value="{{ back_params.regiao }}">
-  <input type="hidden" name="ret_tipo" value="{{ back_params.tipo }}">
-  <input type="hidden" name="ret_page" value="{{ back_params.page }}">
-  <div>
-    <label for="nome_contato">Nome do contato</label>
-    <input id="nome_contato" name="nome_contato" value="{{ org.nome_contato or '' }}" autocomplete="off">
+<header class="comercial-page-header comercial-page-header--compact">
+  <div class="comercial-page-header__main">
+    <p class="comercial-page-header__back"><a href="{{ url_for('comercial_orgaos_publicos', q=back_params.q, uf=back_params.uf, regiao=back_params.regiao, tipo=back_params.tipo, page=back_params.page) }}">← Voltar ao diretório</a></p>
+    <h1 class="comercial-page-header__title">Contato do órgão</h1>
+    <p class="comercial-page-header__lead">
+      <strong>{{ org.nome }}</strong>{% if org.nome_unidade %} — {{ org.nome_unidade }}{% endif %}{% if org.uf %} ({{ org.uf }}){% endif %}
+      · {{ tipos_org.get(org.tipo, org.tipo) }}
+      {% if org.cnpj %}<br>CNPJ {{ format_cnpj(org.cnpj) }}{% endif %}
+    </p>
   </div>
-  <div>
-    <label for="email_contato">E-mail</label>
-    <input id="email_contato" name="email_contato" type="email" value="{{ org.email_contato or '' }}">
-  </div>
-  <div>
-    <label for="telefone_contato">Telefone</label>
-    <input id="telefone_contato" name="telefone_contato" value="{{ org.telefone_contato or '' }}" placeholder="DDD + número">
-  </div>
-  <div style="grid-column:1/-1">
-    <label for="contato_obs">Observações (setor, ramal, horário…)</label>
-    <textarea id="contato_obs" name="contato_obs" rows="4" style="width:100%;max-width:100%">{{ org.contato_obs or '' }}</textarea>
-  </div>
-  <div>
-    <button type="submit" class="btn btn--primary">Salvar</button>
-    <a href="{{ url_for('comercial_orgaos_publicos', q=back_params.q, uf=back_params.uf, regiao=back_params.regiao, tipo=back_params.tipo, page=back_params.page) }}" class="btn" style="margin-left:0.5rem">Cancelar</a>
-  </div>
-</form>
+</header>
+
+<div class="comercial-form-card">
+  <form method="post" class="form-grid form-grid--wide comercial-form">
+    <input type="hidden" name="ret_q" value="{{ back_params.q }}">
+    <input type="hidden" name="ret_uf" value="{{ back_params.uf }}">
+    <input type="hidden" name="ret_regiao" value="{{ back_params.regiao }}">
+    <input type="hidden" name="ret_tipo" value="{{ back_params.tipo }}">
+    <input type="hidden" name="ret_page" value="{{ back_params.page }}">
+    <div>
+      <label for="nome_contato">Nome do contato</label>
+      <input id="nome_contato" name="nome_contato" value="{{ org.nome_contato or '' }}" autocomplete="off">
+    </div>
+    <div>
+      <label for="email_contato">E-mail</label>
+      <input id="email_contato" name="email_contato" type="email" value="{{ org.email_contato or '' }}">
+    </div>
+    <div>
+      <label for="telefone_contato">Telefone</label>
+      <input id="telefone_contato" name="telefone_contato" value="{{ org.telefone_contato or '' }}" placeholder="DDD + número">
+    </div>
+    <div class="comercial-form__full">
+      <label for="contato_obs">Observações (setor, ramal, horário…)</label>
+      <textarea id="contato_obs" name="contato_obs" rows="4">{{ org.contato_obs or '' }}</textarea>
+    </div>
+    <div class="comercial-form__actions">
+      <button type="submit" class="btn btn--primary">Salvar contato</button>
+      <a href="{{ url_for('comercial_orgaos_publicos', q=back_params.q, uf=back_params.uf, regiao=back_params.regiao, tipo=back_params.tipo, page=back_params.page) }}" class="btn btn--ghost">Cancelar</a>
+    </div>
+  </form>
+</div>
 {% endblock %}
