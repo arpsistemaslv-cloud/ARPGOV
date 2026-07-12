@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Garantia — cadastros{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='garantia') }}">← Setor Garantia</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Garantia — cadastros</h1>
+    <p class="meta"><strong>Protocolos</strong> de troca ou reparo; opcionalmente vinculados a produto do catálogo de Compras.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.garantia_protocolos_list') }}"><strong>Protocolos</strong><span>{{ n_protocolos }} registro(s)</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

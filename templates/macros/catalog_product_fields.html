@@ -1,0 +1,29 @@
+{% macro sphere_select(field_name='sphere', current_value='', required=true, sphere_choices=none) %}
+{% set choices = sphere_choices if sphere_choices is not none else [] %}
+<label for="{{ field_name }}">Esfera{% if required %} *{% endif %}</label>
+<select id="{{ field_name }}" name="{{ field_name }}" {% if required %}required{% endif %}>
+  <option value="" disabled {% if not current_value %}selected{% endif %}>Selecione…</option>
+  {% if current_value and current_value not in choices %}
+  <option value="{{ current_value }}" selected>{{ current_value }} (legado)</option>
+  {% endif %}
+  {% for s in choices %}
+  <option value="{{ s }}" {% if current_value == s %}selected{% endif %}>{{ s }}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
+{% macro partner_owner_select(field_name='partner_id', selected_id=none, required=false, partners=none) %}
+{% set partner_list = partners if partners is not none else [] %}
+<label for="{{ field_name }}">Empresa dona da ata (parceiro){% if required %} *{% endif %}</label>
+<select id="{{ field_name }}" name="{{ field_name }}" {% if required %}required{% endif %}>
+  <option value="">— Selecione o parceiro —</option>
+  {% for p in partner_list %}
+  <option value="{{ p.id }}" {% if selected_id == p.id %}selected{% endif %}>
+    {% if p.company_name %}{{ p.company_name }}{% else %}{{ p.name }}{% endif %}
+    {% if p.company_name and p.name %} — {{ p.name }}{% endif %}
+    {% if not p.is_active %} (inativo){% endif %}
+  </option>
+  {% endfor %}
+</select>
+<p class="field-hint">Parceiros cadastrados no painel. Não aparece no site público; serve para filtrar no catálogo administrativo.</p>
+{% endmacro %}

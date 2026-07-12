@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Clientes sugeridos — comercial{% endblock %}
+{% block body %}
+{% include "comercial/_subnav.html" %}
+<h1 style="margin-top:0">Clientes sugeridos (órgãos PNCP)</h1>
+<p class="meta">Lista de <strong>órgãos públicos</strong> obtida a partir dos dados abertos do <a href="https://pncp.gov.br/" target="_blank" rel="noopener">PNCP</a> (contratos e atas). Use para prospecção e abra uma <strong>Nova captação</strong> com os dados pré-preenchidos.</p>
+{% if total == 0 %}
+<p class="flash flash--error" style="display:block">Nenhum órgão na base ainda. No <strong>Painel do site</strong> (administrador), acesse <strong>Sincronizar órgãos PNCP</strong>, escolha um período de até 365 dias e execute a sincronização.</p>
+{% endif %}
+<form method="get" class="filters-block" style="margin-top:1rem">
+  <span class="filters-block__label">Buscar</span>
+  <div class="form-grid form-grid--wide" style="max-width:720px;grid-template-columns:1fr 120px auto;align-items:end;gap:0.75rem">
+    <div>
+      <label for="q">Nome, unidade ou CNPJ</label>
+      <input id="q" name="q" value="{{ q }}" placeholder="Ex.: Prefeitura, 01612…">
+    </div>
+    <div>
+      <label for="uf">UF</label>
+      <select id="uf" name="uf">
+        <option value="">Todas</option>
+        {% for sigla, nome in br_ufs %}
+        <option value="{{ sigla }}" {% if uf_filter == sigla %}selected{% endif %}>{{ sigla }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn--primary">Filtrar</button>
+  </div>
+</form>
+<p class="meta">{{ total }} órgão(s) / unidade(s) encontrado(s){% if total > per_page %} — página {{ page }} de {{ total_pages }}{% endif %}.</p>
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Órgão / unidade</th>
+        <th>CNPJ</th>
+        <th>Local</th>
+        <th>Esfera</th>
+        <th>Contato (interno)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in rows %}
+      <tr>
+        <td>
+          <strong>{{ o.razao_social }}</strong>
+          {% if o.nome_unidade %}<br><span class="meta">{{ o.nome_unidade }}</span>{% endif %}
+          {% if o.codigo_unidade and o.codigo_unidade != '0000' %}<br><span class="meta">Unidade PNCP: {{ o.codigo_unidade }}</span>{% endif %}
+        </td>
+        <td class="meta">{{ format_cnpj(o.cnpj) }}</td>
+        <td class="meta">
+          {% if o.municipio_nome or o.uf_sigla %}
+          {{ o.municipio_nome or '—' }}{% if o.uf_sigla %} / {{ o.uf_sigla }}{% endif %}
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        <td class="meta">
+          {% if o.esfera_id %}{{ esfera_labels.get(o.esfera_id, o.esfera_id) }}{% else %}—{% endif %}
+          {% if o.poder_id %}<br>{{ poder_labels.get(o.poder_id, o.poder_id) }}{% endif %}
+        </td>
+        <td class="meta">
+          {% if o.email_licitacoes %}{{ o.email_licitacoes }}<br>{% endif %}
+          {% if o.telefone_licitacoes %}{{ o.telefone_licitacoes }}<br>{% endif %}
+          {% if o.contato_licitacoes_obs %}<span style="white-space:pre-wrap">{{ o.contato_licitacoes_obs[:120] }}{% if o.contato_licitacoes_obs|length > 120 %}…{% endif %}</span>{% elif not o.email_licitacoes and not o.telefone_licitacoes %}—{% endif %}
+        </td>
+        <td>
+          {% set sph = (esfera_labels.get(o.esfera_id, '') ~ (' / ' ~ poder_labels.get(o.poder_id, '') if o.poder_id else ''))|trim %}
+          <a class="btn btn--primary" style="padding:0.35rem 0.65rem;font-size:0.8rem" href="{{ url_for('comercial_op_new', organization=o.razao_social, cnpj=format_cnpj(o.cnpj), sphere=sph) }}">Nova captação</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="meta">Nada para exibir com estes filtros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if total_pages > 1 %}
+<p class="meta" style="margin-top:1rem">
+  {% if page > 1 %}
+  <a href="{{ url_for('comercial_clientes_sugeridos', page=page-1, q=q, uf=uf_filter) }}">← Anterior</a>
+  {% endif %}
+  {% if page < total_pages %}
+  <a href="{{ url_for('comercial_clientes_sugeridos', page=page+1, q=q, uf=uf_filter) }}" style="margin-left:0.75rem">Próxima →</a>
+  {% endif %}
+</p>
+{% endif %}
+{% endblock %}

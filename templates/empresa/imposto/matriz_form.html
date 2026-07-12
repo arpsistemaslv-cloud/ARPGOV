@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{% if linha %}Editar{% else %}Novo{% endif %} — imposto produto × UF{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:640px">
+    <p class="meta"><a href="{{ url_for('empresa.imposto_matriz') }}">← Matriz</a></p>
+    <h1 style="margin-top:0">{% if linha %}Editar registro{% else %}Novo registro{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div style="grid-column:1/-1">
+        <label for="produto_id">Produto *</label>
+        <select id="produto_id" name="produto_id" required {% if linha %}disabled{% endif %}>
+          <option value="">—</option>
+          {% for p in produtos %}
+          <option value="{{ p.id }}" {% if linha and linha.produto_id == p.id %}selected{% endif %}>{{ p.part_number }} — {{ p.nome }}</option>
+          {% endfor %}
+        </select>
+        {% if linha %}<input type="hidden" name="produto_id" value="{{ linha.produto_id }}">{% endif %}
+      </div>
+      <div>
+        <label for="uf">UF *</label>
+        <select id="uf" name="uf" required {% if linha %}disabled{% endif %}>
+          <option value="">—</option>
+          {% for sig, nome in ufs %}
+          <option value="{{ sig }}" {% if linha and linha.uf == sig %}selected{% endif %}>{{ sig }} — {{ nome }}</option>
+          {% endfor %}
+        </select>
+        {% if linha %}<input type="hidden" name="uf" value="{{ linha.uf }}">{% endif %}
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="beneficio_fiscal">Benefício fiscal (este estado / produto)</label>
+        <textarea id="beneficio_fiscal" name="beneficio_fiscal" rows="3" placeholder="Ex.: redução de base, crédito presumido, regime especial…">{{ linha.beneficio_fiscal if linha else '' }}</textarea>
+      </div>
+      <div>
+        <label for="aliquota_icms">ICMS %</label>
+        <input id="aliquota_icms" name="aliquota_icms" value="{{ linha.aliquota_icms if linha else '' }}" placeholder="0">
+      </div>
+      <div>
+        <label for="aliquota_ipi">IPI %</label>
+        <input id="aliquota_ipi" name="aliquota_ipi" value="{{ linha.aliquota_ipi if linha else '' }}" placeholder="0">
+      </div>
+      <div>
+        <label for="aliquota_pis">PIS %</label>
+        <input id="aliquota_pis" name="aliquota_pis" value="{{ linha.aliquota_pis if linha else '' }}" placeholder="0">
+      </div>
+      <div>
+        <label for="aliquota_cofins">COFINS %</label>
+        <input id="aliquota_cofins" name="aliquota_cofins" value="{{ linha.aliquota_cofins if linha else '' }}" placeholder="0">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacao">Observação interna</label>
+        <textarea id="observacao" name="observacao" rows="2">{{ linha.observacao if linha else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.imposto_matriz') }}">Cancelar</a>
+    </form>
+    {% if linha %}
+    {% set contexto = 'imposto_uf' %}
+    {% set ref_id = linha.id %}
+    {% set next_url = url_for('empresa.imposto_matriz_edit', iid=linha.id) %}
+    {% include "empresa/_anexos.html" %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

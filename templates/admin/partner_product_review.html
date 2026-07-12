@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Analisar produto do parceiro{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<p class="meta" style="margin-top:0"><a href="{{ url_for('admin_partner_products_pending') }}">← Voltar às solicitações pendentes</a></p>
+<h1 style="margin-top:0">Solicitação de produto</h1>
+<p class="meta"><strong>Parceiro:</strong> {{ pp.partner.name }}{% if pp.partner.company_name %} — {{ pp.partner.company_name }}{% endif %} · {{ pp.partner.email }}</p>
+
+<div class="page-content">
+  <div class="page-body">
+    <h2 style="margin-top:0;font-size:1.05rem">Dados da ata (rascunho)</h2>
+    <dl style="display:grid;gap:0.35rem 1rem;margin:0;font-size:0.9rem">
+      <dt class="meta">Título</dt><dd style="margin:0"><strong>{{ pp.title }}</strong></dd>
+      <dt class="meta">Seção</dt><dd style="margin:0">{{ pp.draft_section or '—' }}</dd>
+      <dt class="meta">Esfera</dt><dd style="margin:0">{{ pp.draft_sphere or '—' }}</dd>
+      <dt class="meta">Fabricante</dt><dd style="margin:0">{{ pp.draft_manufacturer or '—' }}</dd>
+      <dt class="meta">Catálogo / subcatálogo</dt><dd style="margin:0">{% if pp.draft_category %}{{ pp.draft_category.name }}{% else %}—{% endif %}</dd>
+      <dt class="meta">Empresa dona da ata</dt><dd style="margin:0">{{ pp.draft_ata_owner_company or '—' }}</dd>
+      <dt class="meta">Quantidade</dt><dd style="margin:0">{{ pp.draft_quantity or '—' }}</dd>
+      <dt class="meta">Estoque</dt><dd style="margin:0">{{ pp.draft_stock_on_hand if pp.draft_stock_on_hand is not none else '—' }}</dd>
+      <dt class="meta">Preço unitário</dt><dd style="margin:0">{% if pp.draft_unit_price is not none %}{{ format_currency_brl(pp.draft_unit_price) }}{% else %}—{% endif %}</dd>
+      <dt class="meta">Validade da ata</dt><dd style="margin:0">{{ pp.draft_valid_until.strftime('%d/%m/%Y') if pp.draft_valid_until else '—' }}</dd>
+      <dt class="meta">Slug sugerido</dt><dd style="margin:0">{{ pp.draft_slug or '(gerar a partir do título)' }}</dd>
+      <dt class="meta">Destaque</dt><dd style="margin:0">{% if pp.draft_highlight %}Sim{% else %}Não{% endif %}</dd>
+    </dl>
+    {% if pp.description %}
+    <p class="meta" style="margin-top:1rem"><strong>Observações do parceiro:</strong> {{ pp.description }}</p>
+    {% endif %}
+    {% set ufs = pp.allowed_ufs_codes() %}
+    <p class="meta" style="margin-top:0.75rem"><strong>Abrangência:</strong> {% if ufs and ufs[0] == 'BR' %}Todo o Brasil{% elif ufs %}{{ ufs|join(', ') }}{% else %}—{% endif %}</p>
+
+    {% if pp.draft_image_paths() %}
+    <h3 style="font-size:0.95rem;margin:1rem 0 0.5rem">Imagens</h3>
+    <div class="admin-catalog-thumbs">
+      {% for path in pp.draft_image_paths() %}
+      <div class="admin-catalog-thumbs__item">
+        <img src="{{ url_for('static', filename=path) }}" alt="" width="120" height="120" loading="lazy">
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if pp.draft_catalog_attachment_paths() %}
+    <h3 style="font-size:0.95rem;margin:1rem 0 0.5rem">Anexos do catálogo</h3>
+    <ul class="meta">
+      {% for p in pp.draft_catalog_attachment_paths() %}
+      <li><a href="{{ url_for('static', filename=p) }}" target="_blank" rel="noopener">{{ p.split('/')[-1] }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if pp.draft_ata_company_doc_paths() %}
+    <h3 style="font-size:0.95rem;margin:1rem 0 0.5rem">Documentos da empresa</h3>
+    <ul class="meta">
+      {% for p in pp.draft_ata_company_doc_paths() %}
+      <li><a href="{{ url_for('static', filename=p) }}" target="_blank" rel="noopener">{{ p.split('/')[-1] }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:1rem;margin-top:1.5rem;align-items:flex-end">
+  <form method="post" action="{{ url_for('admin_partner_product_approve', product_id=pp.id) }}" style="margin:0" onsubmit="return confirm('Publicar este produto no catálogo do site?');">
+    <button type="submit" class="btn btn--primary">Aprovar e publicar no catálogo</button>
+  </form>
+  <form method="post" action="{{ url_for('admin_partner_product_reject', product_id=pp.id) }}" class="form-grid" style="margin:0;max-width:420px;gap:0.5rem">
+    <div>
+      <label for="rejection_note">Recusar (opcional: motivo para o parceiro)</label>
+      <textarea id="rejection_note" name="rejection_note" rows="2" placeholder="Ex.: falta documento X, preço inconsistente…"></textarea>
+    </div>
+    <button type="submit" class="btn btn--danger" onclick="return confirm('Recusar esta solicitação?');">Recusar</button>
+  </form>
+</div>
+{% endblock %}

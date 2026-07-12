@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Repositório de documentos — intranet{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:1000px">
+    <p class="meta"><a href="{{ url_for('empresa.modulos_hub') }}">← Módulos</a></p>
+    <h1 style="margin-top:0">Repositório de documentos da empresa</h1>
+    <p class="meta">Central de arquivos corporativos (certidões, procurações, modelos, atas). Para anexos ligados a um edital específico, use também a <a href="{{ url_for('empresa.licitacoes_lista') }}">licitação</a> correspondente.</p>
+
+    <section style="margin:1.25rem 0;padding:1rem 1.15rem;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--surface)">
+      <h2 style="font-size:1rem;margin:0 0 0.75rem">Publicar documento</h2>
+      <form method="post" action="{{ url_for('empresa.documentos_repositorio_upload') }}" enctype="multipart/form-data" class="form-grid" style="align-items:end">
+        <input type="hidden" name="next" value="{{ url_for('empresa.documentos_repositorio_hub') }}">
+        <div style="grid-column:1/-1">
+          <label for="titulo">Título *</label>
+          <input id="titulo" name="titulo" required maxlength="400" placeholder="Ex.: Certidão FGTS — jan/2026">
+        </div>
+        <div>
+          <label for="categoria_upload">Categoria</label>
+          <input id="categoria_upload" name="categoria" maxlength="120" list="cats-list" placeholder="Selecione ou digite">
+          <datalist id="cats-list">
+            {% for c in categorias_sugestao %}<option value="{{ c }}">{% endfor %}
+            {% for c in categorias_usadas %}<option value="{{ c }}">{% endfor %}
+          </datalist>
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="descricao">Descrição (opcional)</label>
+          <textarea id="descricao" name="descricao" rows="2" placeholder="Validade, número do documento, observações"></textarea>
+        </div>
+        <div>
+          <label for="arquivo">Arquivo *</label>
+          <input id="arquivo" name="arquivo" type="file" required>
+        </div>
+        <button type="submit" class="btn btn--primary">Enviar</button>
+      </form>
+      <p class="meta" style="margin:0.6rem 0 0;font-size:0.85rem">Máx. 25 MB. PDF, Office, imagens, XML, etc.</p>
+    </section>
+
+    <h2 style="font-size:1.05rem;margin:1.5rem 0 0.75rem">Busca ({{ n_documentos }} arquivo(s))</h2>
+    <form method="get" class="form-grid" style="align-items:end;max-width:100%;margin-bottom:1rem">
+      <div>
+        <label for="q">Texto</label>
+        <input id="q" name="q" value="{{ q }}" placeholder="Título ou nome do arquivo">
+      </div>
+      <div>
+        <label for="categoria">Categoria exata</label>
+        <input id="categoria" name="categoria" value="{{ categoria_filtro }}" list="cats-list2" placeholder="Opcional">
+        <datalist id="cats-list2">
+          {% for c in categorias_usadas %}<option value="{{ c }}">{% endfor %}
+        </datalist>
+      </div>
+      <button type="submit" class="btn btn--primary">Filtrar</button>
+      {% if q or categoria_filtro %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.documentos_repositorio_hub') }}">Limpar</a>
+      {% endif %}
+    </form>
+
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Categoria</th>
+            <th>Arquivo</th>
+            <th>Enviado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in documentos %}
+          <tr>
+            <td>
+              <strong>{{ d.titulo }}</strong>
+              {% if d.descricao %}<br><span class="meta" style="white-space:pre-wrap">{{ d.descricao[:200] }}{% if d.descricao|length > 200 %}…{% endif %}</span>{% endif %}
+            </td>
+            <td>{{ d.categoria or '—' }}</td>
+            <td><a href="{{ url_for('empresa.documentos_repositorio_download', did=d.id) }}">{{ d.nome_original }}</a></td>
+            <td class="meta">{{ d.created_at.strftime('%d/%m/%Y %H:%M') if d.created_at else '—' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('empresa.documentos_repositorio_delete', did=d.id) }}" style="display:inline" onsubmit="return confirm('Remover este documento do repositório?');">
+                <input type="hidden" name="next" value="{{ url_for('empresa.documentos_repositorio_hub', q=q, categoria=categoria_filtro) }}">
+                <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.45rem;font-size:0.82rem">Excluir</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhum documento. Publique arquivos acima ou ajuste o filtro.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

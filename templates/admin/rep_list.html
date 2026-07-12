@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Representantes comerciais{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Representantes comerciais</h1>
+<p class="meta">Cada representante entra em <strong>Comercial</strong> no rodapé do site com e-mail e senha próprios. Representantes comuns veem só os leads atribuídos a eles; <strong>administradores</strong> acessam também o Painel, o CRM e todos os leads.</p>
+<p><a class="btn btn--primary" href="{{ url_for('admin_rep_new') }}">Novo representante</a></p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>E-mail (login)</th>
+        <th>Telefone</th>
+        <th>Status</th>
+        <th>Perfil</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reps %}
+      <tr>
+        <td><strong>{{ r.name }}</strong></td>
+        <td>{{ r.email }}</td>
+        <td class="meta">{{ r.phone or '—' }}</td>
+        <td>{% if r.is_active %}<span class="pill" style="background:#e8f5e9;color:#1b5e20">Ativo</span>{% else %}<span class="meta">Inativo</span>{% endif %}</td>
+        <td>{% if r.is_admin %}<span class="pill">Administrador</span>{% else %}<span class="meta">Representante</span>{% endif %}</td>
+        <td><a href="{{ url_for('admin_rep_edit', rep_id=r.id) }}">Editar</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="meta">Nenhum representante. Cadastre o primeiro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

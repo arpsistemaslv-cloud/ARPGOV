@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{% if row %}Editar{% else %}Nova{% endif %} ARP — análise prévia{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<p class="meta" style="margin:0 0 0.75rem"><a href="{{ url_for('admin_arp_analysis_list') }}">← Análise prévia de ARPs</a></p>
+<h1 style="margin-top:0">{% if row %}Editar{% else %}Nova{% endif %} ARP</h1>
+
+<form method="post" class="form-grid" style="max-width:720px">
+  <div>
+    <label for="titulo">Título / resumo *</label>
+    <input id="titulo" name="titulo" required value="{{ row.titulo if row else '' }}" placeholder="Ex.: Material hospitalar — HUB">
+  </div>
+  <div>
+    <label for="arp_url">Link da ARP *</label>
+    <input id="arp_url" name="arp_url" type="url" required value="{{ row.arp_url if row else '' }}" placeholder="https://pncp.gov.br/app/atas/...">
+    <p class="meta" style="margin:0.25rem 0 0">PNCP, Contratos.gov.br ou portal do órgão.</p>
+  </div>
+  <div class="form-grid form-grid--2col">
+    <div>
+      <label for="pncp_url">Link PNCP (opcional)</label>
+      <input id="pncp_url" name="pncp_url" type="url" value="{{ row.pncp_url or '' if row else '' }}">
+    </div>
+    <div>
+      <label for="contratos_url">Link Contratos.gov (opcional)</label>
+      <input id="contratos_url" name="contratos_url" type="url" value="{{ row.contratos_url or '' if row else '' }}">
+    </div>
+  </div>
+  <div class="form-grid form-grid--2col">
+    <div>
+      <label for="orgao">Órgão gerenciador</label>
+      <input id="orgao" name="orgao" value="{{ row.orgao or '' if row else '' }}">
+    </div>
+    <div>
+      <label for="numero_ata">Número da ata</label>
+      <input id="numero_ata" name="numero_ata" value="{{ row.numero_ata or '' if row else '' }}">
+    </div>
+  </div>
+  <div>
+    <label for="objeto">Objeto</label>
+    <textarea id="objeto" name="objeto" rows="3">{{ row.objeto or '' if row else '' }}</textarea>
+  </div>
+  <div class="form-grid form-grid--2col">
+    <div>
+      <label for="vigencia_inicial">Vigência início</label>
+      <input id="vigencia_inicial" name="vigencia_inicial" placeholder="dd/mm/aaaa" value="{{ row.vigencia_inicial or '' if row else '' }}">
+    </div>
+    <div>
+      <label for="vigencia_final">Vigência fim</label>
+      <input id="vigencia_final" name="vigencia_final" placeholder="dd/mm/aaaa" value="{{ row.vigencia_final or '' if row else '' }}">
+    </div>
+  </div>
+  <div class="form-grid form-grid--2col">
+    <div>
+      <label for="fornecedor_nome">Fornecedor / parceiro alvo</label>
+      <input id="fornecedor_nome" name="fornecedor_nome" value="{{ row.fornecedor_nome or '' if row else '' }}">
+    </div>
+    <div>
+      <label for="fornecedor_cnpj">CNPJ fornecedor</label>
+      <input id="fornecedor_cnpj" name="fornecedor_cnpj" value="{{ row.fornecedor_cnpj or '' if row else '' }}">
+    </div>
+  </div>
+  <div>
+    <label for="partner_contact">Contato para negociação</label>
+    <input id="partner_contact" name="partner_contact" value="{{ row.partner_contact or '' if row else '' }}" placeholder="Nome, e-mail ou telefone do parceiro">
+  </div>
+  <div>
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      {% for sid, slabel in statuses %}
+      <option value="{{ sid }}" {% if row and row.status == sid %}selected{% elif not row and sid == 'preliminar' %}selected{% endif %}>{{ slabel }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="notes">Notas internas</label>
+    <textarea id="notes" name="notes" rows="4">{{ row.notes or '' if row else '' }}</textarea>
+  </div>
+
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+    <button type="submit" class="btn btn--primary">Salvar</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin_arp_analysis_list') }}">Voltar</a>
+  </div>
+</form>
+
+{% if row %}
+<div class="robo-card" style="margin-top:1.5rem;max-width:720px">
+  <h2 style="margin:0 0 0.75rem;font-size:1rem">Ações</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+    {% if row.catalog_item_id %}
+    <a class="btn btn--ghost" href="{{ url_for('admin_catalog_edit', item_id=row.catalog_item_id) }}">Editar no catálogo</a>
+    {% else %}
+    <form method="post" action="{{ url_for('admin_arp_analysis_publish', analysis_id=row.id) }}" style="margin:0" onsubmit="return confirm('Criar produto no site com estes dados? Ajuste preço e imagens depois no catálogo.');">
+      <button type="submit" class="btn btn--primary">Publicar no site</button>
+    </form>
+    {% endif %}
+    {% if row.opportunity_id %}
+    <a class="btn btn--ghost" href="{{ url_for('crm.crm_op_edit', opp_id=row.opportunity_id) }}">Ver no CRM</a>
+    {% else %}
+    <form method="post" action="{{ url_for('admin_arp_analysis_opportunity', analysis_id=row.id) }}" style="margin:0">
+      <button type="submit" class="btn btn--ghost">+ Oportunidade CRM</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin_arp_analysis_delete', analysis_id=row.id) }}" style="margin:0" onsubmit="return confirm('Excluir este registro?');">
+      <button type="submit" class="btn btn--danger">Excluir</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

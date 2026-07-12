@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Rastreamento Braspress — logística{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:820px">
+    <p class="meta"><a href="{{ url_for('empresa.logistica_hub') }}">← Logística — cadastros</a> · <a href="{{ url_for('empresa.setor', slug='logistica') }}">Setor</a></p>
+    <h1 style="margin-top:0">Rastreamento — Braspress</h1>
+    <p class="meta">Consulta à API pública da transportadora (Basic Auth). Os dados ficam na Braspress; esta tela só encaminha a requisição pelo servidor.</p>
+    <p class="meta">Base configurada: <strong>{{ api_base }}</strong>. Credenciais: variáveis <code>BRASPRESS_API_USER</code> e <code>BRASPRESS_API_PASSWORD</code> no <code>.env</code>. CNPJ padrão do remetente (opcional): <code>BRASPRESS_CNPJ_REMETENTE</code>.</p>
+
+    <form method="post" class="form-grid form-grid--wide" style="margin-top:1.25rem;max-width:640px">
+      <div>
+        <label for="cnpj">CNPJ do remetente (na URL da API)</label>
+        <input id="cnpj" name="cnpj" required maxlength="20" placeholder="Somente números ou com máscara" value="{{ posted.get('cnpj', default_cnpj) }}">
+      </div>
+      <div>
+        <label for="spec">Endpoint</label>
+        <select id="spec" name="spec">
+          <option value="v1_nf" {% if posted.get('spec', 'v3_nf') == 'v1_nf' %}selected{% endif %}>v1 — tracking por NF</option>
+          <option value="v2_nf" {% if posted.get('spec', 'v3_nf') == 'v2_nf' %}selected{% endif %}>v2 — tracking por NF</option>
+          <option value="v3_nf" {% if posted.get('spec', 'v3_nf') == 'v3_nf' %}selected{% endif %}>v3 — tracking/byNf</option>
+          <option value="v3_pedido" {% if posted.get('spec') == 'v3_pedido' %}selected{% endif %}>v3 — tracking/byNumPedido</option>
+        </select>
+      </div>
+      <div>
+        <label for="reference">Nota fiscal ou número do pedido</label>
+        <input id="reference" name="reference" required placeholder="Conforme cadastro na Braspress" value="{{ posted.get('reference', '') }}">
+      </div>
+      <div>
+        <label for="return_type">returnType (formato da resposta)</label>
+        <input id="return_type" name="return_type" value="{{ posted.get('return_type', 'json') }}" placeholder="json">
+        <p class="meta" style="margin:0.35rem 0 0">Em geral use <strong>json</strong>; outros valores dependem da documentação da Braspress para o seu contrato.</p>
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+        <button type="submit" class="btn btn--primary">Consultar</button>
+        <a class="btn btn--ghost" href="{{ url_for('empresa.logistica_hub') }}">Voltar</a>
+      </div>
+    </form>
+
+    {% if track_result %}
+    <section class="card" style="margin-top:1.75rem;padding:1rem 1.15rem">
+      <h2 style="font-size:1.05rem;margin:0 0 0.75rem">Resposta</h2>
+      <p class="meta" style="margin:0 0 0.5rem"><strong>HTTP</strong> {{ track_result.http_status }}{% if track_result.content_type %} · {{ track_result.content_type }}{% endif %}</p>
+      <p class="meta" style="margin:0 0 0.75rem;word-break:break-all"><strong>URL</strong><br>{{ track_result.url }}</p>
+      {% if track_result.pretty_json %}
+      <pre style="margin:0;white-space:pre-wrap;word-break:break-word;background:var(--surface, #f8fafc);padding:0.85rem;border-radius:8px;border:1px solid var(--border,#e2e8f0);font-size:0.82rem;max-height:480px;overflow:auto">{{ track_result.pretty_json }}</pre>
+      {% else %}
+      <pre style="margin:0;white-space:pre-wrap;word-break:break-word;background:var(--surface, #f8fafc);padding:0.85rem;border-radius:8px;border:1px solid var(--border,#e2e8f0);font-size:0.82rem;max-height:480px;overflow:auto">{{ track_result.body }}</pre>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="meta" style="margin-top:1.5rem;line-height:1.5">
+      <p style="margin:0 0 0.5rem"><strong>Referência de endpoints</strong> (contrato Braspress):</p>
+      <ul style="margin:0;padding-left:1.2rem">
+        <li><code>/v1/tracking/{cnpj}/{notaFiscal}/{returnType}</code></li>
+        <li><code>/v2/tracking/{cnpj}/{notaFiscal}/{returnType}</code></li>
+        <li><code>/v3/tracking/byNf/{cnpj}/{notaFiscal}/{returnType}</code></li>
+        <li><code>/v3/tracking/byNumPedido/{cnpj}/{numPedido}/{returnType}</code></li>
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

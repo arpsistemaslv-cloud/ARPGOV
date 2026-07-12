@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Órgãos públicos BR — painel{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Diretório de órgãos públicos (Brasil)</h1>
+<p class="meta">Alimenta a lista <strong>Órgãos públicos</strong> na área do representante. <strong>Federal (executivo)</strong> e <strong>autarquias federais</strong> usam sede em Brasília (DF). <strong>Polícia Federal</strong> e <strong>PRF</strong> estão em autarquias federais; o botão <strong>Segurança pública</strong> acrescenta PM, PC, bombeiros por UF e órgãos federais complementares (PPEN, Força Nacional, SENASP, DEPEN). <strong>Órgãos jurídicos</strong> incluem tribunais superiores, TRFs, TJs, MPE por UF, MPF, DPU e TCU. <strong>Justiça do Trabalho</strong> (TRT + MPT) e <strong>legislativo</strong> têm botões próprios. <strong>Serviços de aprendizagem</strong> e <strong>autarquias estaduais</strong> (DETRAN + guia) são semeados por estado. <strong>Municípios</strong> vêm do IBGE (demorado). PNCP: <a href="{{ url_for('admin_sync_pncp_orgaos') }}">sincronizar</a> e <strong>Copiar PNCP</strong>.</p>
+<p class="meta"><strong>Registros no diretório:</strong> {{ total_br_orgaos }} · <strong>Órgãos PNCP (tabela bruta):</strong> {{ pncp_count }}</p>
+
+<form method="post" style="margin:1.25rem 0;padding:1rem;border:1px solid var(--border,#ddd);border-radius:8px;max-width:920px;background:#f9fafb">
+  <input type="hidden" name="acao" value="ibge_pop_orcamento">
+  <h2 style="margin:0 0 0.5rem;font-size:1.1rem">População IBGE e potencial orçamentário</h2>
+  <p class="meta" style="margin:0 0 0.75rem">Consulta a API do IBGE (estimativa residente {{ 2024 }}) para <strong>todas as UFs</strong> e <strong>todos os municípios</strong> já cadastrados como prefeitura; atualiza totais em <code>brasil_geo</code> e recalcula o <strong>potencial de orçamento anual</strong> (modelo interno — ordem de grandeza). Pode levar <strong>vários minutos</strong> se houver milhares de municípios.</p>
+  <button type="submit" class="btn btn--primary">Sincronizar população e orçamento potencial</button>
+</form>
+
+<div class="form-grid form-grid--wide" style="max-width:920px;margin-top:1.25rem;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="municipios">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Prefeituras (municípios IBGE)</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Um registro por município.</p>
+    <button type="submit" class="btn btn--primary">Importar municípios</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="estados">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Administração estadual</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Uma linha por UF.</p>
+    <button type="submit" class="btn btn--primary">Semear estados</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="federal_executivo">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Presidência e ministérios</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Executivo federal (União), sede DF.</p>
+    <button type="submit" class="btn btn--primary">Semear Executivo federal</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="autarquias_federais">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Autarquias federais</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Agências, institutos e fundações federais (catálogo).</p>
+    <button type="submit" class="btn btn--primary">Semear autarquias federais</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="orgaos_juridicos">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Órgãos jurídicos</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Judiciário, MP, Defensoria, TRFs, TJs, MPE.</p>
+    <button type="submit" class="btn btn--primary">Semear órgãos jurídicos</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="justica_trabalho_mpt">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">TRT e MPT</h2>
+    <p class="meta" style="margin:0 0 0.75rem">24 TRTs, PGT e 24 procuradorias regionais do trabalho.</p>
+    <button type="submit" class="btn btn--primary">Semear Justiça do Trabalho / MPT</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="legislativo">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Poder Legislativo</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Câmara, Senado, assembleias estaduais e CLDF.</p>
+    <button type="submit" class="btn btn--primary">Semear órgãos legislativos</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="seguranca_publica">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Polícias e bombeiros</h2>
+    <p class="meta" style="margin:0 0 0.75rem">PM, PC e Corpo de Bombeiros Militar por UF; PPEN, Força Nacional, SENASP e DEPEN (DF).</p>
+    <button type="submit" class="btn btn--primary">Semear segurança pública</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="educacao">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Educação (IFs, UFs, MEC)</h2>
+    <p class="meta" style="margin:0 0 0.75rem">INEP, FNDE, CONIF, SESU, SETEC; todas as UFs federais; institutos federais; guia por UF para faculdades públicas estaduais.</p>
+    <button type="submit" class="btn btn--primary">Semear educação</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="sistema_s">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Sistema S</h2>
+    <p class="meta" style="margin:0 0 0.75rem">SESI, SENAI, SESC, SENAC × UFs.</p>
+    <button type="submit" class="btn btn--primary">Semear Sistema S</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="servico_aprendizagem">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">SENAR, SEBRAE, SENAT, SESCOOP</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Quatro marcas × 27 UFs.</p>
+    <button type="submit" class="btn btn--primary">Semear serviços de aprendizagem</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="detran">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">DETRAN (autarquia estadual)</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Um DETRAN por UF.</p>
+    <button type="submit" class="btn btn--primary">Semear DETRAN</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="autarquias_estaduais_demais">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Demais autarquias estaduais</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Linha-guia por UF (além do DETRAN).</p>
+    <button type="submit" class="btn btn--primary">Semear guia estadual</button>
+  </form>
+  <form method="post" style="margin:0;padding:1rem;border:1px solid var(--border, #ddd);border-radius:8px">
+    <input type="hidden" name="acao" value="pncp">
+    <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Copiar órgãos PNCP</h2>
+    <p class="meta" style="margin:0 0 0.75rem">Duplica para o diretório nacional.</p>
+    <button type="submit" class="btn btn--primary">Copiar PNCP → diretório</button>
+  </form>
+</div>
+
+<p class="meta" style="margin-top:1.5rem"><a href="{{ url_for('admin_sync_pncp_orgaos') }}">Sincronizar órgãos PNCP (API)</a> · <a href="{{ url_for('admin_home') }}">Início do painel</a></p>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Relatório de comissões — Fechamento{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:960px">
+    <p class="meta"><a href="{{ url_for('empresa.fechamento_preco_hub') }}">← Fechamento de preço</a></p>
+    <h1 style="margin-top:0">Relatório de comissões (estimado)</h1>
+    <p class="meta">Soma das comissões das <strong>planilhas fechadas</strong>, usando o total sugerido gravado no snapshot. Filtra pelo <strong>mês de competência do faturamento</strong>; se a planilha não tiver competência, entra no mês em que foi <strong>fechada</strong>.</p>
+
+    <form method="get" class="form-grid" style="align-items:end;max-width:420px;margin:1rem 0">
+      <div>
+        <label for="mes">Mês</label>
+        <input id="mes" name="mes" type="month" value="{{ mes }}" required>
+      </div>
+      <button type="submit" class="btn btn--primary">Atualizar</button>
+    </form>
+
+    <p class="meta" style="margin-bottom:1rem"><strong>{{ n_planilhas }}</strong> planilha(s) fechada(s) neste critério.</p>
+
+    {% if totais %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Total estimado (R$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for eid in totais|sort %}
+          {% set valor = totais[eid] %}
+          {% set emp = employees.get(eid) %}
+          <tr>
+            <td>
+              <strong>{{ emp.name if emp else ('#' ~ eid) }}</strong>
+              {% if emp %}<br><span class="meta">{{ emp.email }}</span>{% endif %}
+            </td>
+            <td><strong>R$ {{ valor }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h2 style="font-size:1.05rem;margin:1.5rem 0 0.75rem">Detalhamento</h2>
+    {% for eid in totais|sort %}
+    {% set valor = totais[eid] %}
+    {% set emp = employees.get(eid) %}
+    <section style="margin:1rem 0;padding:0.85rem 1rem;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--surface)">
+      <p style="margin:0 0 0.5rem"><strong>{{ emp.name if emp else ('#' ~ eid) }}</strong> — subtotal mês: <strong>R$ {{ valor }}</strong></p>
+      <ul class="meta" style="margin:0;padding-left:1.2rem">
+        {% if eid in detalhes %}
+        {% for d in detalhes[eid] %}
+        <li>
+          <a href="{{ url_for('empresa.fechamento_preco_planilha_detail', fid=d.planilha_id) }}">{{ d.titulo[:70] }}{% if d.titulo|length > 70 %}…{% endif %}</a>
+          — {{ d.percentual }}% → R$ {{ d.valor }}
+          {% if d.papel %}<span class="meta">({{ d.papel }})</span>{% endif %}
+        </li>
+        {% endfor %}
+        {% endif %}
+      </ul>
+    </section>
+    {% endfor %}
+    {% else %}
+    <p class="meta">Nenhuma comissão neste mês. Feche planilhas com equipe cadastrada ou ajuste a competência de faturamento no cabeçalho.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

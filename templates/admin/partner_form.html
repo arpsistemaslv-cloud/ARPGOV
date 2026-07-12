@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "macros/partner_profile_fields.html" import partner_profile_fields %}
+{% block title %}{% if partner %}Editar{% else %}Novo{% endif %} parceiro{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">{% if partner %}Editar{% else %}Novo{% endif %} parceiro</h1>
+<form method="post" class="client-profile-form br-lookup-form" style="max-width:920px;margin-top:1rem">
+  {{ partner_profile_fields(
+    partner=partner,
+    show_login=True,
+    show_password=True,
+    password_required=not partner,
+    show_active=partner is not none
+  ) }}
+  <div class="form-actions" style="margin-top:1.25rem">
+    <button type="submit" class="btn btn--primary">Salvar</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin_partner_list') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

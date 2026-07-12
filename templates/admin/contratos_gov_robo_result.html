@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% from "macros/robo_field.html" import robo_option_tip %}
+{% block title %}Resultado — Robô de Atas{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+
+<div class="robo-page">
+  <p class="meta" style="margin:0 0 0.75rem"><a href="{{ url_for('admin_robo_contratos') }}">← Nova busca</a></p>
+
+  <h1 style="margin-top:0">Resultado da busca</h1>
+  <p class="robo-page__intro" style="margin-bottom:1rem">
+    {{ scan.period_label }}
+    {% if scan.keyword %} · “{{ scan.keyword }}”{% endif %}
+    {% if scan.supplier_cnpj %} · CNPJ {{ scan.supplier_cnpj }}{% endif %}
+    · modo <span class="badge-robo badge-robo--mode">{{ scan.scan_mode or 'contratos' }}</span>
+  </p>
+
+  <div class="robo-card" style="margin-bottom:1.25rem;max-width:960px">
+    <div style="display:flex;flex-wrap:wrap;gap:0.75rem 1.5rem;align-items:flex-start">
+      <div>
+        <span class="meta" style="display:block;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Registros</span>
+        <strong style="font-size:1.35rem">{{ results|length }}</strong>
+      </div>
+      {% if scan.scan_mode != 'pncp' %}
+      <div>
+        <span class="meta" style="display:block;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Com adesão em item {{ robo_option_tip('Atas com pelo menos um item “Aceita adesão = Sim” confirmado no Contratos.gov.br.') }}</span>
+        <strong style="font-size:1.35rem">{{ scan.atas_with_adesao }}</strong>
+      </div>
+      {% endif %}
+      <div>
+        <span class="meta" style="display:block;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">Varredura {{ robo_option_tip('Completa = todas as páginas e atas do período foram processadas dentro dos limites.') }}</span>
+        {% if scan.scan_fully_complete %}
+          <span class="badge-robo badge-robo--ok">Completa</span>
+        {% else %}
+          <span class="badge-robo badge-robo--warn">Parcial</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="robo-stats-row" style="display:flex;flex-wrap:wrap;gap:0.5rem 1.25rem;margin-top:1rem;padding-top:0.85rem;border-top:1px solid var(--border);font-size:0.88rem">
+      {% if scan.scan_mode in ('contratos', 'hibrido') %}
+      <span>
+        <strong>Contratos</strong> — listagem:
+        {% if scan.list_scan_complete %}completa{% else %}parcial{% endif %}
+        · {{ scan.list_pages_read }}{% if scan.list_pages_total %}/{{ scan.list_pages_total }}{% endif %} pág.
+        · {{ scan.atas_listed }} atas
+        · detalhe {{ scan.atas_checked }}/{{ scan.atas_listed }}
+      </span>
+      {% endif %}
+      {% if scan.scan_mode in ('pncp', 'hibrido') and scan.pncp_pages_read %}
+      <span>
+        <strong>PNCP</strong> — {{ scan.pncp_pages_read }}{% if scan.pncp_total_pages %}/{{ scan.pncp_total_pages }}{% endif %} pág.
+        · {{ scan.pncp_rows_matched }} com adesão ({{ scan.pncp_rows_api }} lidas)
+      </span>
+      {% endif %}
+      {% if scan.duplicates_skipped %}<span class="meta">{{ scan.duplicates_skipped }} ID duplicado(s)</span>{% endif %}
+      {% if scan.item_details_fetched %}<span class="meta">{{ scan.item_details_fetched }} item(ns) com fornecedor</span>{% endif %}
+    </div>
+
+    {% if scan.error_message %}
+    <p class="meta" style="margin:0.85rem 0 0;color:var(--danger);white-space:pre-wrap">{{ scan.error_message }}</p>
+    {% endif %}
+  </div>
+
+  {% if results %}
+  <div class="robo-actions" style="margin-bottom:1rem;border-top:none;padding-top:0">
+    <form method="post" action="{{ url_for('admin_robo_contratos_catalog_all', scan_id=scan.id) }}" onsubmit="return confirm('Cadastrar todas as atas desta busca no catálogo?');">
+      <button type="submit" class="btn btn--ghost">Cadastrar todos no catálogo</button>
+    </form>
+    <form method="post" action="{{ url_for('admin_robo_contratos_opportunities_all', scan_id=scan.id) }}" onsubmit="return confirm('Criar oportunidade no CRM para cada ata?');">
+      <button type="submit" class="btn btn--ghost">Criar oportunidades no CRM</button>
+    </form>
+  </div>
+
+  <div class="table-wrap robo-history">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Ata / objeto {{ robo_option_tip('Número da ata, objeto da licitação ou descrição dos itens com adesão.') }}</th>
+          <th>Órgão {{ robo_option_tip('Unidade gerenciadora da ata — órgão público responsável pela adesão.') }}</th>
+          <th>Fornecedor {{ robo_option_tip('Empresa homologada na ata, com CNPJ e valor quando a busca de fornecedor estava ativa.') }}</th>
+          <th>Vigência</th>
+          <th>Confiança {{ robo_option_tip('✓ Item = adesão confirmada por item. PNCP = apenas indício no cadastro nacional — valide com o órgão.') }}</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        {% set sup = r.primary_supplier %}
+        <tr{% if r.was_known_before %} style="opacity:0.88"{% endif %}>
+          <td style="max-width:260px">
+            <strong>{{ r.numero_ata or r.pncp_control_id or ('#' ~ r.arp_id) }}</strong>
+            {% if r.objeto %}
+            <br><span class="meta">{{ r.objeto[:90] }}{% if r.objeto|length > 90 %}…{% endif %}</span>
+            {% elif r.items_adesao %}
+            {% for it in r.items_adesao[:2] %}
+            <br><span class="meta">{{ (it.descricao_detalhada or it.descricao or '')[:70] }}</span>
+            {% endfor %}
+            {% endif %}
+            {% if r.was_known_before %}<br><span class="meta" title="Esta ata já apareceu em busca anterior">↻ já vista</span>{% endif %}
+          </td>
+          <td class="meta">{{ r.unidade or '—' }}</td>
+          <td class="meta">
+            {% if sup %}{{ sup.fornecedor }}<br>{{ sup.cnpj }}{% if sup.valor_unitario %}<br>{{ sup.valor_unitario }}{% endif %}{% else %}—{% endif %}
+          </td>
+          <td class="meta">{% if r.vigencia_inicial %}{{ r.vigencia_inicial }}{% if r.vigencia_final %} → {{ r.vigencia_final }}{% endif %}{% else %}—{% endif %}</td>
+          <td>
+            {% if r.verification_level == 'item' %}
+              <span class="badge-robo badge-robo--ok">✓ Item</span>
+            {% else %}
+              <span class="badge-robo badge-robo--warn">PNCP</span>
+            {% endif %}
+          </td>
+          <td style="white-space:nowrap">
+            <a href="{{ r.detail_url }}" target="_blank" rel="noopener" class="meta">Portal</a>
+            {% if r.pncp_ata_url %} · <a href="{{ r.pncp_ata_url }}" target="_blank" rel="noopener" class="meta">PNCP</a>{% endif %}
+            <div style="margin-top:0.35rem;display:flex;flex-direction:column;gap:0.25rem;align-items:flex-start">
+              {% if r.catalog_item_id %}
+                <a href="{{ url_for('admin_catalog_edit', item_id=r.catalog_item_id) }}">Catálogo ✓</a>
+              {% else %}
+                <form method="post" action="{{ url_for('admin_robo_contratos_result_catalog', scan_id=scan.id, result_id=r.id) }}" style="margin:0">
+                  <button type="submit" class="btn btn--ghost" style="padding:0.15rem 0.45rem;font-size:0.82rem">+ Catálogo</button>
+                </form>
+              {% endif %}
+              {% if r.opportunity_id %}
+                <a href="{{ url_for('crm.crm_op_edit', opp_id=r.opportunity_id) }}">CRM ✓</a>
+              {% else %}
+                <form method="post" action="{{ url_for('admin_robo_contratos_result_opportunity', scan_id=scan.id, result_id=r.id) }}" style="margin:0">
+                  <button type="submit" class="btn btn--ghost" style="padding:0.15rem 0.45rem;font-size:0.82rem">+ Oportunidade</button>
+                </form>
+              {% endif %}
+              {% if analyses_by_result.get(r.id) %}
+                <a href="{{ url_for('admin_arp_analysis_edit', analysis_id=analyses_by_result[r.id].id) }}">Análise ✓</a>
+              {% else %}
+                <form method="post" action="{{ url_for('admin_robo_contratos_result_analysis', scan_id=scan.id, result_id=r.id) }}" style="margin:0">
+                  <button type="submit" class="btn btn--ghost" style="padding:0.15rem 0.45rem;font-size:0.82rem">+ Análise</button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="robo-card" style="max-width:640px">
+    <p style="margin:0">Nenhum resultado nesta execução.</p>
+    <p class="meta" style="margin:0.5rem 0 0">Tente outro mês, palavra-chave mais ampla, outro CNPJ ou modo PNCP para descoberta rápida.</p>
+    <a class="btn btn--primary" href="{{ url_for('admin_robo_contratos') }}" style="margin-top:1rem">Nova busca</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

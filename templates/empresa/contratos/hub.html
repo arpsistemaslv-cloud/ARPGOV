@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Contratos — cadastros{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='contratos_empenhos') }}">← Contratos e Empenhos</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Contratos com órgãos</h1>
+    <p class="meta">Cadastro de <strong>contratos</strong> (vigência, valores). Em <a href="{{ url_for('empresa.compras_hub') }}">Compras</a>, vincule <strong>empenhos</strong> a um contrato ao editar o empenho.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.contratos_lista') }}"><strong>Lista de contratos</strong><span>{{ n_contratos }} registro(s)</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

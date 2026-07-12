@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title[:60] }}{% endblock %}
+{% block body %}
+<div class="page-shell">
+  <nav class="breadcrumb" aria-label="Navegação">
+    <a href="{{ url_for('home') }}">Início</a>
+    <span class="breadcrumb__sep">/</span>
+    <a href="{{ url_for('loja') }}">Atas</a>
+    <span class="breadcrumb__sep">/</span>
+    <span>{{ item.title[:48] }}{% if item.title|length > 48 %}…{% endif %}</span>
+  </nav>
+
+  <div class="produto-layout">
+    <div>
+      {% if item.image_paths %}
+      <div class="produto-gallery" id="produto-gallery" data-gallery-count="{{ item.image_paths|length }}">
+        <button type="button" class="produto-gallery-main" id="produto-gallery-main-btn" aria-label="Ampliar imagem do produto">
+          <img id="produto-gallery-main-img" src="{{ url_for('static', filename=item.image_paths[0]) }}" alt="{{ item.title }}">
+          {% if item.image_paths|length > 1 %}
+          <span class="produto-gallery__zoom-hint">Clique para ampliar</span>
+          {% endif %}
+        </button>
+        {% if item.image_paths|length > 1 %}
+        <div class="product-gallery" role="list" aria-label="Miniaturas do produto">
+          {% for path in item.image_paths %}
+          <button type="button" class="product-gallery__thumb{% if loop.first %} is-active{% endif %}" data-gallery-index="{{ loop.index0 }}" aria-label="Ver imagem {{ loop.index }} de {{ item.image_paths|length }}"{% if loop.first %} aria-current="true"{% endif %}>
+            <img src="{{ url_for('static', filename=path) }}" alt="" class="product-gallery__img" loading="lazy">
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="produto-lightbox" id="produto-lightbox" hidden aria-hidden="true">
+          <div class="produto-lightbox__backdrop" data-gallery-close></div>
+          <button type="button" class="produto-lightbox__close" data-gallery-close aria-label="Fechar galeria">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          {% if item.image_paths|length > 1 %}
+          <button type="button" class="produto-lightbox__nav produto-lightbox__nav--prev" data-gallery-prev aria-label="Imagem anterior">
+            <span aria-hidden="true">&#8249;</span>
+          </button>
+          <button type="button" class="produto-lightbox__nav produto-lightbox__nav--next" data-gallery-next aria-label="Próxima imagem">
+            <span aria-hidden="true">&#8250;</span>
+          </button>
+          <p class="produto-lightbox__counter" id="produto-lightbox-counter" aria-live="polite"></p>
+          {% endif %}
+          <div class="produto-lightbox__stage">
+            <img class="produto-lightbox__img" id="produto-lightbox-img" src="" alt="{{ item.title }}">
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="produto-gallery-main" style="display:flex;align-items:center;justify-content:center;min-height:240px;background:var(--gov-blue-10);color:var(--muted)">
+        Sem imagem cadastrada
+      </div>
+      {% endif %}
+    </div>
+
+    <article class="produto-panel">
+      <span class="pill">{{ item.section }}</span>
+      {% if item.category %}
+      <p class="meta" style="margin:0.35rem 0 0">{% if item.category.parent %}{{ item.category.parent.name }} › {{ item.category.name }}{% else %}{{ item.category.name }}{% endif %}</p>
+      {% endif %}
+      <h1>{{ item.title }}</h1>
+
+      <dl class="produto-specs">
+        <dt>Esfera</dt>
+        <dd>{{ item.sphere }}</dd>
+        {% if item.manufacturer %}
+        <dt>Fabricante</dt>
+        <dd>{{ item.manufacturer }}</dd>
+        {% endif %}
+        <dt>Quantidade na ata</dt>
+        <dd>{{ item.quantity }}</dd>
+        {% if item.valid_until %}
+        <dt>Validade</dt>
+        <dd>{{ item.valid_until.strftime('%d/%m/%Y') }}</dd>
+        {% endif %}
+        {% if item.warranty %}
+        <dt>Garantia</dt>
+        <dd>{{ item.warranty }}</dd>
+        {% endif %}
+        <dt>Valor unitário</dt>
+        <dd style="font-size:1.35rem;color:var(--gov-blue-70)">{{ item.unit_price|brl }}</dd>
+      </dl>
+
+      <p class="meta produto-cta-hint">Interessado em aderir a esta ata? Adicione à solicitação ou envie diretamente — nossa equipe orienta sobre documentação e prazos.</p>
+
+      <div class="produto-actions-wrap">
+        <div class="produto-actions">
+          {% if item.technical_description %}
+          <button type="button" class="btn btn--ghost btn--compact produto-tech-toggle" id="produto-tech-toggle" aria-expanded="false" aria-controls="produto-tech-panel" title="Ver descrição técnica">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Técnica
+            <svg class="btn-icon btn-icon--chevron produto-tech-toggle__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          {% endif %}
+          <a class="btn btn--primary btn--compact" href="{{ url_for('contato', produto=item.slug) }}" title="Solicitar adesão a esta ata">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>
+            Solicitar
+          </a>
+          <form method="post" action="{{ url_for('carrinho_adicionar', slug=item.slug) }}" class="produto-cart-form">
+            <label class="produto-cart-form__qty-label" for="produto-qty">Qtd. adesão</label>
+            <input id="produto-qty" class="produto-cart-form__qty" type="number" name="quantity" min="1" step="1" value="1">
+            <button type="submit" class="btn btn--ghost btn--compact" title="Adicionar à solicitação">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Adicionar
+            </button>
+          </form>
+          {% if session.client_id and client_cart_count %}
+          <a class="btn btn--ghost btn--compact" href="{{ url_for('carrinho') }}" title="Ver solicitação em andamento">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            Solicitação ({{ client_cart_count }})
+          </a>
+          {% endif %}
+          <a class="btn btn--ghost btn--compact" href="{{ url_for('loja') }}" title="Ver outras atas">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Outras atas
+          </a>
+        </div>
+        {% if item.technical_description %}
+        <div class="produto-tech-panel" id="produto-tech-panel" hidden>
+          <div class="produto-tech-panel__body">{{ item.technical_description }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </article>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{% if item.technical_description %}
+<script src="{{ url_for('static', filename='js/produto-specs.js') }}?v={{ gallery_js_v }}" defer></script>
+{% endif %}
+{% if item.image_paths %}
+<script type="application/json" id="produto-gallery-data">[
+{% for path in item.image_paths %}
+  {{ url_for('static', filename=path) | tojson }}{{ "," if not loop.last else "" }}
+{% endfor %}
+]</script>
+<script src="{{ url_for('static', filename='js/produto-gallery.js') }}?v={{ gallery_js_v }}" defer></script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Pendências — cadastros{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='pendencias') }}">← Pendências</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Pendências — mesa de controle</h1>
+    <p class="meta">Itens que travam processos, com <strong>setor de origem</strong> e <strong>responsável</strong>.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.pendencias_itens_list') }}"><strong>Lista de pendências</strong><span>{{ n_abertas }} não resolvida(s)</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

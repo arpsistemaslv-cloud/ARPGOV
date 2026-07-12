@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Catálogos e subcatálogos{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Catálogos e subcatálogos</h1>
+<p class="meta">Use na <strong>loja</strong> para filtros do cliente. Cada produto pode ser vinculado a um catálogo ou subcatálogo no cadastro do item.</p>
+<p style="display:flex;flex-wrap:wrap;gap:0.75rem">
+  <a class="btn btn--primary" href="{{ url_for('admin_category_new') }}">Novo catálogo principal</a>
+  <a class="btn btn--ghost" href="{{ url_for('admin_catalog_list') }}">Voltar aos produtos</a>
+</p>
+
+<div class="table-wrap" style="margin-top:1.25rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Slug (filtro na URL)</th>
+        <th>Ordem</th>
+        <th>Produtos</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if roots %}
+      {% for root in roots %}
+      <tr style="background:#fafbff">
+        <td><strong>{{ root.name }}</strong> <span class="meta">(catálogo)</span></td>
+        <td><code>{{ root.slug }}</code></td>
+        <td>{{ root.sort_order }}</td>
+        <td>{{ root.items.count() }}</td>
+        <td>
+          <a href="{{ url_for('admin_category_edit', cat_id=root.id) }}">Editar</a>
+          · <a href="{{ url_for('admin_category_new', parent=root.id) }}">+ Subcatálogo</a>
+          · <a href="{{ loja_url(categoria=root.slug) }}" target="_blank" rel="noopener">Ver filtro</a>
+          <form method="post" action="{{ url_for('admin_category_delete', cat_id=root.id) }}" style="display:inline;margin-left:0.35rem" onsubmit="return confirm('Excluir este catálogo? Só é permitido se não houver subcatálogos nem produtos.');">
+            <button type="submit" class="btn btn--danger" style="padding:0.15rem 0.45rem;font-size:0.8rem">Excluir</button>
+          </form>
+        </td>
+      </tr>
+      {% for ch in root.children %}
+      <tr>
+        <td style="padding-left:1.75rem">└ {{ ch.name }} <span class="meta">(subcatálogo)</span></td>
+        <td><code>{{ ch.slug }}</code></td>
+        <td>{{ ch.sort_order }}</td>
+        <td>{{ ch.items.count() }}</td>
+        <td>
+          <a href="{{ url_for('admin_category_edit', cat_id=ch.id) }}">Editar</a>
+          · <a href="{{ loja_url(categoria=ch.slug) }}" target="_blank" rel="noopener">Ver filtro</a>
+          <form method="post" action="{{ url_for('admin_category_delete', cat_id=ch.id) }}" style="display:inline;margin-left:0.35rem" onsubmit="return confirm('Excluir este subcatálogo?');">
+            <button type="submit" class="btn btn--danger" style="padding:0.15rem 0.45rem;font-size:0.8rem">Excluir</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+      {% else %}
+      <tr><td colspan="5" class="meta">Nenhuma categoria. Crie um <a href="{{ url_for('admin_category_new') }}">catálogo principal</a> e depois subcatálogos se quiser.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

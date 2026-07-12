@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if page %}Editar página{% else %}Nova página{% endif %}{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">{% if page %}Editar página{% else %}Nova página{% endif %}</h1>
+<form method="post" class="form-grid" style="max-width:720px;margin-top:1rem">
+  <div>
+    <label for="title">Título da página</label>
+    <input id="title" name="title" required value="{{ page.title if page else '' }}">
+  </div>
+  <div>
+    <label for="slug">Slug (URL)</label>
+    <input id="slug" name="slug" value="{{ page.slug if page else '' }}" placeholder="ex.: sobre-nos (fica /p/sobre-nos)">
+  </div>
+  <div>
+    <label for="nav_label">Texto no menu (opcional)</label>
+    <input id="nav_label" name="nav_label" value="{{ page.nav_label if page else '' }}" placeholder="Se vazio, usa o título">
+  </div>
+  <div>
+    <label for="sort_order">Ordem no menu (número menor = primeiro)</label>
+    <input id="sort_order" name="sort_order" type="number" value="{{ page.sort_order if page else 0 }}">
+  </div>
+  <div class="form-check-row">
+    <label><input type="checkbox" name="show_in_nav" value="1" {% if not page or page.show_in_nav %}checked{% endif %}> Mostrar no menu do site</label>
+  </div>
+  <div class="form-check-row">
+    <label><input type="checkbox" name="is_published" value="1" {% if not page or page.is_published %}checked{% endif %}> Publicada (visível no site)</label>
+  </div>
+  <div>
+    <label for="body_html">Conteúdo (HTML)</label>
+    <textarea id="body_html" name="body_html" rows="16" placeholder="&lt;p&gt;Parágrafos, &lt;h2&gt;, listas…&lt;/p&gt;">{{ page.body_html if page else '' }}</textarea>
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn--primary">Salvar</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin_page_list') }}">Voltar à lista</a>
+  </div>
+</form>
+{% endblock %}

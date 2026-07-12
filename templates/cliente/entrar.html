@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Entrar — área do cliente{% endblock %}
+{% block body %}
+<h1 style="margin-top:0">Área do cliente</h1>
+<p class="meta">Entre com o e-mail e a senha do seu cadastro para ver o andamento dos seus leads.</p>
+<form method="post" class="form-grid" style="max-width:360px;margin-top:1rem" action="{{ url_for('cliente_entrar', next=request.args.get('next')) if request.args.get('next') else url_for('cliente_entrar') }}">
+  <div>
+    <label for="email">E-mail</label>
+    <input id="email" name="email" type="email" required autocomplete="email" maxlength="120">
+  </div>
+  <div>
+    <label for="password">Senha</label>
+    <input id="password" name="password" type="password" required autocomplete="current-password">
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+    <button type="submit" class="btn btn--primary">Entrar</button>
+    <a class="btn btn--ghost" href="{{ url_for('cliente_cadastro', next=request.args.get('next')) if request.args.get('next') else url_for('cliente_cadastro') }}">Criar conta</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% set in_crm = request.path.startswith('/crm') %}
+{% set on_login = request.endpoint in ('admin_login', 'crm.crm_login') %}
+<header class="backoffice-topbar">
+  <div class="backoffice-topbar__inner">
+    <a href="{% if on_login %}{{ url_for('home') }}{% elif in_crm %}{{ url_for('crm.crm_dashboard') }}{% else %}{{ admin_home_url }}{% endif %}" class="backoffice-topbar__brand">
+      <img src="{{ url_for('static', filename='images/arpgov-mark.svg') }}" width="32" height="32" alt="">
+      <span>
+        <strong>ARPGOV</strong>
+        <small>{% if on_login %}Acesso da equipe{% elif in_crm %}CRM{% else %}Painel do site{% endif %}</small>
+      </span>
+    </a>
+    <div class="backoffice-topbar__actions">
+      <a href="{{ url_for('home') }}" class="backoffice-topbar__link" target="_blank" rel="noopener">Ver site público</a>
+      {% if session.admin_ok or session.crm_ok %}
+      <a href="{{ url_for('staff_logout') }}" class="btn btn--ghost backoffice-topbar__logout">Sair</a>
+      {% endif %}
+    </div>
+  </div>
+</header>

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Contrato {{ contrato.numero_contrato }} — intranet{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:720px">
+    <p class="meta"><a href="{{ url_for('empresa.contratos_lista') }}">← Contratos</a></p>
+    <header style="margin-bottom:1.25rem">
+      <p class="meta" style="margin:0">Contrato administrativo</p>
+      <h1 style="margin:0.35rem 0 0"><code>{{ contrato.numero_contrato }}</code></h1>
+      <p style="margin:0.5rem 0 0;font-size:1.05rem">{{ contrato.orgao_nome }}</p>
+      {% if contrato.cnpj_orgao %}<p class="meta" style="margin:0.25rem 0 0">CNPJ órgão: {{ contrato.cnpj_orgao }}</p>{% endif %}
+    </header>
+
+    <div style="display:grid;gap:1rem;grid-template-columns:1fr 1fr;margin-bottom:1.25rem">
+      <section style="padding:0.9rem 1rem;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--surface)">
+        <h2 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 0.5rem;color:var(--muted,#666)">Vigência e valores</h2>
+        <p style="margin:0"><strong>Status:</strong> {{ contrato.status }}</p>
+        <p style="margin:0.4rem 0 0" class="meta">
+          {% if contrato.vigencia_inicio %}{{ contrato.vigencia_inicio.strftime('%d/%m/%Y') }}{% else %}—{% endif %}
+          →
+          {% if contrato.vigencia_fim %}{{ contrato.vigencia_fim.strftime('%d/%m/%Y') }}{% else %}—{% endif %}
+        </p>
+        {% if contrato.valor_total is not none %}<p style="margin:0.4rem 0 0"><strong>Valor total:</strong> R$ {{ contrato.valor_total }}</p>{% endif %}
+        {% if contrato.saldo_referencia is not none %}<p style="margin:0.25rem 0 0" class="meta">Saldo referência: R$ {{ contrato.saldo_referencia }}</p>{% endif %}
+      </section>
+      <section style="padding:0.9rem 1rem;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--surface)">
+        <h2 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 0.5rem;color:var(--muted,#666)">Contato no órgão</h2>
+        {% if contrato.email_contato %}<p style="margin:0"><a href="mailto:{{ contrato.email_contato }}">{{ contrato.email_contato }}</a></p>{% else %}<p class="meta" style="margin:0">E-mail não informado.</p>{% endif %}
+        {% if contrato.telefone %}<p style="margin:0.35rem 0 0"><strong>Tel.:</strong> {{ contrato.telefone }}</p>{% endif %}
+      </section>
+    </div>
+
+    <section style="padding:0.9rem 1rem;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--surface);margin-bottom:1rem">
+      <h2 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 0.5rem;color:var(--muted,#666)">Cliente / tomador (cadastro)</h2>
+      {% if contrato.cliente_razao_social %}
+      <p style="margin:0;font-weight:600">{{ contrato.cliente_razao_social }}</p>
+      {% if contrato.cliente_cnpj %}<p class="meta" style="margin:0.25rem 0 0">CNPJ: {{ contrato.cliente_cnpj }}</p>{% endif %}
+      {% else %}
+      <p class="meta" style="margin:0">Razão social do cliente não informada — preencha na edição para documentação e propostas.</p>
+      {% endif %}
+    </section>
+
+    {% if contrato.observacoes %}
+    <section style="margin-bottom:1rem">
+      <h2 style="font-size:1rem;margin:0 0 0.35rem">Observações</h2>
+      <p style="white-space:pre-wrap;margin:0">{{ contrato.observacoes }}</p>
+    </section>
+    {% endif %}
+
+    <p style="margin-bottom:1rem">
+      <a class="btn btn--primary" href="{{ url_for('empresa.contratos_edit', cid=contrato.id) }}">Editar cadastro</a>
+    </p>
+
+    {% set contexto = 'contrato' %}
+    {% set ref_id = contrato.id %}
+    {% set next_url = url_for('empresa.contratos_detail', cid=contrato.id) %}
+    {% include "empresa/_anexos.html" %}
+  </div>
+</div>
+{% endblock %}

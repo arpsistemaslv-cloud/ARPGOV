@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Matriz imposto produto × UF{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:1100px">
+    <p class="meta"><a href="{{ url_for('empresa.imposto_hub') }}">← Impostos</a></p>
+    <h1 style="margin-top:0">Matriz produto × UF</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.imposto_matriz_new') }}">Novo</a></p>
+    <div class="table-wrap" style="overflow-x:auto;margin-top:1rem">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>UF</th>
+            <th>Alíquotas % (ICMS / IPI / PIS / COFINS)</th>
+            <th>Benefício</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for L in linhas %}
+          <tr>
+            <td>
+              {% if L.produto %}<code>{{ L.produto.part_number }}</code> — {{ L.produto.nome }}{% else %}#{{ L.produto_id }}{% endif %}
+            </td>
+            <td><strong>{{ L.uf }}</strong></td>
+            <td class="meta">{{ L.aliquota_icms }} / {{ L.aliquota_ipi }} / {{ L.aliquota_pis }} / {{ L.aliquota_cofins }}</td>
+            <td class="meta" style="max-width:280px">{% if L.beneficio_fiscal %}{{ L.beneficio_fiscal[:120] }}{% if L.beneficio_fiscal|length > 120 %}…{% endif %}{% else %}—{% endif %}</td>
+            <td><a href="{{ url_for('empresa.imposto_matriz_edit', iid=L.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhum registro. Cadastre combinações produto + UF usadas nas entregas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

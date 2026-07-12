@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+{% from "macros/catalog_product_fields.html" import sphere_select, partner_owner_select %}
+{% block title %}{% if item %}Editar produto{% else %}Novo produto{% endif %}{% if crm_mode %} — CRM{% endif %}{% endblock %}
+{% block body %}
+{% if crm_mode %}
+<div class="crm-shell"><div class="crm-shell__inner">
+{% include "crm/_subnav.html" %}
+{% else %}
+{% include "admin/_subnav.html" %}
+{% endif %}
+
+<div class="product-form-page">
+  <header class="product-form-page__header">
+    <h1>{% if item %}Editar produto{% else %}Novo produto{% endif %}</h1>
+    <p class="product-form-page__lead">Cadastre ou atualize um item de ATA no catálogo. A <strong>seção</strong> define onde aparece na home: use <em>ATA de veículos</em> para o bloco de veículos; os demais entram em “ATA em destaque”.</p>
+  </header>
+
+  <form method="post" class="product-form" enctype="multipart/form-data">
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Identificação</h2>
+        <p>Dados principais exibidos na loja e na listagem.</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__grid product-form__grid--2">
+          <div class="product-form__field product-form__span-2">
+            <label for="title">Título *</label>
+            <input id="title" name="title" required value="{{ item.title if item else '' }}" placeholder="Nome do produto ou serviço na ata">
+          </div>
+          <div class="product-form__field">
+            <label for="section">Seção *</label>
+            <input id="section" name="section" required value="{{ item.section if item else 'ATA em destaque' }}" list="section-list">
+            <datalist id="section-list">
+              {% for s in section_suggestions %}
+              <option value="{{ s }}">
+              {% endfor %}
+            </datalist>
+          </div>
+          <div class="product-form__field">
+            <label for="slug">URL amigável (slug)</label>
+            <input id="slug" name="slug" placeholder="Gerado automaticamente se vazio" value="{{ item.slug if item else '' }}">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Classificação</h2>
+        <p>Esfera, catálogo, fabricante e vínculo com o parceiro registrante.</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__grid product-form__grid--2">
+          <div class="product-form__field">
+            {{ sphere_select('sphere', item.sphere if item else '', true, catalog_sphere_choices) }}
+          </div>
+          <div class="product-form__field">
+            <label for="category_id">Catálogo / subcatálogo</label>
+            <select id="category_id" name="category_id">
+              <option value="">— Nenhum —</option>
+              {% for root in category_roots %}
+              <option value="{{ root.id }}" {% if item and item.category_id == root.id %}selected{% endif %}>{{ root.name }} (catálogo)</option>
+              {% for ch in root.children %}
+              <option value="{{ ch.id }}" {% if item and item.category_id == ch.id %}selected{% endif %}>└ {{ ch.name }}</option>
+              {% endfor %}
+              {% endfor %}
+            </select>
+            <p class="field-hint">Filtro na loja. Gerencie em <a href="{{ url_for('admin_category_list') }}">Catálogos</a>.</p>
+          </div>
+          <div class="product-form__field">
+            <label for="manufacturer">Fabricante</label>
+            <input id="manufacturer" name="manufacturer" maxlength="200" list="manufacturer-list" placeholder="Ex.: Dell, HP, Volkswagen…" value="{{ item.manufacturer if item and item.manufacturer else '' }}">
+            <datalist id="manufacturer-list">
+              {% for m in manufacturer_suggestions %}
+              <option value="{{ m }}">
+              {% endfor %}
+            </datalist>
+            <p class="field-hint">Aparece no site público e pode ser usado como filtro na loja.</p>
+          </div>
+          <div class="product-form__field product-form__span-2">
+            {{ partner_owner_select('partner_id', selected_partner_id, false, catalog_partners) }}
+            {% if item and item.ata_owner_company and not selected_partner_id %}
+            <p class="field-hint">Valor atual (sem parceiro vinculado): <strong>{{ item.ata_owner_company }}</strong></p>
+            <input type="hidden" name="ata_owner_company" value="{{ item.ata_owner_company }}">
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Origem da ATA (PNCP)</h2>
+        <p>Links para identificar a cópia da ARP e conferir a contratação original.</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__grid product-form__grid--2">
+          <div class="product-form__field product-form__span-2">
+            <label for="pncp_url">Link do PNCP</label>
+            <input id="pncp_url" name="pncp_url" type="url" maxlength="700" placeholder="https://pncp.gov.br/app/atas/..." value="{{ item.pncp_url if item and item.pncp_url else '' }}">
+            <p class="field-hint">Página da ata/compra no Portal Nacional de Contratações Públicas.</p>
+          </div>
+          <div class="product-form__field product-form__span-2">
+            <label for="contract_page_url">Link da página de contratação</label>
+            <input id="contract_page_url" name="contract_page_url" type="url" maxlength="700" placeholder="https://..." value="{{ item.contract_page_url if item and item.contract_page_url else '' }}">
+            <p class="field-hint">Página da contratação/processo de origem da ARP — facilita identificar a cópia da ata.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Valores e vigência</h2>
+        <p>Quantidades, preço e validade da ata.</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__grid product-form__grid--2">
+          <div class="product-form__field">
+            <label for="quantity">Quantidade na ata</label>
+            <input id="quantity" name="quantity" type="number" min="1" value="{{ item.quantity if item else 1 }}">
+          </div>
+          <div class="product-form__field">
+            <label for="stock_on_hand">Estoque disponível</label>
+            <input id="stock_on_hand" name="stock_on_hand" type="number" min="0" step="1" value="{{ item.stock_on_hand if item else 0 }}">
+            <p class="field-hint">Referência interna opcional.</p>
+          </div>
+          <div class="product-form__field">
+            <label for="warranty">Garantia (licitação)</label>
+            <input id="warranty" name="warranty" maxlength="300" placeholder="Ex.: 36 meses on-site conforme edital" value="{{ item.warranty if item and item.warranty else '' }}">
+            <p class="field-hint">Garantia contratada na ata — exibida no site acima do preço.</p>
+          </div>
+          <div class="product-form__field">
+            <label for="unit_price">Preço unitário (R$) *</label>
+            <input id="unit_price" name="unit_price" type="text" required placeholder="0,00 ou 10.773,00" inputmode="decimal" autocomplete="off" value="{{ unit_price_display }}">
+            <p class="field-hint">Ex.: <code>10.773,00</code> ou <code>1234,56</code>.</p>
+          </div>
+          <div class="product-form__field">
+            <label for="valid_until">Validade da ata</label>
+            <input id="valid_until" name="valid_until" type="date" value="{{ item.valid_until.strftime('%Y-%m-%d') if item and item.valid_until else '' }}">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Descrição técnica</h2>
+        <p>Especificações exibidas no site em painel recolhível (o visitante expande se quiser ver).</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__field">
+          <label for="technical_description">Especificações técnicas</label>
+          <textarea id="technical_description" name="technical_description" rows="10" placeholder="Processador, memória, armazenamento, conectividade, certificações…">{{ item.technical_description if item and item.technical_description else '' }}</textarea>
+          <p class="field-hint">Uma linha por item ou blocos de texto. Aparece na página do produto com botão + / −.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Imagens</h2>
+        <p>Fotos exibidas na página do produto e na loja.</p>
+      </header>
+      <div class="product-form__card-body product-form__upload">
+        <div class="product-form__field product-form__span-2">
+          <label for="source_product_url">Link do produto no site do fabricante</label>
+          <div class="product-form__import-url-row">
+            <input id="source_product_url" name="source_product_url" type="url" placeholder="https://www.fabricante.com.br/produto/..." value="{{ item.source_product_url if item and item.source_product_url else '' }}">
+            <button type="button" class="btn btn--ghost" id="btn-import-url-images">Buscar imagens</button>
+          </div>
+          <p class="field-hint">Cole a página do produto no site do fabricante. O sistema baixa as fotos e você escolhe quais usar ao salvar.</p>
+        </div>
+        <div id="import-url-status" class="field-hint" aria-live="polite"></div>
+        <div id="import-url-gallery" class="import-url-gallery" hidden>
+          <p class="field-hint" style="margin:0 0 0.5rem"><strong>Selecione as imagens</strong> que deseja incluir no produto:</p>
+          <div id="import-url-grid" class="import-url-gallery__grid"></div>
+        </div>
+        <div class="product-form__suggest-row">
+          <button type="button" class="btn btn--ghost" id="btn-suggest-image" title="{% if suggest_image_available %}Pexels (grátis) e, se configurado, OpenAI (pago){% else %}Defina PEXELS_API_KEY no .env (OpenAI é opcional){% endif %}">Sugerir imagem (web / IA)</button>
+          {% if suggest_image_available %}
+          <span class="field-hint" style="margin:0">Ativo: <strong>{{ suggest_image_sources_hint or 'API configurada' }}</strong></span>
+          {% endif %}
+        </div>
+        {% if suggest_image_available %}
+        <p class="field-hint">Preencha o título, clique em sugerir e depois salve o formulário.</p>
+        {% else %}
+        <p class="field-hint">Defina <code>PEXELS_API_KEY</code> no <code>.env</code> para sugestão automática de imagens.</p>
+        {% endif %}
+        <div id="suggest-preview" class="field-hint" aria-live="polite"></div>
+        <div class="product-form__upload-zone">
+          <input id="images" name="images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+          <span>PNG, JPG, WebP ou GIF — até 20 imagens no total</span>
+        </div>
+        {% if item and item.image_paths %}
+        <div class="product-form__field">
+          <label>Imagens atuais</label>
+          <p class="field-hint">Marque <strong>remover</strong> para apagar ao salvar.</p>
+          <div class="admin-catalog-thumbs" style="margin-top:0.5rem">
+            {% for path in item.image_paths %}
+            <div class="admin-catalog-thumbs__item">
+              <img src="{{ url_for('static', filename=path) }}" alt="" width="120" height="120" loading="lazy">
+              <label class="admin-catalog-thumbs__remove"><input type="checkbox" name="remove_image" value="{{ path }}"> Remover</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Anexos do catálogo</h2>
+        <p>Documentos do produto — não aparecem no site público.</p>
+      </header>
+      <div class="product-form__card-body product-form__upload">
+        <div class="product-form__upload-zone">
+          <input id="catalog_attachments" name="catalog_attachments" type="file" accept=".pdf,.doc,.docx,application/pdf" multiple>
+          <span>PDF ou DOC — até 8 arquivos, 15 MB cada</span>
+        </div>
+        {% if item and item.catalog_attachment_paths %}
+        <div class="product-form__field">
+          <label>Arquivos atuais</label>
+          <ul class="product-form__file-list">
+            {% for p in item.catalog_attachment_paths %}
+            <li>
+              <a href="{{ url_for('static', filename=p) }}" target="_blank" rel="noopener">{{ p.split('/')[-1] }}</a>
+              <label><input type="checkbox" name="remove_catalog_attachment" value="{{ p }}"> remover</label>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Documentos da empresa (admin)</h2>
+        <p>Cópias da empresa registrante — visíveis somente no painel administrativo.</p>
+      </header>
+      <div class="product-form__card-body product-form__upload">
+        <div class="product-form__upload-zone">
+          <input id="ata_company_docs" name="ata_company_docs" type="file" accept=".pdf,.doc,.docx,application/pdf" multiple>
+          <span>PDF ou DOC — até 12 arquivos, 15 MB cada</span>
+        </div>
+        {% if item and item.ata_company_doc_paths %}
+        <div class="product-form__field">
+          <label>Documentos atuais</label>
+          <ul class="product-form__file-list">
+            {% for p in item.ata_company_doc_paths %}
+            <li>
+              <a href="{{ url_for('static', filename=p) }}" target="_blank" rel="noopener">{{ p.split('/')[-1] }}</a>
+              <label><input type="checkbox" name="remove_ata_company_doc" value="{{ p }}"> remover</label>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <div class="product-form__field">
+      <label class="product-form__check">
+        <input type="checkbox" name="highlight" value="1" {% if item and item.highlight %}checked{% endif %}>
+        <span>Destacar na listagem (aparece antes dos demais na mesma seção)</span>
+      </label>
+    </div>
+
+    <footer class="product-form__actions product-form__actions--sticky">
+      <button type="submit" class="btn btn--primary">Salvar produto</button>
+      {% if crm_mode %}
+      <a class="btn btn--ghost" href="{{ url_for('crm.crm_products_list') }}">Voltar à lista</a>
+      {% else %}
+      <a class="btn btn--ghost" href="{{ url_for('admin_catalog_list') }}">Voltar à lista</a>
+      {% endif %}
+    </footer>
+  </form>
+
+  {% if item and not crm_mode %}
+  <div class="product-form__danger-zone">
+    <p>Remover este produto do catálogo público. Esta ação não pode ser desfeita.</p>
+    <form method="post" action="{{ url_for('admin_catalog_delete', item_id=item.id) }}" onsubmit="return confirm('Remover este produto do site?');">
+      <button type="submit" class="btn btn--danger">Excluir produto</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var suggestConfigured = {{ suggest_image_available | tojson }};
+  var apiUrl = {{ url_for('admin_catalog_suggest_image') | tojson }};
+  var btn = document.getElementById('btn-suggest-image');
+  var titleEl = document.getElementById('title');
+  var preview = document.getElementById('suggest-preview');
+  var form = btn && btn.closest('form');
+  if (!btn || !form || !titleEl || !preview) return;
+  btn.addEventListener('click', function () {
+    if (!suggestConfigured) {
+      alert('Nenhuma chave ativa. No .env defina PEXELS_API_KEY (grátis). OpenAI (sk-…) é opcional e pago — não é obrigatório. Salve o .env, recarregue a página ou reinicie o servidor.');
+      return;
+    }
+    var title = (titleEl.value || '').trim();
+    if (title.length < 3) {
+      alert('Preencha o título do produto (mínimo 3 caracteres) antes de sugerir a imagem.');
+      return;
+    }
+    form.querySelectorAll('input[name="prefetch_image"][data-prefetch-suggest="1"]').forEach(function (n) { n.remove(); });
+    btn.disabled = true;
+    preview.textContent = 'Aguarde… isso pode levar até um minuto.';
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ title: title })
+    })
+      .then(function (r) {
+        if (r.redirected && r.url && /\/admin\/login/i.test(r.url)) {
+          return Promise.reject({ _needLogin: true });
+        }
+        var ct = (r.headers.get('content-type') || '').toLowerCase();
+        if (ct.indexOf('application/json') === -1) {
+          return r.text().then(function (t) {
+            return Promise.reject({ _badCt: true, snippet: (t || '').slice(0, 280) });
+          });
+        }
+        return r.json();
+      })
+      .then(function (data) {
+        btn.disabled = false;
+        if (!data || !data.ok) {
+          preview.textContent = '';
+          alert((data && data.error) ? data.error : 'Não foi possível obter imagem.');
+          return;
+        }
+        var path = data.path;
+        var inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'prefetch_image';
+        inp.value = path;
+        inp.setAttribute('data-prefetch-suggest', '1');
+        form.appendChild(inp);
+        var src = '/static/' + path.replace(/^\/+/, '');
+        preview.innerHTML = '<img src="' + src + '" alt="" width="140" height="140"> Incluída ao salvar. Origem: ' + (data.source || '') + '.';
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        preview.textContent = '';
+        if (err && err._needLogin) {
+          alert('Você não está logado no painel ou a sessão expirou. Recarregue a página (F5), faça login em Admin e tente de novo. Use sempre o mesmo endereço (ex.: só 127.0.0.1 ou só localhost).');
+          return;
+        }
+        if (err && err._badCt) {
+          alert('Resposta inesperada do servidor (não é JSON). Se não estiver logado, faça login no painel. Trecho: ' + (err.snippet || '(vazio)'));
+          return;
+        }
+        alert('Erro de rede ao solicitar imagem. Verifique a conexão.');
+      });
+  });
+})();
+</script>
+<script>
+(function () {
+  var importApiUrl = {{ url_for('admin_catalog_import_images_from_url') | tojson }};
+  var btn = document.getElementById('btn-import-url-images');
+  var urlEl = document.getElementById('source_product_url');
+  var statusEl = document.getElementById('import-url-status');
+  var gallery = document.getElementById('import-url-gallery');
+  var grid = document.getElementById('import-url-grid');
+  var form = document.querySelector('form.product-form');
+  if (!btn || !urlEl || !form || !grid || !gallery) return;
+
+  function setPrefetch(path, on) {
+    var sel = 'input[name="prefetch_image"][data-import-path="' + path.replace(/"/g, '\\"') + '"]';
+    var existing = form.querySelector(sel);
+    if (on && !existing) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'prefetch_image';
+      inp.value = path;
+      inp.setAttribute('data-import-path', path);
+      form.appendChild(inp);
+    } else if (!on && existing) {
+      existing.remove();
+    }
+  }
+
+  btn.addEventListener('click', function () {
+    var url = (urlEl.value || '').trim();
+    if (!url) {
+      alert('Cole o link da página do produto no site do fabricante.');
+      return;
+    }
+    btn.disabled = true;
+    if (statusEl) statusEl.textContent = 'Buscando imagens na página… isso pode levar alguns segundos.';
+    gallery.hidden = true;
+    grid.innerHTML = '';
+    form.querySelectorAll('input[name="prefetch_image"][data-import-path]').forEach(function (n) { n.remove(); });
+
+    fetch(importApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ url: url })
+    })
+      .then(function (r) {
+        var ct = (r.headers.get('content-type') || '').toLowerCase();
+        if (ct.indexOf('application/json') === -1) {
+          return r.text().then(function (t) {
+            return Promise.reject({ msg: 'Resposta inesperada do servidor.' });
+          });
+        }
+        return r.json();
+      })
+      .then(function (data) {
+        btn.disabled = false;
+        if (!data || !data.ok) {
+          if (statusEl) statusEl.textContent = '';
+          alert((data && data.error) ? data.error : 'Não foi possível buscar imagens.');
+          return;
+        }
+        var images = data.images || [];
+        if (!images.length) {
+          if (statusEl) statusEl.textContent = '';
+          alert('Nenhuma imagem utilizável encontrada.');
+          return;
+        }
+        if (statusEl) statusEl.textContent = images.length + ' imagem(ns) encontrada(s). Marque as que deseja usar e clique em Salvar.';
+        gallery.hidden = false;
+        images.forEach(function (img) {
+          var label = document.createElement('label');
+          label.className = 'import-url-gallery__item';
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = img.path;
+          var thumb = document.createElement('img');
+          thumb.src = img.preview || ('/static/' + img.path);
+          thumb.alt = '';
+          thumb.loading = 'lazy';
+          label.appendChild(cb);
+          label.appendChild(thumb);
+          cb.addEventListener('change', function () {
+            label.classList.toggle('import-url-gallery__item--selected', cb.checked);
+            setPrefetch(img.path, cb.checked);
+          });
+          grid.appendChild(label);
+        });
+      })
+      .catch(function () {
+        btn.disabled = false;
+        if (statusEl) statusEl.textContent = '';
+        alert('Erro de rede ao buscar imagens. Verifique o link e tente de novo.');
+      });
+  });
+})();
+</script>
+
+{% if crm_mode %}
+</div></div>
+{% endif %}
+{% endblock %}

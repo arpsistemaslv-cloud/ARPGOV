@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+{% from "macros/robo_field.html" import robo_label, robo_option_tip %}
+{% block title %}Robô de Atas — ARPGOV{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+
+<div class="robo-page">
+  <h1 style="margin-top:0">Robô de atas — busca PNCP</h1>
+  <p class="robo-page__intro">
+    A busca principal é no <strong>PNCP</strong> (portal /app/atas). Configure período e filtros abaixo e clique em
+    <strong>Buscar no PNCP</strong>. Contratos.gov.br e híbrido ficam disponíveis como opções extras.
+  </p>
+
+  <div class="robo-page__layout">
+    <form method="post" id="robo_form" class="robo-page__form">
+      <div class="robo-card robo-stage robo-stage--primary" id="pncp_opts" data-source="pncp">
+        <div class="robo-stage__head">
+          <h2 class="robo-card__title" style="margin:0">1 · Busca no PNCP</h2>
+          <span class="robo-stage__badge robo-stage__badge--primary">Principal · API pncp.gov.br/app/atas</span>
+        </div>
+        <p class="robo-stage__desc meta">Período + filtros do portal. Usa <strong>somente</strong> a API PNCP — não abre o Contratos.gov.br.</p>
+
+        <div class="robo-fields robo-fields--2 robo-stage__period">
+          <div class="robo-field">
+            {{ robo_label('year', 'Ano', 'Atas com vigência no intervalo (API consulta/v1/atas).', true) }}
+            <input type="number" id="year" name="year" value="2026" min="2000" max="2100" required>
+          </div>
+          <div class="robo-field">
+            {{ robo_label('month', 'Mês', 'Ano inteiro = mais resultados. Um mês acelera testes.') }}
+            <select id="month" name="month">
+              <option value="0">Ano inteiro</option>
+              {% for m, label in [(1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),(5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),(9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro')] %}
+              <option value="{{ m }}"{% if m == 6 %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="robo-field" style="grid-column:1/-1">
+            {{ robo_label('keyword', 'Termo de busca (opcional)', 'Filtra objeto, órgão e unidade — equivalente ao q do portal PNCP.') }}
+            <input type="text" id="keyword" name="keyword" maxlength="120" placeholder="Digite um termo para pesquisar" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="pncp-portal-search">
+          <fieldset class="pncp-portal-vigencia">
+            <legend class="robo-label__text" style="margin-bottom:0.35rem">Situação da ata <span class="meta">(campo vigenciaInicio/Fim)</span></legend>
+            <label class="robo-check"><input type="radio" name="pncp_vigencia_status" value="vigente" checked><span>Vigentes</span></label>
+            <label class="robo-check"><input type="radio" name="pncp_vigencia_status" value="nao_vigente"><span>Não vigentes</span></label>
+            <label class="robo-check"><input type="radio" name="pncp_vigencia_status" value="todos"><span>Todos</span></label>
+          </fieldset>
+        </div>
+
+        <div class="pncp-portal-filters">
+          <div class="pncp-portal-filters__head">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 5h18v2H3V5zm3 6h12v2H6v-2zm3 6h6v2H9v-2z"/></svg>
+            <span>FILTROS</span>
+            {{ robo_option_tip('Somente o que a API GET /consulta/v1/atas aceita ou o que vem no JSON de cada ata. Sem campos inventados.') }}
+          </div>
+
+          <p class="pncp-filter-section-label">Enviados à API <span class="meta">(parâmetros oficiais)</span></p>
+          <div class="pncp-portal-filters__grid">
+            <div class="robo-field">
+              {{ robo_label('orgao_cnpj', 'Órgão gerenciador', 'Parâmetro cnpj na API. Reduz volume antes da varredura — use quando souber o órgão.') }}
+              <select id="orgao_cnpj" name="orgao_cnpj">
+                <option value="">Todos (sem filtro na API)</option>
+                {% for cnpj, nome in pncp_orgaos %}
+                <option value="{{ cnpj }}">{{ nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="robo-field">
+              {{ robo_label('pncp_codigo_unidade', 'Unidade administrativa', 'Parâmetro codigoUnidadeAdministrativa. Só aparece após escolher o órgão.') }}
+              <select id="pncp_codigo_unidade" name="pncp_codigo_unidade">
+                <option value="">Todas</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="pncp-filter-section-label">Filtrados nos resultados <span class="meta">(campos de cada ata retornada)</span></p>
+          <div class="pncp-portal-filters__grid">
+            <div class="robo-field">
+              {{ robo_label('pncp_permite_adesao', 'Permite adesão', 'Campo possibilidadeAdesao (true/false) no JSON da ata.') }}
+              <select id="pncp_permite_adesao" name="pncp_permite_adesao">
+                <option value="sim" selected>Sim</option>
+                <option value="nao">Não</option>
+                <option value="todos">Todos</option>
+              </select>
+            </div>
+            <div class="robo-field">
+              {{ robo_label('pncp_ano_ata', 'Ano da ata', 'Campo anoAta no JSON retornado.') }}
+              <input type="number" id="pncp_ano_ata" name="pncp_ano_ata" min="2000" max="2100" placeholder="Qualquer" style="max-width:120px">
+            </div>
+          </div>
+
+          <details class="pncp-filter-org"{% if pncp_org_sync_count %} open{% endif %}>
+            <summary>Filtros por cadastro do órgão <span class="meta">(cache local — mais lento se cache vazio)</span></summary>
+            <p class="meta" style="margin:0.5rem 0 0.75rem;font-size:0.82rem">
+              A API de atas <strong>não</strong> filtra UF/esfera. Usamos o cache de órgãos
+              {% if pncp_org_sync_count %}({{ pncp_org_sync_count }} órgãos){% else %}— <a href="{{ url_for('admin_sync_pncp_orgaos') }}">sincronize primeiro</a>{% endif %}.
+            </p>
+            <div class="pncp-portal-filters__grid">
+              <div class="robo-field">
+                {{ robo_label('pncp_esfera', 'Esfera', 'esferaId do cadastro PNCP do órgão (F/E/M/D).') }}
+                <select id="pncp_esfera" name="pncp_esfera">
+                  <option value="">Todas</option>
+                  {% for eid, ename in pncp_esferas %}
+                  <option value="{{ eid }}">{{ ename }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="robo-field">
+                {{ robo_label('pncp_poder', 'Poder', 'poderId do cadastro PNCP (E/L/J).') }}
+                <select id="pncp_poder" name="pncp_poder">
+                  <option value="">Todos</option>
+                  {% for pid, pname in pncp_poderes %}
+                  <option value="{{ pid }}">{{ pname }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="robo-field">
+                {{ robo_label('pncp_uf', 'UF', 'UF da unidade no cache local (contratos importados).') }}
+                <select id="pncp_uf" name="pncp_uf">
+                  <option value="">Todas</option>
+                  {% for sigla, nome in br_ufs|default([]) %}
+                  <option value="{{ sigla }}">{{ sigla }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="robo-field">
+                {{ robo_label('pncp_municipio_ibge', 'Município (IBGE)', 'Código IBGE da unidade no cache local.') }}
+                <select id="pncp_municipio_ibge" name="pncp_municipio_ibge">
+                  <option value="">Todos</option>
+                </select>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <details class="pncp-portal-advanced" style="margin-top:0.85rem">
+          <summary>Tipo de consulta na API</summary>
+          <div class="robo-fields" style="margin-top:0.75rem">
+            <div class="robo-checks" style="flex-direction:row;flex-wrap:wrap;gap:1rem">
+              <label class="robo-check">
+                <input type="radio" name="pncp_query_mode" value="vigencia" checked>
+                <span>GET /v1/atas — vigência no período</span>
+              </label>
+              <label class="robo-check">
+                <input type="radio" name="pncp_query_mode" value="atualizacao">
+                <span>GET /v1/atas/atualizacao — alterações no período</span>
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <div class="robo-stage__limits">
+          <label class="robo-check" style="margin-right:1rem">
+            <input type="checkbox" name="full_scan_pncp" value="1" id="full_scan_pncp">
+            <span>Varredura completa PNCP</span>
+          </label>
+          <div class="robo-field robo-field--inline">
+            {{ robo_label('max_pncp_pages', 'Páginas PNCP', 'Até 50 atas por página na API.') }}
+            <input type="number" id="max_pncp_pages" name="max_pncp_pages" value="10" min="1" max="500">
+          </div>
+        </div>
+        <div class="robo-stage__actions robo-stage__actions--primary">
+          <button type="submit" name="scan_action" value="pncp" class="btn btn--primary btn--pncp-main">
+            Buscar no PNCP
+          </button>
+          <a id="pncp_portal_link" class="btn btn--ghost" href="{{ pncp_portal_url or 'https://pncp.gov.br/app/atas' }}" target="_blank" rel="noopener">Abrir no portal ↗</a>
+        </div>
+      </div>
+
+      <details class="robo-more-stages">
+        <summary>Outras buscas — Contratos.gov.br e híbrido</summary>
+
+      <div class="robo-card robo-stage robo-stage--secondary" id="contratos_opts" data-source="contratos">
+        <div class="robo-stage__head">
+          <h2 class="robo-card__title" style="margin:0">2 · Busca no Contratos.gov.br</h2>
+          <span class="robo-stage__badge robo-stage__badge--cgov">Portal · contratos.sistema.gov.br</span>
+        </div>
+        <p class="robo-stage__desc meta">Usa <strong>somente</strong> os filtros abaixo + período + termo. Confirma adesão <em>item a item</em> no HTML público.</p>
+        <div class="robo-fields">
+          <div class="robo-field">
+            {{ robo_label('supplier_cnpj', 'CNPJ do fornecedor', 'Empresa homologada na ata (cnpjFornecedor). Quando preenchido, desativa o PNCP — a API não filtra fornecedor.') }}
+            <input type="text" id="supplier_cnpj" name="supplier_cnpj" maxlength="22" placeholder="00.000.000/0001-00" inputmode="numeric" autocomplete="off">
+          </div>
+        </div>
+        <div class="robo-checks" style="margin-top:0.75rem">
+          <label class="robo-check">
+            <input type="checkbox" name="include_vigente" value="1" checked>
+            <span>Ata vigente {{ robo_option_tip('Situação vigente na listagem do Contratos.gov.br.') }}</span>
+          </label>
+          <label class="robo-check">
+            <input type="checkbox" name="include_nao_vigente" value="1" checked>
+            <span>Ata não vigente</span>
+          </label>
+          <label class="robo-check">
+            <input type="checkbox" name="enrich_suppliers" value="1" checked id="enrich_suppliers">
+            <span>Detalhar fornecedor e valor por item {{ robo_option_tip('Abre página de cada item com adesão. Obrigatório com CNPJ de fornecedor.') }}</span>
+          </label>
+        </div>
+        <div class="robo-stage__limits">
+          <label class="robo-check" style="margin-right:1rem">
+            <input type="checkbox" name="full_scan_contratos" value="1" id="full_scan_contratos">
+            <span>Varredura completa Contratos</span>
+          </label>
+          <div class="robo-field robo-field--inline">
+            {{ robo_label('max_list_pages', 'Páginas listagem', '10 atas por página.') }}
+            <input type="number" id="max_list_pages" name="max_list_pages" value="20" min="1" max="500">
+          </div>
+          <div class="robo-field robo-field--inline">
+            {{ robo_label('max_detail_checks', 'Atas a abrir', 'Uma requisição por ata.') }}
+            <input type="number" id="max_detail_checks" name="max_detail_checks" value="150" min="1" max="5000">
+          </div>
+        </div>
+        <div class="robo-stage__actions">
+          <button type="submit" name="scan_action" value="contratos" class="btn btn--primary">
+            Buscar no Contratos.gov.br
+          </button>
+          <a class="btn btn--ghost" href="https://contratos.sistema.gov.br/transparencia/arp" target="_blank" rel="noopener">Abrir portal ↗</a>
+        </div>
+      </div>
+
+      <div class="robo-card robo-stage robo-stage--secondary robo-stage--hybrid" id="hybrid_opts" data-source="hibrido">
+        <div class="robo-stage__head">
+          <h2 class="robo-card__title" style="margin:0">3 · Busca híbrida (PNCP + Contratos)</h2>
+          <span class="robo-stage__badge robo-stage__badge--hybrid">Opcional</span>
+        </div>
+        <p class="robo-stage__desc meta">
+          Usa o período e filtros PNCP da <strong>seção 1</strong> + filtros Contratos abaixo.
+        </p>
+        <ul class="robo-stage__flow meta">
+          <li>PNCP → possibilidadeAdesao + filtros do portal</li>
+          <li>Contratos → itens com “Aceita adesão = Sim” + CNPJ fornecedor</li>
+          <li>Se houver CNPJ de fornecedor, pula o PNCP (API não filtra fornecedor)</li>
+        </ul>
+        <label class="robo-check" style="margin:0.75rem 0">
+          <input type="checkbox" name="full_scan" value="1" id="full_scan">
+          <span><strong>Varredura completa</strong> {{ robo_option_tip('Aumenta limites de PNCP e Contratos ao máximo.') }}</span>
+        </label>
+        <div class="robo-stage__actions">
+          <button type="submit" name="scan_action" value="hibrido" class="btn btn--primary btn--hybrid">
+            Executar busca híbrida
+          </button>
+          <a class="btn btn--ghost" href="{{ url_for('admin_import_pncp') }}">Importar PNCP (catálogo)</a>
+        </div>
+      </div>
+      </details>
+    </form>
+
+    <aside class="robo-page__aside">
+      <div class="robo-card">
+        <div class="robo-aside__block">
+          <h3>Busca principal (PNCP)</h3>
+          <ul>
+            <li>Filtros iguais ao portal /app/atas</li>
+            <li><strong>Permite Adesão = Sim</strong> → possibilidadeAdesao na API</li>
+            <li><strong>Esfera / UF</strong> → cache local + cadastro do órgão</li>
+          </ul>
+          <p class="meta" style="margin-top:0.5rem">API: <code>GET /consulta/v1/atas</code> · Esfera/UF usam cache local.</p>
+        </div>
+        <div class="robo-aside__block">
+          <h3>Outras buscas</h3>
+          <ul>
+            <li><strong>Contratos</strong> — confirma adesão por item</li>
+            <li><strong>Híbrido</strong> — PNCP + Contratos em sequência</li>
+          </ul>
+        </div>
+        <div class="robo-aside__block">
+          <h3>Consulta incremental</h3>
+          <p>Use <em>Atualizações no período</em> para monitorar só atas novas/alteradas — recomendado pelo <a href="https://www.gov.br/pncp/pt-br/central-de-conteudo/comunicados/2025/no-01-2025-implantacao-da-consulta-as-atas-de-registro-de-precos-por-data-de-atualizacao-no-pncp" target="_blank" rel="noopener">PNCP</a> para robôs.</p>
+        </div>
+        <div class="robo-aside__block robo-aside__links">
+          <h3>Links</h3>
+          <a href="https://pncp.gov.br/app/atas" target="_blank" rel="noopener">Portal — Atas (ARP)</a>
+          <a href="https://pncp.gov.br/api/consulta/swagger-ui/index.html" target="_blank" rel="noopener">API Consulta (Swagger)</a>
+          <a href="https://contratos.sistema.gov.br/transparencia/arp" target="_blank" rel="noopener">Contratos.gov.br</a>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  {% if recent_scans %}
+  <section class="robo-history">
+    <h2 class="section-title" style="font-size:1.05rem">Execuções recentes</h2>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Quando</th>
+            <th>Período / filtro</th>
+            <th>Modo</th>
+            <th>Resultado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in recent_scans %}
+          <tr>
+            <td class="meta">{{ s.started_at.strftime('%d/%m/%Y %H:%M') if s.started_at else '—' }}</td>
+            <td>
+              <strong>{{ s.period_label }}</strong>
+              {% if s.keyword %}<br><span class="meta">“{{ s.keyword }}”</span>{% endif %}
+              {% if s.orgao_cnpj %}<br><span class="meta">Órgão {{ s.orgao_cnpj }}</span>{% endif %}
+              {% if s.supplier_cnpj %}<br><span class="meta">Forn. {{ s.supplier_cnpj }}</span>{% endif %}
+            </td>
+            <td><span class="badge-robo badge-robo--mode">{{ s.scan_mode or 'contratos' }}</span></td>
+            <td>
+              {% if s.status == 'error' %}<span class="badge-robo badge-robo--warn">Erro</span>
+              {% elif s.scan_fully_complete %}<span class="badge-robo badge-robo--ok">Completa</span>
+              {% else %}<span class="badge-robo badge-robo--warn">Parcial</span>{% endif %}
+              {% if s.scan_mode == 'pncp' %} · <strong>{{ s.pncp_rows_matched }}</strong>
+              {% else %} · <strong>{{ s.atas_with_adesao }}</strong> c/ adesão{% endif %}
+            </td>
+            <td><a href="{{ url_for('admin_robo_contratos_scan', scan_id=s.id) }}">Ver</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+<div id="robo_scan_overlay" class="robo-scan-overlay" hidden aria-live="polite" aria-busy="true">
+  <div class="robo-scan-overlay__panel" role="status">
+    <div class="robo-scan-overlay__spinner" aria-hidden="true"></div>
+    <strong id="robo_scan_title" class="robo-scan-overlay__title">Varredura em andamento</strong>
+    <p id="robo_scan_detail" class="robo-scan-overlay__detail">Preparando busca…</p>
+    <ul id="robo_scan_steps" class="robo-scan-overlay__steps" hidden></ul>
+    <p class="robo-scan-overlay__hint">Não feche esta aba. Buscas grandes podem levar vários minutos.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('robo_form');
+  if (!form) return;
+  var fullHybrid = document.getElementById('full_scan');
+  var fullPncp = document.getElementById('full_scan_pncp');
+  var fullContratos = document.getElementById('full_scan_contratos');
+  var maxPncp = document.getElementById('max_pncp_pages');
+  var maxList = document.getElementById('max_list_pages');
+  var maxDetail = document.getElementById('max_detail_checks');
+  var cnpjForn = document.getElementById('supplier_cnpj');
+  var keyword = document.getElementById('keyword');
+  var portalLink = document.getElementById('pncp_portal_link');
+  var enrichCb = document.getElementById('enrich_suppliers');
+  var orgSelect = document.getElementById('orgao_cnpj');
+  var unitSelect = document.getElementById('pncp_codigo_unidade');
+  var ufSelect = document.getElementById('pncp_uf');
+  var munSelect = document.getElementById('pncp_municipio_ibge');
+  var allUnits = [];
+  var allMunicipios = [];
+  try {
+    allUnits = {{ pncp_unidades_data|default([])|tojson }};
+    allMunicipios = {{ pncp_municipios_data|default([])|tojson }};
+  } catch (e) {}
+
+  function refillSelect(sel, options, placeholder) {
+    if (!sel) return;
+    var current = sel.value;
+    sel.innerHTML = '';
+    var blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = placeholder || 'Selecione';
+    sel.appendChild(blank);
+    options.forEach(function (opt) {
+      var o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.label;
+      sel.appendChild(o);
+    });
+    if (current && Array.prototype.some.call(sel.options, function (x) { return x.value === current; })) {
+      sel.value = current;
+    }
+  }
+
+  function syncUnitOptions() {
+    if (!unitSelect) return;
+    var cnpj = orgSelect ? orgSelect.value : '';
+    var opts = allUnits.filter(function (u) { return !cnpj || u.cnpj === cnpj; }).map(function (u) {
+      return { value: u.codigo, label: (u.nome || u.codigo) + (u.uf ? ' (' + u.uf + ')' : '') };
+    });
+    refillSelect(unitSelect, opts);
+  }
+
+  function syncMunicipioOptions() {
+    if (!munSelect) return;
+    var uf = ufSelect ? ufSelect.value : '';
+    var opts = allMunicipios.filter(function (m) {
+      if (!uf) return true;
+      return (m[2] || '') === uf;
+    }).map(function (m) {
+      var label = m[1];
+      if (m[2]) label += ' (' + m[2] + ')';
+      return { value: m[0], label: label };
+    });
+    refillSelect(munSelect, opts);
+  }
+
+  function updatePortalLink() {
+    if (!portalLink || !keyword) return;
+    var q = (keyword.value || '').trim();
+    portalLink.href = q
+      ? 'https://pncp.gov.br/app/atas?q=' + encodeURIComponent(q)
+      : 'https://pncp.gov.br/app/atas';
+  }
+
+  function setDisabled(el, off) {
+    if (!el) return;
+    el.disabled = off;
+    el.style.opacity = off ? '0.45' : '1';
+  }
+
+  function syncFullScan() {
+    if (fullHybrid && fullHybrid.checked) {
+      setDisabled(maxPncp, true);
+      setDisabled(maxList, true);
+      setDisabled(maxDetail, true);
+      if (fullPncp) fullPncp.checked = false;
+      if (fullContratos) fullContratos.checked = false;
+    } else {
+      setDisabled(maxPncp, !!(fullPncp && fullPncp.checked));
+      setDisabled(maxList, !!(fullContratos && fullContratos.checked));
+      setDisabled(maxDetail, !!(fullContratos && fullContratos.checked));
+    }
+  }
+
+  function syncSupplier() {
+    var hasForn = cnpjForn && cnpjForn.value.replace(/\D/g, '').length === 14;
+    if (hasForn && enrichCb) enrichCb.checked = true;
+  }
+
+  var overlay = document.getElementById('robo_scan_overlay');
+  var overlayTitle = document.getElementById('robo_scan_title');
+  var overlayDetail = document.getElementById('robo_scan_detail');
+  var overlaySteps = document.getElementById('robo_scan_steps');
+  var stepTimer = null;
+
+  var scanLabels = {
+    pncp: {
+      title: 'Varredura PNCP em andamento',
+      detail: 'Consultando a API oficial (pncp.gov.br)…',
+      steps: ['Paginando atas no período', 'Aplicando filtros do portal', 'Montando resultados']
+    },
+    contratos: {
+      title: 'Varredura Contratos.gov.br em andamento',
+      detail: 'Listando atas e abrindo itens com adesão…',
+      steps: ['Listagem pública por período', 'Abrindo cada ata selecionada', 'Confirmando adesão por item']
+    },
+    hibrido: {
+      title: 'Varredura híbrida em andamento',
+      detail: 'PNCP + Contratos.gov.br em sequência…',
+      steps: ['Etapa 1 — API PNCP', 'Etapa 2 — Contratos.gov.br (itens)', 'Consolidando resultados']
+    }
+  };
+
+  function showScanOverlay(action) {
+    var cfg = scanLabels[action] || scanLabels.hibrido;
+    if (overlayTitle) overlayTitle.textContent = cfg.title;
+    if (overlayDetail) overlayDetail.textContent = cfg.detail;
+    if (overlaySteps && cfg.steps) {
+      overlaySteps.hidden = false;
+      overlaySteps.innerHTML = cfg.steps.map(function (s, i) {
+        return '<li class="robo-scan-overlay__step' + (i === 0 ? ' is-active' : '') + '">' + s + '</li>';
+      }).join('');
+      var idx = 0;
+      if (stepTimer) clearInterval(stepTimer);
+      stepTimer = setInterval(function () {
+        if (!overlaySteps) return;
+        var items = overlaySteps.querySelectorAll('.robo-scan-overlay__step');
+        if (!items.length) return;
+        items.forEach(function (el) { el.classList.remove('is-active'); });
+        idx = (idx + 1) % items.length;
+        items[idx].classList.add('is-active');
+      }, 2800);
+    }
+    if (overlay) {
+      overlay.hidden = false;
+      document.body.classList.add('robo-scan-busy');
+    }
+  }
+
+  form.addEventListener('submit', function (e) {
+    var action = 'hibrido';
+    if (e.submitter && e.submitter.name === 'scan_action') {
+      action = e.submitter.value || 'hibrido';
+    }
+    showScanOverlay(action);
+  });
+
+  form.querySelectorAll('button[name="scan_action"]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      form.querySelectorAll('.robo-stage').forEach(function (el) {
+        el.classList.remove('robo-stage--active');
+      });
+      var stage = btn.closest('.robo-stage');
+      if (stage) stage.classList.add('robo-stage--active');
+    });
+  });
+
+  if (orgSelect) orgSelect.addEventListener('change', syncUnitOptions);
+  if (ufSelect) ufSelect.addEventListener('change', syncMunicipioOptions);
+  if (fullHybrid) fullHybrid.addEventListener('change', syncFullScan);
+  if (fullPncp) fullPncp.addEventListener('change', syncFullScan);
+  if (fullContratos) fullContratos.addEventListener('change', syncFullScan);
+  if (cnpjForn) cnpjForn.addEventListener('input', syncSupplier);
+  if (keyword) keyword.addEventListener('input', updatePortalLink);
+  syncUnitOptions();
+  syncMunicipioOptions();
+  syncFullScan();
+  syncSupplier();
+  updatePortalLink();
+})();
+</script>
+{% endblock %}

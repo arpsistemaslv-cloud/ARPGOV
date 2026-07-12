@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Compras — cadastros{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='compras') }}">← Página do setor Compras</a></p>
+    <h1 style="margin-top:0">Setor de Compras — cadastros</h1>
+    <p class="meta">Cadastre <strong>produtos</strong> com part number, <strong>NCM (8 dígitos)</strong> e acessórios; registre <strong>empenhos processados</strong> e vincule itens do catálogo a cada empenho. O NCM alimenta o setor <a href="{{ url_for('empresa.fechamento_preco_hub') }}">Fechamento de preço</a>.</p>
+
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.compras_produtos_list') }}">
+        <strong>Produtos (part numbers)</strong>
+        <span>{{ n_produtos }} cadastro(s) ativo(s) — criar, editar, acessórios</span>
+      </a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.compras_empenhos_list') }}">
+        <strong>Empenhos processados</strong>
+        <span>{{ n_empenhos }} registro(s) — vincular produtos por item</span>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

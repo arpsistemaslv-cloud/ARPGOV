@@ -1,0 +1,13 @@
+{% set ep = (request.endpoint or '') %}
+{% set in_crm = request.path.startswith('/crm') %}
+{% set in_admin = request.path.startswith('/admin') %}
+<nav class="backoffice-switcher{% if switcher_in_hero %} backoffice-switcher--in-hero{% endif %}" aria-label="Alternar entre Painel do site e CRM">
+  <a href="{{ admin_home_url }}" class="backoffice-switcher__tab{% if in_admin %} backoffice-switcher__tab--active{% endif %}">
+    <span class="backoffice-switcher__title">Painel do site</span>
+    <span class="backoffice-switcher__desc">Catálogo, páginas, parceiros</span>
+  </a>
+  <a href="{{ url_for('crm.crm_dashboard') }}" class="backoffice-switcher__tab{% if in_crm %} backoffice-switcher__tab--active{% endif %}">
+    <span class="backoffice-switcher__title">CRM</span>
+    <span class="backoffice-switcher__desc">Clientes, leads, financeiro</span>
+  </a>
+</nav>

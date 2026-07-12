@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{% if contrato %}Editar contrato{% else %}Novo contrato{% endif %}{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:640px">
+    <p class="meta"><a href="{{ url_for('empresa.contratos_lista') }}">← Contratos</a>{% if contrato %} · <a href="{{ url_for('empresa.contratos_detail', cid=contrato.id) }}">Ver ficha</a>{% endif %}</p>
+    <h1 style="margin-top:0">{% if contrato %}Editar contrato{% else %}Novo contrato{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div style="grid-column:1/-1"><h2 style="font-size:0.95rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Identificação</h2></div>
+      <div style="grid-column:1/-1">
+        <label for="numero_contrato">Número do contrato *</label>
+        <input id="numero_contrato" name="numero_contrato" required maxlength="160" value="{{ contrato.numero_contrato if contrato else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="orgao_nome">Órgão contratante *</label>
+        <input id="orgao_nome" name="orgao_nome" required maxlength="400" value="{{ contrato.orgao_nome if contrato else '' }}">
+      </div>
+      <div>
+        <label for="cnpj_orgao">CNPJ do órgão</label>
+        <input id="cnpj_orgao" name="cnpj_orgao" maxlength="18" placeholder="Somente números" value="{{ contrato.cnpj_orgao if contrato else '' }}">
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <input id="status" name="status" maxlength="40" value="{{ contrato.status if contrato else 'vigente' }}">
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:0.95rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Cliente / tomador</h2></div>
+      <div style="grid-column:1/-1">
+        <label for="cliente_razao_social">Razão social do cliente</label>
+        <input id="cliente_razao_social" name="cliente_razao_social" maxlength="400" value="{{ contrato.cliente_razao_social if contrato else '' }}" placeholder="Nome cadastral exibido em propostas e documentos">
+      </div>
+      <div>
+        <label for="cliente_cnpj">CNPJ do cliente</label>
+        <input id="cliente_cnpj" name="cliente_cnpj" maxlength="18" value="{{ contrato.cliente_cnpj if contrato else '' }}">
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:0.95rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Contato</h2></div>
+      <div>
+        <label for="email_contato">E-mail</label>
+        <input id="email_contato" name="email_contato" type="email" maxlength="120" value="{{ contrato.email_contato if contrato else '' }}">
+      </div>
+      <div>
+        <label for="telefone">Telefone</label>
+        <input id="telefone" name="telefone" maxlength="40" value="{{ contrato.telefone if contrato else '' }}">
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:0.95rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Vigência e valores</h2></div>
+      <div>
+        <label for="vigencia_inicio">Início vigência</label>
+        <input id="vigencia_inicio" name="vigencia_inicio" type="date" value="{{ contrato.vigencia_inicio.isoformat() if contrato and contrato.vigencia_inicio else '' }}">
+      </div>
+      <div>
+        <label for="vigencia_fim">Fim vigência</label>
+        <input id="vigencia_fim" name="vigencia_fim" type="date" value="{{ contrato.vigencia_fim.isoformat() if contrato and contrato.vigencia_fim else '' }}">
+      </div>
+      <div>
+        <label for="valor_total">Valor total (R$)</label>
+        <input id="valor_total" name="valor_total" value="{{ contrato.valor_total if contrato and contrato.valor_total is not none else '' }}">
+      </div>
+      <div>
+        <label for="saldo_referencia">Saldo referência (R$)</label>
+        <input id="saldo_referencia" name="saldo_referencia" value="{{ contrato.saldo_referencia if contrato and contrato.saldo_referencia is not none else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="4">{{ contrato.observacoes if contrato else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      {% if contrato %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.contratos_detail', cid=contrato.id) }}">Cancelar</a>
+      {% else %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.contratos_lista') }}">Cancelar</a>
+      {% endif %}
+    </form>
+
+    {% if contrato %}
+    {% set contexto = 'contrato' %}
+    {% set ref_id = contrato.id %}
+    {% set next_url = url_for('empresa.contratos_edit', cid=contrato.id) %}
+    {% include "empresa/_anexos.html" %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}CRM — {% if project %}Editar{% else %}Novo{% endif %} tipo de comissão{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <p class="meta"><a href="{{ url_for('crm.crm_commission_projects') }}">← Comissionamento</a></p>
+    <h1 style="margin-top:0">{% if project %}Editar tipo de comissão{% else %}Novo tipo de comissão{% endif %}</h1>
+
+    {% if project %}
+      {% set rateio_mode = project.rateio_mode if project.rateio_mode else ('with_seller' if project.with_seller else 'no_seller') %}
+    {% else %}
+      {% set rateio_mode = 'no_seller' %}
+    {% endif %}
+
+    <form method="post" class="form-grid" style="max-width:560px;margin-top:1.25rem">
+      <div class="form-grid__full">
+        <label for="title">Nome do tipo *</label>
+        <input id="title" name="title" required maxlength="200" value="{{ project.title if project else '' }}" placeholder="Ex.: Representação externa · Parceria X">
+      </div>
+      <div class="form-grid__full">
+        <label for="rateio_mode">Modelo de rateio</label>
+        <select id="rateio_mode" name="rateio_mode" {% if project and project.is_system %}disabled{% endif %}>
+          <option value="no_seller" {% if rateio_mode == 'no_seller' %}selected{% endif %}>Sem vendedor — 100% entre sócios</option>
+          <option value="with_seller" {% if rateio_mode == 'with_seller' %}selected{% endif %}>Com vendedor — 30% vendedor + 70% sócios</option>
+          <option value="custom" {% if rateio_mode == 'custom' %}selected{% endif %}>Personalizado — criar novo modelo</option>
+        </select>
+        {% if project and project.is_system %}
+        <input type="hidden" name="rateio_mode" value="{{ rateio_mode }}">
+        <p class="meta form-field-hint">Modelo fixo nos tipos padrão do sistema.</p>
+        {% else %}
+        <p class="meta form-field-hint">Em <strong>Personalizado</strong>, você define os participantes e percentuais na próxima tela.</p>
+        {% endif %}
+      </div>
+      <div class="form-grid__full">
+        <label for="notes">Observações</label>
+        <textarea id="notes" name="notes" rows="2" placeholder="Quando usar este tipo…">{{ project.notes or '' if project else '' }}</textarea>
+      </div>
+      {% if project %}
+      <div class="form-grid__full">
+        <label><input type="checkbox" name="is_active" value="1" {% if project.is_active %}checked{% endif %}> Ativo (disponível nos leads)</label>
+      </div>
+      {% endif %}
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+        <button type="submit" class="btn btn--primary">Salvar</button>
+        <a class="btn btn--ghost" href="{% if project %}{{ url_for('crm.crm_commission_project_detail', project_id=project.id) }}{% else %}{{ url_for('crm.crm_commission_projects') }}{% endif %}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

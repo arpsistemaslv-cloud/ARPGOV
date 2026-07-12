@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}CRM — Fornecedores{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;justify-content:space-between">
+      <div>
+        <h1 style="margin-top:0">Fornecedores</h1>
+        <p class="meta">Parceiros / fabricantes vinculados aos leads e produtos da ata.</p>
+      </div>
+      <a class="btn btn--primary" href="{{ url_for('crm.crm_partner_new') }}">Novo fornecedor</a>
+    </div>
+    <form method="get" action="{{ url_for('crm.crm_partners_list') }}" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <label for="q">Buscar</label>
+        <input id="q" name="q" value="{{ q or '' }}" placeholder="Nome, empresa, e-mail…">
+      </div>
+      <button type="submit" class="btn btn--ghost">Filtrar</button>
+      {% if q %}<a href="{{ url_for('crm.crm_partners_list') }}" class="btn btn--ghost">Limpar</a>{% endif %}
+    </form>
+    <div class="crm-table-card">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>CNPJ</th>
+              <th>Contato</th>
+              <th>E-mail</th>
+              <th>Cidade</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in partners %}
+            <tr>
+              <td><strong>{{ p.company_name or p.razao_social or '—' }}</strong></td>
+              <td class="meta">{{ p.cnpj or '—' }}</td>
+              <td>{{ p.name }}</td>
+              <td class="meta">{{ p.email }}</td>
+              <td class="meta">{% if p.address_city %}{{ p.address_city }}{% if p.address_state %}/{{ p.address_state }}{% endif %}{% else %}—{% endif %}</td>
+              <td class="meta">{% if p.is_active %}Ativo{% else %}Inativo{% endif %}</td>
+              <td><a href="{{ url_for('crm.crm_partner_edit', partner_id=p.id) }}">Editar</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="meta">Nenhum fornecedor. <a href="{{ url_for('crm.crm_partner_new') }}">Cadastre o primeiro</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{% if rep %}Editar{% else %}Novo{% endif %} representante{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">{% if rep %}Editar{% else %}Novo{% endif %} representante comercial</h1>
+<form method="post" class="form-grid" style="max-width:480px">
+  <div>
+    <label for="name">Nome *</label>
+    <input id="name" name="name" required value="{{ rep.name if rep else '' }}">
+  </div>
+  <div>
+    <label for="email">E-mail (login) *</label>
+    <input id="email" name="email" type="email" required autocomplete="off" value="{{ rep.email if rep else '' }}">
+  </div>
+  <div>
+    <label for="phone">Telefone</label>
+    <input id="phone" name="phone" value="{{ rep.phone or '' if rep else '' }}">
+  </div>
+  {% if rep %}
+  <div>
+    <label><input type="checkbox" name="is_active" value="1" {% if rep.is_active %}checked{% endif %}> Ativo (pode entrar no sistema)</label>
+  </div>
+  <div>
+    <label><input type="checkbox" name="is_admin" value="1" {% if rep.is_admin %}checked{% endif %}> Administrador (Painel, CRM e todos os leads)</label>
+  </div>
+  {% else %}
+  <div>
+    <label><input type="checkbox" name="is_admin" value="1"> Administrador (Painel, CRM e todos os leads)</label>
+  </div>
+  {% endif %}
+  <div>
+    <label for="password">{% if rep %}Nova senha{% else %}Senha *{% endif %}</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" {% if not rep %}required minlength="8"{% endif %}>
+    {% if rep %}<p class="meta" style="margin:0.25rem 0 0">Deixe em branco para manter a senha atual.</p>{% endif %}
+  </div>
+  <div>
+    <label for="password_confirm">Confirmar senha{% if not rep %} *{% endif %}</label>
+    <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" {% if not rep %}required minlength="8"{% endif %}>
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn--primary">Salvar</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin_rep_list') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

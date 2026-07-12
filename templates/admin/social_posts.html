@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Artes para redes sociais{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<div class="product-form-page">
+  <header class="product-form-page__header">
+    <h1>Artes para Instagram e TikTok</h1>
+    <p class="product-form-page__lead">Gere layouts profissionais com a identidade ARPGOV a partir dos produtos do catálogo. Use no feed, Stories, Reels e TikTok para tráfego pago e posts orgânicos.</p>
+  </header>
+
+  <form method="get" action="{{ url_for('admin_social_posts') }}" class="social-posts-search">
+    <label for="social-q" class="meta">Buscar produto</label>
+    <div class="social-posts-search__row">
+      <input id="social-q" type="search" name="q" value="{{ qtext }}" placeholder="Título, fabricante ou slug…">
+      <button type="submit" class="btn btn--primary">Buscar</button>
+      {% if qtext %}<a href="{{ url_for('admin_social_posts') }}" class="btn btn--ghost">Limpar</a>{% endif %}
+    </div>
+  </form>
+
+  <div class="social-posts-formats meta">
+  {% for key, fmt in social_formats.items() %}
+    <span class="pill">{{ fmt.label }}</span>
+  {% endfor %}
+  </div>
+
+  <div class="social-posts-grid">
+    {% for it in items %}
+    <article class="social-posts-card">
+      {% if it.image_paths %}
+      <a href="{{ url_for('admin_social_post_studio', item_id=it.id) }}" class="social-posts-card__thumb">
+        <img src="{{ url_for('static', filename=it.image_paths[0]) }}" alt="" loading="lazy">
+      </a>
+      {% else %}
+      <a href="{{ url_for('admin_social_post_studio', item_id=it.id) }}" class="social-posts-card__thumb social-posts-card__thumb--empty">Sem imagem</a>
+      {% endif %}
+      <div class="social-posts-card__body">
+        <h2><a href="{{ url_for('admin_social_post_studio', item_id=it.id) }}">{{ it.title }}</a></h2>
+        <p class="meta">
+          {% if it.manufacturer %}{{ it.manufacturer }} · {% endif %}
+          {{ it.unit_price|brl }}
+        </p>
+        <p class="meta">{% if it.category %}{% if it.category.parent %}{{ it.category.parent.name }} › {% endif %}{{ it.category.name }}{% else %}Sem categoria{% endif %}</p>
+        <a class="btn btn--primary btn--block" href="{{ url_for('admin_social_post_studio', item_id=it.id) }}">Criar arte</a>
+      </div>
+    </article>
+    {% else %}
+    <p class="meta">Nenhum produto encontrado. <a href="{{ url_for('admin_catalog_new') }}">Cadastre um produto</a> com imagem para gerar artes.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

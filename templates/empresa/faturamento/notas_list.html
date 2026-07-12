@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Notas fiscais — Faturamento{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.faturamento_hub') }}">← Faturamento</a></p>
+    <h1 style="margin-top:0">Notas fiscais (controle)</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.faturamento_notas_new') }}">Nova nota</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Nº</th><th>Série</th><th>Emissão</th><th>Valor</th><th>Empenho (ref.)</th><th></th></tr></thead>
+        <tbody>
+          {% for n in notas %}
+          <tr>
+            <td>{{ n.numero }}</td>
+            <td>{{ n.serie or '—' }}</td>
+            <td>{{ n.data_emissao.strftime('%d/%m/%Y') if n.data_emissao else '—' }}</td>
+            <td>{% if n.valor_total is not none %}R$ {{ n.valor_total }}{% else %}—{% endif %}</td>
+            <td>{{ n.empenho_numero_ref or '—' }}</td>
+            <td><a href="{{ url_for('empresa.faturamento_notas_edit', nid=n.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="meta">Nenhuma nota.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

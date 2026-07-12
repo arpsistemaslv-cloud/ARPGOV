@@ -1,0 +1,11 @@
+{% set ep = (request.endpoint or '') %}
+<nav class="crm-module-nav" aria-label="Módulos do CRM">
+  <a href="{{ url_for('crm.crm_dashboard') }}" class="crm-module-nav__link{% if ep == 'crm.crm_dashboard' %} crm-module-nav__link--active{% endif %}">Painel</a>
+  <a href="{{ url_for('crm.crm_clients_list') }}" class="crm-module-nav__link{% if ep in ('crm.crm_clients_list', 'crm.crm_client_new', 'crm.crm_client_edit') %} crm-module-nav__link--active{% endif %}">Clientes</a>
+  <a href="{{ url_for('crm.crm_partners_list') }}" class="crm-module-nav__link{% if ep in ('crm.crm_partners_list', 'crm.crm_partner_new', 'crm.crm_partner_edit') %} crm-module-nav__link--active{% endif %}">Fornecedores</a>
+  <a href="{{ url_for('crm.crm_products_list') }}" class="crm-module-nav__link{% if ep in ('crm.crm_products_list', 'crm.crm_product_new', 'crm.crm_product_edit') %} crm-module-nav__link--active{% endif %}">Produtos</a>
+  <a href="{{ url_for('crm.crm_op_new') }}" class="crm-module-nav__link{% if ep in ('crm.crm_op_new', 'crm.crm_op_edit', 'crm.crm_op_delete', 'crm.crm_op_chat') %} crm-module-nav__link--active{% endif %}">Leads</a>
+  <a href="{{ url_for('crm.crm_commission_projects') }}" class="crm-module-nav__link{% if ep in ('crm.crm_commission_projects', 'crm.crm_commission_project_detail', 'crm.crm_commission_project_new', 'crm.crm_commission_project_edit', 'crm.crm_commission_project_delete', 'crm.crm_commission_tier_add', 'crm.crm_commission_tier_delete', 'crm.crm_commission_tier_refresh') %} crm-module-nav__link--active{% endif %}">Comissionamento</a>
+  <a href="{{ url_for('crm.crm_metas_home') }}" class="crm-module-nav__link{% if ep in ('crm.crm_metas_home', 'crm.crm_metas_save', 'crm.crm_metas_simulation_add', 'crm.crm_metas_simulation_edit', 'crm.crm_metas_simulation_delete') %} crm-module-nav__link--active{% endif %}">Metas</a>
+  <a href="{{ url_for('crm.crm_financeiro_home') }}" class="crm-module-nav__link{% if ep in ('crm.crm_financeiro_home', 'crm.crm_commission_split_status', 'crm.crm_commission_sale_split_status', 'crm.crm_finance_entry_status') %} crm-module-nav__link--active{% endif %}">Financeiro</a>
+</nav>

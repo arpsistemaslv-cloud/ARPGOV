@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Financeiro — representantes{% endblock %}
+{% block body %}
+{% include "crm/_subnav.html" %}
+<p class="meta"><a href="{{ url_for('crm_financeiro_home') }}">← Financeiro</a></p>
+<h1 style="margin-top:0">Representantes — comissões e documentos</h1>
+<p class="meta">Cada linha leva ao histórico financeiro do vendedor (NFs enviadas, vínculo com negociação).</p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Representante</th>
+        <th>E-mail</th>
+        <th>Registros</th>
+        <th>Pendentes</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in stats %}
+      <tr>
+        <td><strong>{{ s.rep.name }}</strong></td>
+        <td class="meta">{{ s.rep.email }}</td>
+        <td>{{ s.total }}</td>
+        <td>{% if s.pending %}<span class="pill" style="background:#fff3e0;color:#e65100">{{ s.pending }}</span>{% else %}0{% endif %}</td>
+        <td><a href="{{ url_for('crm_financeiro_rep', rep_id=s.rep.id) }}">Abrir pasta</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="meta">Nenhum representante cadastrado. Use o painel do site.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

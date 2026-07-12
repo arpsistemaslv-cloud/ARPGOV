@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }}{% endblock %}
+{% block body %}
+<article class="page-content">
+  <h1 style="margin-top:0">{{ page.title }}</h1>
+  <div class="page-body">{{ page.body_html|safe }}</div>
+</article>
+<p class="meta"><a href="{{ url_for('home') }}">INÍCIO</a></p>
+{% endblock %}

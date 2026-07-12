@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Licitações em andamento{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Licitações em andamento</h1>
+<p class="meta">Acompanhe processos que devem virar ARP com adesão. Quando a ata sair, gere a entrada na análise prévia.</p>
+
+<form method="get" action="{{ url_for('admin_licitacao_watch_list') }}" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+  <div>
+    <label for="lic-q" class="meta" style="display:block;margin-bottom:0.25rem">Busca</label>
+    <input id="lic-q" type="search" name="q" value="{{ qtext }}" placeholder="Título, órgão, edital…" style="max-width:260px">
+  </div>
+  <div>
+    <label for="lic-status" class="meta" style="display:block;margin-bottom:0.25rem">Status</label>
+    <select id="lic-status" name="status">
+      <option value="">Todos</option>
+      {% for sid, slabel in statuses %}
+      <option value="{{ sid }}" {% if filter_status == sid %}selected{% endif %}>{{ slabel }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn--primary">Filtrar</button>
+  {% if qtext or filter_status %}<a href="{{ url_for('admin_licitacao_watch_list') }}" class="btn btn--ghost">Limpar</a>{% endif %}
+</form>
+
+<p>
+  <a class="btn btn--primary" href="{{ url_for('admin_licitacao_watch_new') }}">+ Nova licitação</a>
+  <a class="btn btn--ghost" href="{{ url_for('admin_arp_analysis_list') }}">Análise prévia de ARPs</a>
+</p>
+
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Processo</th>
+        <th>Órgão</th>
+        <th>Adesão</th>
+        <th>Status</th>
+        <th>Datas</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td style="max-width:280px">
+          <strong>{{ r.titulo[:90] }}{% if r.titulo|length > 90 %}…{% endif %}</strong>
+          {% if r.numero_edital %}<br><span class="meta">Edital {{ r.numero_edital }}</span>{% endif %}
+          {% if r.modalidade %}<br><span class="meta">{{ r.modalidade }}</span>{% endif %}
+        </td>
+        <td class="meta">{{ r.orgao or '—' }}</td>
+        <td>{% if r.permite_adesao %}<span class="badge-robo badge-robo--ok">Sim</span>{% else %}<span class="meta">—</span>{% endif %}</td>
+        <td><span class="badge-pipeline badge-pipeline--lic-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span></td>
+        <td class="meta">
+          {% if r.data_abertura %}Abertura {{ r.data_abertura.strftime('%d/%m/%Y') }}{% endif %}
+          {% if r.data_resultado %}<br>Resultado {{ r.data_resultado.strftime('%d/%m/%Y') }}{% endif %}
+          {% if not r.data_abertura and not r.data_resultado %}—{% endif %}
+        </td>
+        <td style="white-space:nowrap">
+          <a href="{{ r.link }}" target="_blank" rel="noopener" class="meta">Link</a>
+          · <a href="{{ url_for('admin_licitacao_watch_edit', watch_id=r.id) }}">Editar</a>
+          {% if r.arp_analysis_id %}
+          · <a href="{{ url_for('admin_arp_analysis_edit', analysis_id=r.arp_analysis_id) }}">ARP ✓</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="meta">Nenhuma licitação. <a href="{{ url_for('admin_licitacao_watch_new') }}">Cadastre a primeira</a>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

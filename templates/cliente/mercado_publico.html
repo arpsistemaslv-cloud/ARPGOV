@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}Mercado público — compras governamentais{% endblock %}
+{% block body %}
+{% include "cliente/_subnav.html" %}
+<h1 style="margin-top:0">Mercado público (PNCP)</h1>
+<p class="meta">Visão agregada a partir do <a href="https://pncp.gov.br/" target="_blank" rel="noopener">Portal Nacional de Contratações Públicas</a> (dados abertos de <strong>contratos</strong> e <strong>atas de registro de preço</strong>). Os valores referem-se a contratos com indicação de <strong>despesa</strong> (compras/contratações); operações marcadas como receita (ex.: alienações) aparecem à parte.</p>
+<p class="meta">A API pública de consulta <strong>não separa</strong> modalidade oficial (pregão eletrônico, dispensa, inexigibilidade, etc.) em cada registro. Os gráficos usam <strong>categoria do processo</strong>, <strong>tipo de instrumento</strong>, <strong>esfera do órgão</strong> e <strong>menções no texto do objeto</strong> (amostra) como referência.</p>
+
+{% if not snapshot %}
+<p class="flash flash--error" style="display:block">Ainda não há dados agregados. Peça à equipe para atualizar o painel em <strong>Painel do site → Mercado público (PNCP)</strong>.</p>
+{% else %}
+<p class="meta"><strong>Período:</strong> {{ snapshot.data_inicio.strftime('%d/%m/%Y') }} a {{ snapshot.data_fim.strftime('%d/%m/%Y') }} · <strong>Atualizado:</strong> {{ snapshot.created_at.strftime('%d/%m/%Y %H:%M') }} UTC</p>
+{% if snapshot.amostra_incompleta %}
+<p class="flash flash--error" style="display:block"><strong>Amostra parcial:</strong> a API retorna milhares de registros; a coleta limita páginas para concluir em tempo razoável. Totais e gráficos refletem apenas os contratos/atas processados nesta rodada.</p>
+{% endif %}
+{% if snapshot.erro %}
+<p class="meta" style="color:var(--danger)"><strong>Observação técnica:</strong> {{ snapshot.erro[:800] }}{% if snapshot.erro|length > 800 %}…{% endif %}</p>
+{% endif %}
+
+<div class="mercado-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin:1.25rem 0">
+  <div class="mercado-stat" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <div class="meta" style="margin:0">Valor (despesa / compras)</div>
+    <div style="font-size:1.35rem;font-weight:700">{{ format_currency_brl(snapshot.valor_contratos_despesa) }}</div>
+    <p class="meta mercado-extenso" style="margin:0.5rem 0 0;font-size:0.9rem;line-height:1.35">{{ moeda_extenso_brl(snapshot.valor_contratos_despesa) }}</p>
+  </div>
+  <div class="mercado-stat" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <div class="meta" style="margin:0">Contratos na amostra</div>
+    <div style="font-size:1.35rem;font-weight:700">{{ format_inteiro_pt_br(snapshot.contratos_processados) }} <span class="meta">/ {{ format_inteiro_pt_br(snapshot.contratos_total_api) if snapshot.contratos_total_api is not none else '—' }} na API</span></div>
+    <p class="meta mercado-extenso" style="margin:0.5rem 0 0;font-size:0.9rem;line-height:1.35">{{ frase_contagem_masc(snapshot.contratos_processados, 'contrato', 'contratos', 'na amostra') }}{% if snapshot.contratos_total_api is not none %} Total na API: {{ frase_contagem_masc(snapshot.contratos_total_api, 'registro', 'registros', 'na API') }}{% endif %}</p>
+  </div>
+  <div class="mercado-stat" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <div class="meta" style="margin:0">Atas de registro (amostra)</div>
+    <div style="font-size:1.35rem;font-weight:700">{{ format_inteiro_pt_br(snapshot.atas_processadas) }} <span class="meta">/ {{ format_inteiro_pt_br(snapshot.atas_total_api) if snapshot.atas_total_api is not none else '—' }} na API</span></div>
+    <p class="meta mercado-extenso" style="margin:0.5rem 0 0;font-size:0.9rem;line-height:1.35">{{ frase_contagem_fem(snapshot.atas_processadas, 'ata', 'atas', 'de registro na amostra') }}{% if snapshot.atas_total_api is not none %} Total na API: {{ frase_contagem_fem(snapshot.atas_total_api, 'ata', 'atas', 'na API') }}{% endif %}</p>
+  </div>
+  <div class="mercado-stat" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <div class="meta" style="margin:0">Receita / alienações (amostra)</div>
+    <div style="font-size:1.35rem;font-weight:700">{{ format_currency_brl(snapshot.valor_contratos_receita) }}</div>
+    <p class="meta mercado-extenso" style="margin:0.5rem 0 0;font-size:0.9rem;line-height:1.35">{{ moeda_extenso_brl(snapshot.valor_contratos_receita) }}</p>
+  </div>
+</div>
+
+<div class="mercado-filtro-valor" style="margin:1.25rem 0;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+  <div class="meta" style="margin-bottom:0.5rem"><strong>Filtrar orçamentos por faixa de valor</strong> — cada gráfico usa os itens do período, ordenados por valor (ou por menções, no último gráfico). <strong>Maiores</strong> = terço superior, <strong>médios</strong> = terço central, <strong>menores</strong> = terço inferior. Os totais dos cartões não mudam com o filtro; apenas os gráficos abaixo.</div>
+  <div class="filters mercado-faixa-btns" role="group" aria-label="Faixa de valor" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
+    <button type="button" class="btn btn--primary mercado-faixa-btn active" data-faixa="todos">Todos</button>
+    <button type="button" class="btn btn--ghost mercado-faixa-btn" data-faixa="maiores">Maiores valores</button>
+    <button type="button" class="btn btn--ghost mercado-faixa-btn" data-faixa="medios">Valores médios</button>
+    <button type="button" class="btn btn--ghost mercado-faixa-btn" data-faixa="menores">Menores valores</button>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;align-items:start">
+  <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <h2 style="font-size:1.05rem;margin:0 0 0.75rem">Valor por categoria de processo</h2>
+    <div style="max-width:420px;margin:0 auto"><canvas id="chartCategorias" height="260"></canvas></div>
+  </section>
+  <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <h2 style="font-size:1.05rem;margin:0 0 0.75rem">Contratos por tipo de instrumento</h2>
+    <div><canvas id="chartTipos" height="280"></canvas></div>
+  </section>
+  <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <h2 style="font-size:1.05rem;margin:0 0 0.75rem">Valor por esfera do órgão</h2>
+    <div><canvas id="chartEsfera" height="260"></canvas></div>
+  </section>
+  <section style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">
+    <h2 style="font-size:1.05rem;margin:0 0 0.75rem">Menções no objeto (pregão, dispensa…)</h2>
+    <p class="meta" style="margin-top:0">Contagem na <strong>amostra de contratos</strong> — palavras-chave no texto do objeto.</p>
+    <div><canvas id="chartKeywords" height="260"></canvas></div>
+  </section>
+</div>
+
+<script src="{{ url_for('static', filename='js/br_moeda_extenso.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function(){
+  const chart = {{ chart|tojson }};
+  const palette = ['#c8102e','#070708','#5c5f66','#9e0d25','#1c1c24','#757575','#a60e28','#37474f','#78909c','#8b1530'];
+
+  function brl(v) {
+    try {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v));
+    } catch (e) { return v; }
+  }
+
+  function extensoMoeda(v) {
+    return (typeof moedaExtensoBrl === 'function') ? moedaExtensoBrl(v) : '';
+  }
+
+  function fmtInt(n) {
+    return (typeof formatInteiroPtBr === 'function') ? formatInteiroPtBr(n) : String(n);
+  }
+
+  function extensoInt(n) {
+    return (typeof extensoInteiroPtBr === 'function') ? extensoInteiroPtBr(n) : '';
+  }
+
+  function numVal(row, key) {
+    var v = row[key];
+    return v == null ? 0 : Number(v);
+  }
+
+  /** Ordena por valor (decrescente) e devolve fatia tercil: todos | maiores | medios | menores */
+  function filtrarPorFaixa(rows, faixa, key) {
+    if (!rows || !rows.length) return [];
+    var sorted = rows.slice().sort(function(a, b) { return numVal(b, key) - numVal(a, key); });
+    if (faixa === 'todos') return sorted;
+    var n = sorted.length;
+    var t = Math.ceil(n / 3);
+    var t2 = Math.ceil(2 * n / 3);
+    if (faixa === 'maiores') return sorted.slice(0, t);
+    if (faixa === 'medios') return sorted.slice(t, t2);
+    if (faixa === 'menores') return sorted.slice(t2, n);
+    return sorted;
+  }
+
+  function filtrarKeywordsPorFaixa(rows, faixa) {
+    if (!rows || !rows.length) return [];
+    var sorted = rows.slice().sort(function(a, b) { return numVal(b, 'qtd') - numVal(a, 'qtd'); });
+    if (faixa === 'todos') return sorted;
+    var n = sorted.length;
+    var t = Math.ceil(n / 3);
+    var t2 = Math.ceil(2 * n / 3);
+    if (faixa === 'maiores') return sorted.slice(0, t);
+    if (faixa === 'medios') return sorted.slice(t, t2);
+    if (faixa === 'menores') return sorted.slice(t2, n);
+    return sorted;
+  }
+
+  function destroyIfExists(canvasId) {
+    var el = document.getElementById(canvasId);
+    if (!el) return;
+    var c = Chart.getChart(el);
+    if (c) c.destroy();
+  }
+
+  var faixaAtual = 'todos';
+
+  function renderCharts(faixa) {
+    faixaAtual = faixa || 'todos';
+    var cats = filtrarPorFaixa(chart.categorias || [], faixaAtual, 'valor');
+    var tipos = filtrarPorFaixa(chart.tipos_contrato || [], faixaAtual, 'valor');
+    var esf = filtrarPorFaixa(chart.esfera || [], faixaAtual, 'valor');
+    var kws = filtrarKeywordsPorFaixa(chart.keywords || [], faixaAtual);
+
+    destroyIfExists('chartCategorias');
+    destroyIfExists('chartTipos');
+    destroyIfExists('chartEsfera');
+    destroyIfExists('chartKeywords');
+
+    if (cats.length && document.getElementById('chartCategorias')) {
+      new Chart(document.getElementById('chartCategorias'), {
+        type: 'doughnut',
+        data: {
+          labels: cats.map(function(c) { return c.nome; }),
+          datasets: [{
+            data: cats.map(function(c) { return c.valor; }),
+            backgroundColor: palette.concat(palette).slice(0, Math.max(cats.length, 10)),
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  var row = cats[ctx.dataIndex];
+                  var q = row ? fmtInt(row.qtd) + ' contratos' : '';
+                  var linhas = [q, brl(ctx.raw), extensoMoeda(ctx.raw)];
+                  return linhas.filter(function(s) { return s; });
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    if (tipos.length && document.getElementById('chartTipos')) {
+      new Chart(document.getElementById('chartTipos'), {
+        type: 'bar',
+        data: {
+          labels: tipos.map(function(t) { return t.nome; }),
+          datasets: [{
+            label: 'Quantidade',
+            data: tipos.map(function(t) { return t.qtd; }),
+            backgroundColor: '#c8102e',
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  var q = ctx.raw;
+                  var n = Number(q);
+                  var lin1 = n === 1 ? '1 contrato' : (fmtInt(q) + ' contratos');
+                  var lin2 = n === 1 ? 'Um contrato' : (extensoInt(n).charAt(0).toUpperCase() + extensoInt(n).slice(1) + ' contratos');
+                  return [lin1, lin2];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) { return fmtInt(value); }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    if (esf.length && document.getElementById('chartEsfera')) {
+      new Chart(document.getElementById('chartEsfera'), {
+        type: 'bar',
+        data: {
+          labels: esf.map(function(e) { return e.nome; }),
+          datasets: [{
+            label: 'Valor (despesa)',
+            data: esf.map(function(e) { return e.valor; }),
+            backgroundColor: '#1a1a1a',
+          }]
+        },
+        options: {
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return [brl(ctx.raw), extensoMoeda(ctx.raw)];
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) { return brl(value); }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    if (kws.length && document.getElementById('chartKeywords')) {
+      new Chart(document.getElementById('chartKeywords'), {
+        type: 'bar',
+        data: {
+          labels: kws.map(function(k) { return k.nome; }),
+          datasets: [{
+            label: 'Menções',
+            data: kws.map(function(k) { return k.qtd; }),
+            backgroundColor: '#5a5a5a',
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  var q = ctx.raw;
+                  var n = Number(q);
+                  var lin1 = n === 1 ? '1 menção' : (fmtInt(q) + ' menções');
+                  var lin2 = n === 1 ? 'Uma menção' : (n === 2 ? 'Duas menções' : (extensoInt(n).charAt(0).toUpperCase() + extensoInt(n).slice(1) + ' menções'));
+                  return [lin1, lin2];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) { return fmtInt(value); }
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  document.querySelectorAll('.mercado-faixa-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var f = btn.getAttribute('data-faixa') || 'todos';
+      document.querySelectorAll('.mercado-faixa-btn').forEach(function(b) {
+        b.classList.remove('active', 'btn--primary');
+        b.classList.add('btn--ghost');
+      });
+      btn.classList.add('active', 'btn--primary');
+      btn.classList.remove('btn--ghost');
+      renderCharts(f);
+    });
+  });
+
+  renderCharts('todos');
+})();
+</script>
+{% endif %}
+{% endblock %}

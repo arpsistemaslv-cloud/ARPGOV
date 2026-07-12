@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Protocolos — Garantia{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.garantia_hub') }}">← Garantia</a></p>
+    <h1 style="margin-top:0">Protocolos de garantia</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.garantia_protocolos_new') }}">Novo protocolo</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Protocolo</th><th>Órgão</th><th>Produto</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for p in protocolos %}
+          <tr>
+            <td><code>{{ p.numero_protocolo }}</code></td>
+            <td>{{ p.orgao_solicitante }}</td>
+            <td>{% if p.produto %}<code>{{ p.produto.part_number }}</code>{% else %}{{ p.descricao_produto or '—' }}{% endif %}</td>
+            <td>{{ p.status }}</td>
+            <td><a href="{{ url_for('empresa.garantia_protocolos_edit', pid=p.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhum protocolo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

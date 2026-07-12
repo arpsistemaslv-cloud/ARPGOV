@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{% if row %}Editar{% else %}Nova{% endif %} licitação{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<p class="meta" style="margin:0 0 0.75rem"><a href="{{ url_for('admin_licitacao_watch_list') }}">← Licitações em andamento</a></p>
+<h1 style="margin-top:0">{% if row %}Editar{% else %}Nova{% endif %} licitação</h1>
+
+<form method="post" class="form-grid" style="max-width:720px">
+  <div>
+    <label for="titulo">Título / objeto *</label>
+    <input id="titulo" name="titulo" required value="{{ row.titulo if row else '' }}">
+  </div>
+  <div>
+    <label for="link">Link do edital / compra PNCP *</label>
+    <input id="link" name="link" type="url" required value="{{ row.link if row else '' }}" placeholder="https://pncp.gov.br/app/editais/...">
+  </div>
+  <div class="form-grid form-grid--2col">
+    <div>
+      <label for="orgao">Órgão</label>
+      <input id="orgao" name="orgao" value="{{ row.orgao or '' if row else '' }}">
+    </div>
+    <div>
+      <label for="numero_edital">Número do edital</label>
+      <input id="numero_edital" name="numero_edital" value="{{ row.numero_edital or '' if row else '' }}">
+    </div>
+  </div>
+  <div class="form-grid form-grid--2col">
+    <div>
+      <label for="modalidade">Modalidade</label>
+      <input id="modalidade" name="modalidade" value="{{ row.modalidade or '' if row else '' }}" placeholder="Pregão, Concorrência…">
+    </div>
+    <div>
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        {% for sid, slabel in statuses %}
+        <option value="{{ sid }}" {% if row and row.status == sid %}selected{% elif not row and sid == 'acompanhando' %}selected{% endif %}>{{ slabel }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="form-grid form-grid--2col">
+    <div>
+      <label for="data_abertura">Data abertura</label>
+      <input id="data_abertura" name="data_abertura" type="date" value="{{ row.data_abertura.isoformat() if row and row.data_abertura else '' }}">
+    </div>
+    <div>
+      <label for="data_resultado">Previsão resultado / homologação</label>
+      <input id="data_resultado" name="data_resultado" type="date" value="{{ row.data_resultado.isoformat() if row and row.data_resultado else '' }}">
+    </div>
+  </div>
+  <div>
+    <label class="robo-check"><input type="checkbox" name="permite_adesao" value="1" {% if not row or row.permite_adesao %}checked{% endif %}> Deve permitir adesão (ARP futura)</label>
+  </div>
+  <div>
+    <label for="notes">Notas / andamento</label>
+    <textarea id="notes" name="notes" rows="4">{{ row.notes or '' if row else '' }}</textarea>
+  </div>
+
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+    <button type="submit" class="btn btn--primary">Salvar</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin_licitacao_watch_list') }}">Voltar</a>
+  </div>
+</form>
+
+{% if row %}
+<div class="robo-card" style="margin-top:1.5rem;max-width:720px">
+  <h2 style="margin:0 0 0.75rem;font-size:1rem">Quando a ARP sair</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+    {% if row.arp_analysis_id %}
+    <a class="btn btn--primary" href="{{ url_for('admin_arp_analysis_edit', analysis_id=row.arp_analysis_id) }}">Abrir análise prévia</a>
+    {% else %}
+    <form method="post" action="{{ url_for('admin_licitacao_watch_to_arp', watch_id=row.id) }}" style="margin:0">
+      <button type="submit" class="btn btn--primary">Gerar entrada na análise prévia</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin_licitacao_watch_delete', watch_id=row.id) }}" style="margin:0" onsubmit="return confirm('Excluir este registro?');">
+      <button type="submit" class="btn btn--danger">Excluir</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

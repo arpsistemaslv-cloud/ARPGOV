@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}CRM — Vendas avulsas{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <header style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div>
+        <p class="meta" style="margin:0"><a href="{{ url_for('crm.crm_commission_projects') }}">← Comissionamento</a></p>
+        <h1 style="margin:0.35rem 0 0">Vendas avulsas</h1>
+        <p class="meta" style="margin:0.35rem 0 0">Leads completos com comissão automática — entram no painel, financeiro e totais da empresa.</p>
+      </div>
+      <a class="btn btn--primary" href="{{ url_for('crm.crm_commission_sale_new') }}">+ Nova venda avulsa</a>
+    </header>
+
+    <div class="crm-table-card">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Lead / adesão</th>
+              <th>Cliente</th>
+              <th>Fornecedor</th>
+              <th>Valor total</th>
+              <th>Estágio</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in leads %}
+            <tr>
+              <td>
+                <strong>{{ o.title }}</strong>
+                {% if o.process_ref %}<br><span class="meta">Processo {{ o.process_ref }}</span>{% endif %}
+                {% if o.organization %}<br><span class="meta">{{ o.organization }}</span>{% endif %}
+              </td>
+              <td class="meta">{{ o.portal_client.name if o.portal_client else '—' }}</td>
+              <td class="meta">{% if o.partner %}{{ o.partner.company_name or o.partner.name }}{% else %}—{% endif %}</td>
+              <td>{% if o.value_brl is not none %}<strong>{{ o.value_brl|float|brl }}</strong>{% else %}—{% endif %}</td>
+              <td class="meta">{{ stage_label_fn(stage_normalize_fn(o.stage)) }}</td>
+              <td><a href="{{ url_for('crm.crm_op_edit', opp_id=o.id) }}">Abrir</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="meta">Nenhuma venda avulsa. <a href="{{ url_for('crm.crm_commission_sale_new') }}">Registrar a primeira</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if legacy_sales %}
+    <section class="crm-table-card" style="margin-top:1.5rem">
+      <header style="padding:1rem 1.1rem 0">
+        <h2 style="font-size:1.05rem;margin:0">Registros antigos (comissão manual)</h2>
+        <p class="meta" style="margin:0.35rem 0 0">Cadastros anteriores à migração para leads completos.</p>
+      </header>
+      <div class="table-wrap" style="padding:0.75rem 1.1rem 1.1rem">
+        <table class="data">
+          <thead>
+            <tr><th>Venda</th><th>Valor</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for s in legacy_sales %}
+            <tr>
+              <td>{{ s.title }}</td>
+              <td>{% if s.value_brl is not none %}{{ s.value_brl|float|brl }}{% else %}—{% endif %}</td>
+              <td><a href="{{ url_for('crm.crm_commission_sale_edit', sale_id=s.id) }}">Editar</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

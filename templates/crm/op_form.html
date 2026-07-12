@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% from "macros/lead_chat.html" import lead_chat_bubble %}
+{% from "macros/catalog_product_picker.html" import catalog_product_picker %}
+{% from "macros/catalog_product_fields.html" import partner_owner_select %}
+{% block title %}{% if opp %}Editar{% else %}Nova{% endif %} oportunidade{% endblock %}
+{% block body %}
+{% if comercial_subnav %}
+{% include "comercial/_subnav.html" %}
+{% else %}
+<div class="crm-shell"><div class="crm-shell__inner">
+{% include "crm/_subnav.html" %}
+{% endif %}
+
+<div class="lead-form-page">
+  <header class="lead-form-header">
+    <div class="lead-form-header__main">
+      <a class="lead-form-back" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">← Voltar</a>
+      <h1 class="lead-form-header__title">{% if opp %}Editar lead{% else %}Novo lead{% endif %}</h1>
+      {% if opp %}
+      <p class="lead-form-header__meta">
+        {% if opp.organization %}<span>{{ opp.organization }}</span>{% endif %}
+        {% if opp.contact_name %}<span>{{ opp.contact_name }}</span>{% endif %}
+        {% for key, label in stages %}{% if stage_normalize_fn(opp.stage) == key %}<span class="lead-form-stage">{{ label }}</span>{% endif %}{% endfor %}
+      </p>
+      {% else %}
+      <p class="lead-form-header__meta">Preencha os dados, vincule produtos e defina a comissão.</p>
+      {% endif %}
+    </div>
+  </header>
+
+  <form method="post" class="lead-form-layout" enctype="multipart/form-data" novalidate>
+    <div class="lead-form-main">
+      <section class="lead-form-card" aria-labelledby="lead-sec-ident">
+        <h2 class="lead-form-card__title" id="lead-sec-ident">Identificação</h2>
+        <div class="lead-form-fields lead-form-fields--2col">
+          <div class="lead-form-field lead-form-field--wide">
+            <label for="title">Título *</label>
+            <input id="title" name="title" required value="{{ opp.title if opp else '' }}">
+          </div>
+          <div class="lead-form-field">
+            <label for="organization">Órgão / empresa</label>
+            <input id="organization" name="organization" value="{{ opp.organization or '' if opp else '' }}">
+          </div>
+          <div class="lead-form-field">
+            <label for="cnpj">CNPJ</label>
+            <input id="cnpj" name="cnpj" placeholder="00.000.000/0001-00" value="{{ opp.cnpj or '' if opp else '' }}" maxlength="22" autocomplete="off">
+          </div>
+          <div class="lead-form-field">
+            <label for="contact_name">Contato</label>
+            <input id="contact_name" name="contact_name" value="{{ opp.contact_name or '' if opp else '' }}">
+          </div>
+          <div class="lead-form-field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" value="{{ opp.email or '' if opp else '' }}">
+          </div>
+          <div class="lead-form-field">
+            <label for="phone">Telefone</label>
+            <input id="phone" name="phone" value="{{ opp.phone or '' if opp else '' }}">
+          </div>
+          <div class="lead-form-field">
+            <label for="sphere">Esfera</label>
+            <input id="sphere" name="sphere" placeholder="Federal, Estadual, Municipal…" value="{{ opp.sphere or '' if opp else '' }}">
+          </div>
+        </div>
+      </section>
+
+      {% if clients is defined and partners is defined and not comercial_subnav %}
+      <section class="lead-form-card" aria-labelledby="lead-sec-links">
+        <h2 class="lead-form-card__title" id="lead-sec-links">Cliente e fornecedor *</h2>
+        <p class="lead-form-card__desc">O lead só pode ser salvo com cliente e fornecedor já cadastrados no CRM.</p>
+        <div class="lead-form-fields lead-form-fields--2col">
+          <div class="lead-form-field lead-form-field--wide">
+            <label for="portal_client_id">Cliente (portal) *</label>
+            <select id="portal_client_id" name="portal_client_id" required>
+              <option value="" disabled {% if not opp or not opp.portal_client_id %}selected{% endif %}>Selecione o cliente…</option>
+              {% for c in clients %}
+              <option value="{{ c.id }}" {% if opp and opp.portal_client_id == c.id %}selected{% endif %}>{{ c.name }} — {{ c.email }}</option>
+              {% endfor %}
+            </select>
+            <p class="meta" style="margin:0.35rem 0 0"><a href="{{ url_for('crm.crm_client_new') }}" target="_blank">+ Cadastrar cliente</a></p>
+          </div>
+          <div class="lead-form-field lead-form-field--wide lead-form-field--partner">
+            {{ partner_owner_select('partner_id', opp.partner_id if opp else none, true, partners) }}
+            <p class="meta" style="margin:0.35rem 0 0"><a href="{{ url_for('crm.crm_partner_new') }}" target="_blank">+ Cadastrar fornecedor</a></p>
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="lead-form-card" aria-labelledby="lead-sec-products">
+        <h2 class="lead-form-card__title" id="lead-sec-products">Produtos da adesão</h2>
+        <p class="lead-form-card__desc">Busque itens do catálogo e informe a quantidade. O valor total é calculado automaticamente.</p>
+        {% set selected_catalog = [] %}
+        {% if opp %}
+          {% for ln in opp.catalog_lines %}
+            {% set _ = selected_catalog.append({'id': ln.catalog_item_id, 'qty': ln.quantity}) %}
+          {% endfor %}
+        {% endif %}
+        {{ catalog_product_picker(selected_lines=selected_catalog) }}
+      </section>
+
+      <section class="lead-form-card" aria-labelledby="lead-sec-pipeline">
+        <h2 class="lead-form-card__title" id="lead-sec-pipeline">Pipeline</h2>
+        <div class="lead-form-fields lead-form-fields--2col">
+          <div class="lead-form-field">
+            <label for="stage">Estágio</label>
+            <select id="stage" name="stage">
+              {% for key, label in stages %}
+              <option value="{{ key }}" {% if opp and stage_normalize_fn(opp.stage) == key %}selected{% elif not opp and key == 'novo' %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="lead-form-field">
+            <label for="source">Origem</label>
+            <input id="source" name="source" placeholder="Site, indicação, licitação…" value="{{ opp.source or '' if opp else '' }}">
+          </div>
+          <div class="lead-form-field">
+            <label for="process_ref">Nº processo / licitação</label>
+            <input id="process_ref" name="process_ref" placeholder="Ex.: 90001.000123/2024-01" value="{{ opp.process_ref or '' if opp else '' }}">
+          </div>
+          {% if sales_reps is not none %}
+          <div class="lead-form-field">
+            <label for="sales_rep_id">Representante comercial</label>
+            <select id="sales_rep_id" name="sales_rep_id">
+              <option value="">Nenhum</option>
+              {% for r in sales_reps %}
+              <option value="{{ r.id }}" {% if opp and opp.sales_rep_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+        </div>
+
+        <p class="lead-form-card__desc meta" id="pipeline-fields-hint" hidden>Altere o estágio acima para preencher os dados desta etapa.</p>
+
+        {% if pipeline_stage_field_defs is defined %}
+        {% include "crm/_pipeline_stage_fields.html" %}
+        {% endif %}
+      </section>
+
+      {% if not comercial_subnav and commission_projects is defined %}
+      <section class="lead-form-card" id="commission_project_section" aria-labelledby="lead-sec-commission">
+        <h2 class="lead-form-card__title" id="lead-sec-commission">Comissionamento</h2>
+        <p class="lead-form-card__desc">O rateio usa o <strong>valor total da venda</strong>. <a href="{{ url_for('crm.crm_commission_projects') }}">Ver tabelas</a></p>
+        <div class="lead-form-fields lead-form-fields--2col">
+          <div class="lead-form-field">
+            <label for="commission_project_id">Tipo de comissão</label>
+            <select id="commission_project_id" name="commission_project_id">
+              <option value="">Manual / sem faixa</option>
+              {% for p in commission_projects %}
+              <option value="{{ p.id }}" {% if opp and opp.commission_project_id == p.id %}selected{% endif %}>{{ p.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="lead-form-field">
+            <label for="commission_tier_id">Faixa de comissão</label>
+            <select id="commission_tier_id" name="commission_tier_id"{% if opp and opp.commission_tier_id %} data-selected="{{ opp.commission_tier_id }}"{% endif %}>
+              <option value="">—</option>
+            </select>
+          </div>
+        </div>
+        <div id="commission_rateio_wrap" class="lead-form-table-wrap"{% if not opp or not opp.commission_splits %} hidden{% endif %}>
+          <p class="lead-form-table-label" id="commission_rateio_label">
+            <strong>Rateio</strong>{% if opp and opp.commission_tier %} — {{ tier_label_fn(opp.commission_tier) }}{% endif %}
+          </p>
+          <table class="data data--compact">
+            <thead><tr><th>Beneficiário</th><th>%</th><th>Valor</th><th>Status</th></tr></thead>
+            <tbody id="commission_rateio_body">
+              {% if opp and opp.commission_splits %}
+              {% for s in opp.commission_splits %}
+              <tr>
+                <td>{{ s.recipient_name }}</td>
+                <td>{{ '%.4f'|format(s.share_percent|float) }}%</td>
+                <td>{% if s.amount_brl is not none %}{{ s.amount_brl|float|brl }}{% else %}—{% endif %}</td>
+                <td class="meta">{{ s.payout_status }}</td>
+              </tr>
+              {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        <div id="manual_commission_fields" class="lead-form-fields lead-form-fields--2col" style="margin-top:0.85rem">
+          <div class="lead-form-field">
+            <label for="rep_commission_brl">Comissão do representante (R$)</label>
+            <input id="rep_commission_brl" name="rep_commission_brl" placeholder="Ex.: 1500,50" value="{% if opp and opp.rep_commission_brl is not none %}{{ opp.rep_commission_brl|brl_decimal }}{% endif %}">
+          </div>
+          <div class="lead-form-field lead-form-field--wide">
+            <label for="rep_commission_note">Observações sobre a comissão</label>
+            <textarea id="rep_commission_note" name="rep_commission_note" rows="2" placeholder="Regras, parcelas…">{{ opp.rep_commission_note or '' if opp else '' }}</textarea>
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="lead-form-card" aria-labelledby="lead-sec-notes">
+        <h2 class="lead-form-card__title" id="lead-sec-notes">Observações</h2>
+        <div class="lead-form-field">
+          <label for="notes" class="visually-hidden">Observações</label>
+          <textarea id="notes" name="notes" rows="3" placeholder="Contexto interno, próximos passos…">{{ opp.notes or '' if opp else '' }}</textarea>
+        </div>
+      </section>
+
+      <div class="lead-form-actions lead-form-actions--mobile">
+        <button type="submit" class="btn btn--primary">Salvar lead</button>
+        <a class="btn btn--ghost" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">Cancelar</a>
+      </div>
+    </div>
+
+    <aside class="lead-form-aside">
+      <div class="lead-form-sticky">
+        <div class="lead-sale-total-card lead-sale-total-card--aside" id="lead_sale_total_wrap">
+          <span class="lead-sale-total-card__label">Valor total da venda</span>
+          <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">
+            {% if opp and opp.value_brl is not none %}{{ opp.value_brl|float|brl }}{% else %}—{% endif %}
+          </p>
+          <input type="hidden" id="value_brl" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
+          <p class="lead-sale-total-card__hint">Base do cálculo da comissão</p>
+        </div>
+        <div class="lead-form-actions lead-form-actions--desktop">
+          <button type="submit" class="btn btn--primary btn--block">Salvar lead</button>
+          <a class="btn btn--ghost btn--block" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">Cancelar</a>
+        </div>
+        {% if opp and opp.catalog_lines %}
+        <div class="lead-form-aside-summary">
+          <span class="lead-form-aside-summary__label">Produtos vinculados</span>
+          <ul class="lead-form-aside-summary__list">
+            {% for ln in opp.catalog_lines %}
+            <li>{% if ln.catalog_item %}{{ ln.catalog_item.title[:48] }}{% if ln.catalog_item.title|length > 48 %}…{% endif %}{% else %}#{{ ln.catalog_item_id }}{% endif %} <strong>×{{ ln.quantity }}</strong></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </aside>
+  </form>
+
+  {% if opp %}
+  <div class="lead-form-bottom">
+    {% if comercial_subnav %}
+    <section class="lead-form-card lead-form-card--compact" aria-label="Comissionamento">
+      <h2 class="lead-form-card__title">Comissionamento</h2>
+      {% if opp.rep_commission_brl is not none %}
+      <p class="meta">Comissão: <strong>{{ opp.rep_commission_brl|float|brl }}</strong></p>
+      {% else %}
+      <p class="meta">Nenhum valor de comissão definido ainda.</p>
+      {% endif %}
+      <p class="meta" style="margin-bottom:0">
+        <a href="{{ url_for('comercial_financeiro_novo') }}?oportunidade={{ opp.id }}">Anexar documento</a>
+        · <a href="{{ url_for('comercial_financeiro') }}">Meu financeiro</a>
+      </p>
+    </section>
+    {% endif %}
+
+    <section class="lead-form-card lead-form-card--chat">
+      <h2 class="lead-form-card__title">Chat com o cliente</h2>
+      <p class="lead-form-card__desc">Visível na área do cliente. Envio independente do botão Salvar.</p>
+      <div class="lead-chat__thread lead-chat__thread--crm lead-chat__thread--bounded">
+        {% if chat_messages %}
+        {% for m in chat_messages %}
+        {{ lead_chat_bubble(m, client_area=false, allow_delete=true) }}
+        {% endfor %}
+        {% else %}
+        <p class="meta" style="margin:0">Sem mensagens ainda.</p>
+        {% endif %}
+      </div>
+      <form method="post" action="{{ chat_form_action }}" class="lead-chat__form lead-chat__form--compact" enctype="multipart/form-data">
+        <textarea id="crm-chat-body" name="chat_body" rows="2" placeholder="Mensagem…"></textarea>
+        <div class="lead-chat__form-row">
+          <input id="crm-chat-files" type="file" name="attachments" multiple accept="image/*,.pdf,.doc,.docx">
+          <button type="submit" class="btn btn--primary btn--compact">Enviar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="lead-form-card lead-form-card--danger">
+      <h2 class="lead-form-card__title lead-form-card__title--danger">Zona de risco</h2>
+      <p class="lead-form-card__desc">Remove o lead, chat e vínculos com produtos. Lançamentos financeiros permanecem sem oportunidade.</p>
+      <a href="{% if comercial_subnav is defined and comercial_subnav %}/comercial/oportunidade/{{ opp.id }}/excluir{% else %}/crm/oportunidade/{{ opp.id }}/excluir{% endif %}" class="btn btn--danger btn--compact">Excluir lead…</a>
+    </section>
+  </div>
+  {% endif %}
+</div>
+
+{% if not comercial_subnav %}
+</div></div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/catalog-product-picker.js') }}?v={{ catalog_picker_js_v }}" defer></script>
+{% if commission_projects_json is defined %}
+<script type="application/json" id="commission_projects_json">{{ commission_projects_json|tojson }}</script>
+<script src="{{ url_for('static', filename='js/commission-tier-picker.js') }}" defer></script>
+{% endif %}
+{% if pipeline_stage_field_defs is defined %}
+<script src="{{ url_for('static', filename='js/lead-pipeline-stages.js') }}?v=4" defer></script>
+{% endif %}
+{% endblock %}

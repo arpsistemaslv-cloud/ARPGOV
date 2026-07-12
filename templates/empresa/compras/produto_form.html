@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{% if produto %}Editar produto{% else %}Novo produto{% endif %} — Compras{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.compras_produtos_list') }}">← Produtos</a></p>
+    <h1 style="margin-top:0">{% if produto %}Editar produto{% else %}Novo produto{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div>
+        <label for="part_number">Part number *</label>
+        <input id="part_number" name="part_number" required maxlength="120" value="{{ produto.part_number if produto else '' }}">
+      </div>
+      <div>
+        <label for="unidade">Unidade</label>
+        <input id="unidade" name="unidade" maxlength="20" value="{{ produto.unidade if produto else 'UN' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="nome">Nome / descrição curta *</label>
+        <input id="nome" name="nome" required maxlength="400" value="{{ produto.nome if produto else '' }}">
+      </div>
+      <div>
+        <label for="ncm">NCM (8 dígitos)</label>
+        <input id="ncm" name="ncm" maxlength="10" value="{{ produto.ncm if produto and produto.ncm else '' }}" placeholder="Obrigatório para fechamento de preço / impostos" inputmode="numeric">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="descricao">Descrição (opcional)</label>
+        <textarea id="descricao" name="descricao" rows="4">{{ produto.descricao if produto else '' }}</textarea>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="beneficio_fiscal">Benefício fiscal (opcional)</label>
+        <textarea id="beneficio_fiscal" name="beneficio_fiscal" rows="2" placeholder="Ex.: redução de base, crédito presumido…">{{ produto.beneficio_fiscal if produto else '' }}</textarea>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes_fiscais">Observações fiscais (opcional)</label>
+        <textarea id="observacoes_fiscais" name="observacoes_fiscais" rows="2">{{ produto.observacoes_fiscais if produto else '' }}</textarea>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="acessorios">Acessórios (um por linha; opcional: <code>Nome | PART-123</code>)</label>
+        <textarea id="acessorios" name="acessorios" rows="5" placeholder="Fonte externa 12V&#10;Cabo USB | USB-A-02">{{ acessorios_text|default('', true) }}</textarea>
+      </div>
+      {% if produto %}
+      <div style="grid-column:1/-1">
+        <label><input type="checkbox" name="ativo" value="1" {% if produto.ativo %}checked{% endif %}> Ativo</label>
+      </div>
+      {% endif %}
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.compras_produtos_list') }}">Cancelar</a>
+    </form>
+    {% if produto %}
+    {% set contexto = 'produto' %}
+    {% set ref_id = produto.id %}
+    {% set next_url = url_for('empresa.compras_produtos_edit', pid=produto.id) %}
+    {% include "empresa/_anexos.html" %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

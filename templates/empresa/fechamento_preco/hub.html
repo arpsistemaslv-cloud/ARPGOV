@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Fechamento de preço{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='fechamento_preco') }}">← Setor Fechamento de preço</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Fechamento de preço</h1>
+    <p class="meta">Planilhas com <strong>UF de entrega</strong>, <strong>frete</strong>, <strong>custo financeiro</strong>, <strong>mark-up</strong> e impostos: prioridade à <a href="{{ url_for('empresa.imposto_hub') }}"><strong>matriz produto × UF</strong></a>; fallback ao <strong>NCM</strong> em <a href="{{ url_for('empresa.compras_produtos_list') }}">Compras</a> e <strong>Tabela NCM</strong>. Feche a planilha para <strong>congelar</strong> o snapshot. Vincule a <a href="{{ url_for('empresa.licitacoes_lista') }}">licitação</a> quando aplicável.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.fechamento_preco_planilhas') }}"><strong>Planilhas</strong><span>{{ n_planilhas }} registro(s)</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.fechamento_preco_relatorio_comissoes') }}"><strong>Relatório de comissões</strong><span>Account e equipe por mês</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.imposto_hub') }}"><strong>Matriz impostos (UF)</strong><span>{{ n_imposto_matriz }} registro(s) produto × UF</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.fechamento_preco_ncm_list') }}"><strong>Tabela NCM</strong><span>{{ n_ncm }} perfil(is) · fallback fiscal</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.compras_produtos_list') }}"><strong>Produtos + NCM</strong><span>{% if n_produtos_sem_ncm %}<strong>{{ n_produtos_sem_ncm }}</strong> sem NCM{% else %}Todos com NCM{% endif %}</span></a>
+    </div>
+    <p style="margin-top:1.25rem"><a class="btn btn--primary" href="{{ url_for('empresa.fechamento_preco_planilha_new') }}">Nova planilha</a></p>
+  </div>
+</div>
+{% endblock %}

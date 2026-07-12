@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Jurídico — cadastros{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='juridico') }}">← Setor Jurídico</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Jurídico — cadastros</h1>
+    <p class="meta"><strong>Processos</strong> com número, tribunal e próximo prazo.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.juridico_processos_list') }}"><strong>Processos</strong><span>{{ n_processos }} registro(s)</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

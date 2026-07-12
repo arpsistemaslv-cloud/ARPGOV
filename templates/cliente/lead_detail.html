@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "macros/lead_chat.html" import lead_chat_bubble %}
+{% block title %}{{ opp.title[:50] }}{% endblock %}
+{% block body %}
+{% include "cliente/_subnav.html" %}
+<p class="meta"><a href="{{ url_for('cliente_meus_leads') }}">← Voltar aos meus leads</a></p>
+<article class="card" style="max-width:640px">
+  <h1 style="margin-top:0;font-size:1.2rem">{{ opp.title }}</h1>
+  <p class="meta">Estágio atual: <strong>{% for key, label in stages %}{% if opp.stage == key %}{{ label }}{% endif %}{% endfor %}</strong></p>
+  <p class="meta">Enviado em: {{ opp.created_at.strftime('%d/%m/%Y %H:%M') if opp.created_at else '—' }} · Última atualização: {{ opp.updated_at.strftime('%d/%m/%Y %H:%M') if opp.updated_at else '—' }}</p>
+  {% if opp.organization or opp.contact_name %}
+  <p class="meta">{% if opp.organization %}<strong>{{ opp.organization }}</strong>{% endif %}{% if opp.contact_name %}{% if opp.organization %} · {% endif %}{{ opp.contact_name }}{% endif %}</p>
+  {% endif %}
+  {% if opp.sphere %}
+  <p class="meta">Esfera: <strong>{{ opp.sphere }}</strong></p>
+  {% endif %}
+  {% if opp.value_brl is not none %}
+  <p class="meta">Valor total da venda: <strong>{{ opp.value_brl|float|brl }}</strong></p>
+  {% endif %}
+  {% if opp.catalog_lines %}
+  <div style="margin-top:0.75rem">
+    <p class="meta" style="margin-bottom:0.35rem"><strong>Produtos de interesse</strong></p>
+    <ul class="meta" style="margin:0;padding-left:1.2rem">
+      {% for ln in opp.catalog_lines|sort(attribute='catalog_item.title') %}
+      <li>
+        {% if ln.catalog_item %}<a href="{{ url_for('produto', slug=ln.catalog_item.slug) }}">{{ ln.catalog_item.title }}</a>{% else %}—{% endif %}
+        — qtd. <strong>{{ ln.quantity }}</strong>
+        {% if ln.catalog_item and ln.catalog_item.unit_price is not none %}
+        · {{ (ln.catalog_item.unit_price|float * ln.quantity)|brl }}
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if opp.notes %}
+  <div style="margin-top:1rem">
+    <p class="meta" style="margin-bottom:0.35rem"><strong>Sua mensagem / observações</strong></p>
+    <div class="page-body" style="font-size:0.9rem;white-space:pre-wrap">{{ opp.notes }}</div>
+  </div>
+  {% endif %}
+</article>
+
+<section class="card lead-chat" style="max-width:640px;margin-top:1.25rem">
+  <h2 class="lead-chat__title">Conversa com a equipe</h2>
+  <p class="meta" style="margin-top:0">Troque mensagens com o atendimento sobre este lead. Você pode receber avisos por e-mail quando houver atualizações.</p>
+  <div class="lead-chat__thread" aria-live="polite">
+    {% if chat_messages %}
+    {% for m in chat_messages %}
+    {{ lead_chat_bubble(m, client_area=true, allow_delete=true) }}
+    {% endfor %}
+    {% else %}
+    <p class="meta" style="margin:0">Nenhuma mensagem ainda. Escreva abaixo para falar com a equipe.</p>
+    {% endif %}
+  </div>
+  <form method="post" action="{{ url_for('cliente_lead_detail', oid=opp.id) }}" class="lead-chat__form" enctype="multipart/form-data">
+    <label for="client-chat-body">Mensagem</label>
+    <textarea id="client-chat-body" name="chat_body" rows="4" placeholder="Texto (opcional se enviar só arquivos)…"></textarea>
+    <label for="client-chat-files">Fotos e documentos</label>
+    <input id="client-chat-files" type="file" name="attachments" multiple accept="image/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    <p class="meta" style="margin:0">Até 8 arquivos, 15 MB cada — imagens, PDF ou Word.</p>
+    <button type="submit" class="btn btn--primary">Enviar</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Produtos de parceiros — pendentes{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Solicitações de produto (parceiros)</h1>
+<p class="meta">Itens enviados pelos parceiros com os mesmos dados do cadastro de produto do painel. <strong>Aprovar</strong> publica o item na loja; <strong>Recusar</strong> devolve o motivo ao parceiro para ajuste.</p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Parceiro</th>
+        <th>Título proposto</th>
+        <th>Preço (rascunho)</th>
+        <th>Atualizado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in products %}
+      <tr>
+        <td>
+          <strong>{{ row.partner.name }}</strong>
+          {% if row.partner.company_name %}<br><span class="meta">{{ row.partner.company_name }}</span>{% endif %}
+        </td>
+        <td>{{ row.title }}</td>
+        <td class="meta">{% if row.draft_unit_price is not none %}{{ format_currency_brl(row.draft_unit_price) }}{% else %}—{% endif %}</td>
+        <td class="meta">{{ row.updated_at.strftime('%d/%m/%Y %H:%M') if row.updated_at else '—' }}</td>
+        <td><a href="{{ url_for('admin_partner_product_review', product_id=row.id) }}">Analisar</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="meta">Nenhuma solicitação pendente.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Análise prévia de ARPs{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Análise prévia de ARPs</h1>
+<p class="meta">Cadastre atas interessantes com o link da ARP, acompanhe negociação com parceiro e publique no site quando estiver pronto.</p>
+
+<form method="get" action="{{ url_for('admin_arp_analysis_list') }}" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+  <div>
+    <label for="arp-q" class="meta" style="display:block;margin-bottom:0.25rem">Busca</label>
+    <input id="arp-q" type="search" name="q" value="{{ qtext }}" placeholder="Título, órgão, nº ata…" style="max-width:260px">
+  </div>
+  <div>
+    <label for="arp-status" class="meta" style="display:block;margin-bottom:0.25rem">Status</label>
+    <select id="arp-status" name="status">
+      <option value="">Todos</option>
+      {% for sid, slabel in statuses %}
+      <option value="{{ sid }}" {% if filter_status == sid %}selected{% endif %}>{{ slabel }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn--primary">Filtrar</button>
+  {% if qtext or filter_status %}<a href="{{ url_for('admin_arp_analysis_list') }}" class="btn btn--ghost">Limpar</a>{% endif %}
+</form>
+
+<p>
+  <a class="btn btn--primary" href="{{ url_for('admin_arp_analysis_new') }}">+ Nova ARP</a>
+  <a class="btn btn--ghost" href="{{ url_for('admin_licitacao_watch_list') }}">Licitações em andamento</a>
+</p>
+
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>ARP / objeto</th>
+        <th>Órgão</th>
+        <th>Fornecedor</th>
+        <th>Status</th>
+        <th>Atualizado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td style="max-width:280px">
+          <strong>{{ r.titulo[:90] }}{% if r.titulo|length > 90 %}…{% endif %}</strong>
+          {% if r.numero_ata %}<br><span class="meta">Ata {{ r.numero_ata }}</span>{% endif %}
+        </td>
+        <td class="meta">{{ r.orgao or '—' }}</td>
+        <td class="meta">{{ r.fornecedor_nome or '—' }}</td>
+        <td><span class="badge-pipeline badge-pipeline--{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span></td>
+        <td class="meta">{{ r.updated_at.strftime('%d/%m/%Y') if r.updated_at else '—' }}</td>
+        <td style="white-space:nowrap">
+          <a href="{{ r.arp_url }}" target="_blank" rel="noopener" class="meta">Link</a>
+          · <a href="{{ url_for('admin_arp_analysis_edit', analysis_id=r.id) }}">Editar</a>
+          {% if r.catalog_item_id %}
+          · <a href="{{ url_for('admin_catalog_edit', item_id=r.catalog_item_id) }}">Site ✓</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="meta">Nenhuma ARP cadastrada. <a href="{{ url_for('admin_arp_analysis_new') }}">Cadastre a primeira</a> ou use o robô e clique em “+ Análise”.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

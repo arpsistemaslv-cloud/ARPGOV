@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Mercado público (PNCP){% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Mercado público — dados para a área do cliente</h1>
+<p class="meta">Agrega <strong>contratos</strong> e <strong>atas de registro de preço</strong> da API pública de consulta do PNCP e alimenta os gráficos em <a href="{{ url_for('cliente_mercado_publico') }}" target="_blank" rel="noopener">/cliente/mercado-publico</a> (clientes logados). Pode levar de alguns segundos a vários minutos conforme o período e os limites de página.</p>
+
+<form method="post" style="max-width:520px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin:1rem 0">
+  <h2 style="font-size:1.05rem;margin:0 0 0.75rem">Atualizar agregação</h2>
+  <div style="display:grid;gap:0.75rem">
+    <label>Data inicial <input type="date" name="data_inicio" value="{{ default_di.isoformat() }}" required style="width:100%;max-width:280px"></label>
+    <label>Data final <input type="date" name="data_fim" value="{{ default_df.isoformat() }}" required style="width:100%;max-width:280px"></label>
+    <label>Máx. páginas (contratos) <input type="number" name="max_pages_contratos" value="25" min="1" max="120" style="width:6rem"> <span class="meta">500 contratos/página</span></label>
+    <label>Máx. páginas (atas ARP) <input type="number" name="max_pages_atas" value="15" min="1" max="80" style="width:6rem"></label>
+  </div>
+  <p class="meta" style="margin:0.75rem 0 0">Período máximo: <strong>31 dias</strong> por execução.</p>
+  <button type="submit" class="btn btn--primary" style="margin-top:1rem">Coletar e gravar snapshot</button>
+</form>
+
+{% if latest %}
+<hr style="border:none;border-top:1px solid var(--border);margin:1.5rem 0">
+<h2 style="font-size:1.05rem">Último snapshot</h2>
+<p class="meta">{{ latest.data_inicio.strftime('%d/%m/%Y') }} — {{ latest.data_fim.strftime('%d/%m/%Y') }} · {{ latest.created_at.strftime('%d/%m/%Y %H:%M') }} UTC</p>
+<ul class="meta" style="margin:0;padding-left:1.25rem">
+  <li>Contratos processados: {{ latest.contratos_processados }} (API total: {{ latest.contratos_total_api or '—' }})</li>
+  <li>Atas processadas: {{ latest.atas_processadas }} (API total: {{ latest.atas_total_api or '—' }})</li>
+  <li>Valor despesa (amostra): {{ format_currency_brl(latest.valor_contratos_despesa) }}</li>
+  <li>Amostra incompleta: {{ 'sim' if latest.amostra_incompleta else 'não' }}</li>
+</ul>
+{% if latest.erro %}<p class="meta" style="color:var(--danger)">{{ latest.erro[:600] }}{% if latest.erro|length > 600 %}…{% endif %}</p>{% endif %}
+{% else %}
+<p class="meta">Nenhum snapshot gravado ainda.</p>
+{% endif %}
+
+<p class="meta" style="margin-top:1.5rem"><a href="{{ url_for('admin_home') }}">← Início do painel</a></p>
+{% endblock %}

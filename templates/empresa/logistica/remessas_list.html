@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Remessas — Logística{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.logistica_hub') }}">← Logística</a></p>
+    <h1 style="margin-top:0">Remessas</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.logistica_remessas_new') }}">Nova remessa</a></p>
+    <form method="get" class="form-grid" style="max-width:420px;margin:1rem 0">
+      <div style="grid-column:1/-1">
+        <label for="q">Buscar</label>
+        <input id="q" name="q" value="{{ q or '' }}" placeholder="Órgão, NF ou rastreio">
+      </div>
+      <button type="submit" class="btn btn--ghost">Filtrar</button>
+    </form>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Destino</th><th>Status</th><th>Rastreio</th><th>Empenho</th><th></th></tr></thead>
+        <tbody>
+          {% for r in remessas %}
+          <tr>
+            <td>{{ r.destino_orgao }}</td>
+            <td>{{ r.status }}</td>
+            <td>{% if r.codigo_rastreio %}<code>{{ r.codigo_rastreio }}</code>{% else %}—{% endif %}</td>
+            <td>{% if r.empenho %}<a href="{{ url_for('empresa.compras_empenho_detail', eid=r.empenho.id) }}">{{ r.empenho.numero }}</a>{% else %}—{% endif %}</td>
+            <td><a href="{{ url_for('empresa.logistica_remessas_edit', rid=r.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhuma remessa.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

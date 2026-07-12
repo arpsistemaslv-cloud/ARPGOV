@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Empenho {{ empenho.numero }} — Compras{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:800px">
+    <p class="meta"><a href="{{ url_for('empresa.compras_empenhos_list') }}">← Empenhos</a></p>
+    <h1 style="margin-top:0">Empenho {{ empenho.numero }}</h1>
+    <p class="meta"><strong>{{ empenho.orgao_nome }}</strong>{% if empenho.cnpj_orgao %} · CNPJ {{ empenho.cnpj_orgao }}{% endif %}</p>
+    <ul class="meta" style="margin:0 0 1rem;padding-left:1.2rem">
+      {% if empenho.contrato %}
+      <li>Contrato vinculado: <strong>{{ empenho.contrato.numero_contrato }}</strong> ({{ empenho.contrato.orgao_nome }}) — <a href="{{ url_for('empresa.contratos_detail', cid=empenho.contrato.id) }}">Ver contrato</a></li>
+      {% endif %}
+      <li>Status: <strong>{{ empenho.status }}</strong></li>
+      <li>Valor total informado: {% if empenho.valor_total is not none %}R$ {{ empenho.valor_total }}{% else %}—{% endif %}</li>
+      <li>Emissão: {{ empenho.data_emissao.strftime('%d/%m/%Y') if empenho.data_emissao else '—' }}</li>
+      <li>Processamento interno: {{ empenho.data_processamento.strftime('%d/%m/%Y') if empenho.data_processamento else '—' }}</li>
+    </ul>
+    {% if empenho.observacoes %}
+    <p style="white-space:pre-wrap">{{ empenho.observacoes }}</p>
+    {% endif %}
+    <p>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.compras_empenhos_edit', eid=empenho.id) }}">Editar dados do empenho</a>
+    </p>
+
+    <h2 style="font-size:1.1rem;margin:1.5rem 0 0.75rem">Itens vinculados (produtos cadastrados)</h2>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Part number</th>
+            <th>Produto</th>
+            <th>Qtd</th>
+            <th>Vlr unit.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in empenho.itens %}
+          <tr>
+            <td><code>{{ it.produto.part_number if it.produto else '?' }}</code></td>
+            <td>{{ it.produto.nome if it.produto else '?' }}</td>
+            <td>{{ it.quantidade }}</td>
+            <td>{% if it.valor_unitario is not none %}R$ {{ it.valor_unitario }}{% else %}—{% endif %}</td>
+            <td>
+              <form method="post" action="{{ url_for('empresa.compras_empenho_item_delete', iid=it.id) }}" style="display:inline" onsubmit="return confirm('Remover este item?');">
+                <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.5rem;font-size:0.85rem">Excluir</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhum produto vinculado ainda.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:1rem;margin:1.25rem 0 0.5rem">Adicionar produto a este empenho</h3>
+    {% if produtos %}
+    <form method="post" action="{{ url_for('empresa.compras_empenho_item_add', eid=empenho.id) }}" class="form-grid" style="max-width:100%;align-items:end">
+      <div>
+        <label for="produto_id">Produto</label>
+        <select id="produto_id" name="produto_id" required>
+          <option value="">— selecione —</option>
+          {% for p in produtos %}
+          <option value="{{ p.id }}">{{ p.part_number }} — {{ p.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="quantidade">Quantidade</label>
+        <input id="quantidade" name="quantidade" value="1" placeholder="1">
+      </div>
+      <div>
+        <label for="valor_unitario">Valor unitário (R$)</label>
+        <input id="valor_unitario" name="valor_unitario" placeholder="Opcional">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacao">Obs. da linha</label>
+        <input id="observacao" name="observacao" maxlength="500" placeholder="Opcional">
+      </div>
+      <button type="submit" class="btn btn--primary">Vincular</button>
+    </form>
+    {% else %}
+    <p class="meta">Cadastre produtos em <a href="{{ url_for('empresa.compras_produtos_new') }}">Novo produto</a> antes de vincular.</p>
+    {% endif %}
+
+    {% set contexto = 'empenho' %}
+    {% set ref_id = empenho.id %}
+    {% set next_url = request.path %}
+    {% include "empresa/_anexos.html" %}
+  </div>
+</div>
+{% endblock %}

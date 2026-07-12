@@ -1,0 +1,78 @@
+{% set login_area = login_area|default('admin') %}
+{% set next_arg = request.args.get('next', '') %}
+{% set admin_login_href = url_for('admin_login', next=next_arg) if next_arg else url_for('admin_login') %}
+{% set crm_login_href = url_for('crm.crm_login', next=next_arg) if next_arg else url_for('crm.crm_login') %}
+{% set is_admin = login_area == 'admin' %}
+
+<section class="staff-login" aria-labelledby="staff-login-title">
+  <div class="staff-login__brand">
+    <div class="staff-login__brand-inner">
+      <img class="staff-login__logo" src="{{ url_for('static', filename='images/arpgov-mark.svg') }}" width="56" height="56" alt="">
+      <p class="staff-login__brand-name">
+        {% if site_settings and site_settings.site_brand_primary %}{{ site_settings.site_brand_primary }}{% else %}ARP{% endif %}<span>{% if site_settings and site_settings.site_brand_accent %}{{ site_settings.site_brand_accent }}{% else %}GOV{% endif %}</span>
+      </p>
+      <p class="staff-login__brand-tag">Plataforma comercial para atas de registro de preço</p>
+
+      <blockquote class="staff-login__quote">
+        <p id="staff-login-quote">O setor público compra com planejamento. Quem se antecipa, fecha adesões.</p>
+      </blockquote>
+
+      <ul class="staff-login__benefits">
+        <li>Catálogo e site com padrão de transparência do mercado governo</li>
+        <li>CRM integrado — do lead à comissão, em um só lugar</li>
+        <li>Gestão profissional para representantes e empresários B2G</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="staff-login__panel">
+    <div class="staff-login__card">
+      <nav class="staff-login__tabs" aria-label="Escolher área de acesso">
+        <a
+          href="{{ admin_login_href }}"
+          class="staff-login__tab{% if is_admin %} staff-login__tab--active{% endif %}"
+          {% if is_admin %}aria-current="page"{% endif %}
+        >
+          <span class="staff-login__tab-title">Painel do site</span>
+          <span class="staff-login__tab-desc">Catálogo e páginas</span>
+        </a>
+        <a
+          href="{{ crm_login_href }}"
+          class="staff-login__tab{% if not is_admin %} staff-login__tab--active{% endif %}"
+          {% if not is_admin %}aria-current="page"{% endif %}
+        >
+          <span class="staff-login__tab-title">CRM</span>
+          <span class="staff-login__tab-desc">Leads e comercial</span>
+        </a>
+      </nav>
+
+      {% if is_admin %}
+      <h1 class="staff-login__title" id="staff-login-title">Entrar no painel</h1>
+      <p class="staff-login__lead">Gerencie o catálogo público, textos do site e integrações.</p>
+      {% else %}
+      <h1 class="staff-login__title" id="staff-login-title">Entrar no CRM</h1>
+      <p class="staff-login__lead">Acompanhe clientes, oportunidades, comissões e financeiro.</p>
+      {% endif %}
+
+      {% if crm_disabled %}
+      <p class="flash flash--error staff-login__alert">Senha do CRM não configurada. Defina <code>CRM_ADMIN_PASSWORD</code> no ambiente ou use o painel do site.</p>
+      {% else %}
+      <form method="post" class="staff-login__form" action="{{ request.path }}{% if next_arg %}?next={{ next_arg|urlencode }}{% endif %}">
+        <div class="staff-login__field">
+          <label for="staff-email">E-mail</label>
+          <input id="staff-email" name="email" type="email" autocomplete="username" placeholder="seu@email.com" value="{{ request.form.get('email', '') }}">
+          <span class="staff-login__field-hint">Opcional para administradores com login comercial.</span>
+        </div>
+        <div class="staff-login__field">
+          <label for="staff-password">Senha</label>
+          <input id="staff-password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn--primary btn--block staff-login__submit">
+          {% if is_admin %}Acessar painel{% else %}Acessar CRM{% endif %}
+        </button>
+      </form>
+      <p class="staff-login__note">A mesma senha vale para o painel e o CRM. Após entrar, alterne entre as áreas no topo.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>

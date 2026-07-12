@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Contratos — intranet{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.contratos_hub') }}">← Contratos</a></p>
+    <h1 style="margin-top:0">Contratos</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.contratos_new') }}">Novo contrato</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Número</th><th>Órgão</th><th>Vigência</th><th>Status</th><th></th><th></th></tr></thead>
+        <tbody>
+          {% for c in contratos %}
+          <tr>
+            <td><code>{{ c.numero_contrato }}</code></td>
+            <td>{{ c.orgao_nome }}</td>
+            <td>
+              {% if c.vigencia_inicio %}{{ c.vigencia_inicio.strftime('%d/%m/%Y') }}{% else %}?{% endif %}
+              —
+              {% if c.vigencia_fim %}{{ c.vigencia_fim.strftime('%d/%m/%Y') }}{% else %}?{% endif %}
+            </td>
+            <td>{{ c.status }}</td>
+            <td><a href="{{ url_for('empresa.contratos_detail', cid=c.id) }}">Ver</a></td>
+            <td><a href="{{ url_for('empresa.contratos_edit', cid=c.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="meta">Nenhum contrato.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

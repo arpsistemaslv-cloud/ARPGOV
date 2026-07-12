@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Pendências — lista{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.pendencias_hub') }}">← Pendências</a></p>
+    <h1 style="margin-top:0">Pendências</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.pendencias_itens_new') }}">Nova pendência</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Título</th><th>Origem</th><th>Responsável</th><th>Prioridade</th><th>Status</th><th>Data alvo</th><th></th></tr></thead>
+        <tbody>
+          {% for it in itens %}
+          <tr>
+            <td>{{ it.titulo }}</td>
+            <td>{{ it.setor_origem_slug or '—' }}</td>
+            <td>{{ it.setor_responsavel_slug or '—' }}</td>
+            <td>{{ it.prioridade }}</td>
+            <td>{{ it.status }}</td>
+            <td>{{ it.data_alvo.strftime('%d/%m/%Y') if it.data_alvo else '—' }}</td>
+            <td><a href="{{ url_for('empresa.pendencias_itens_edit', pid=it.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="meta">Nenhuma pendência.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

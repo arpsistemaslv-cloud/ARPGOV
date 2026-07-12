@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Representante comercial — entrar{% endblock %}
+{% block body %}
+<h1 style="margin-top:0">Área do representante</h1>
+<p class="meta">Use o e-mail e a senha cadastrados pelo administrador. Usuários <strong>administradores</strong> do Comercial também acessam o Painel e o CRM com o mesmo login.</p>
+<form method="post" class="form-grid" style="max-width:360px;margin-top:1rem">
+  <div>
+    <label for="email">E-mail</label>
+    <input id="email" name="email" type="email" required autocomplete="email" maxlength="120">
+  </div>
+  <div>
+    <label for="password">Senha</label>
+    <input id="password" name="password" type="password" required autocomplete="current-password">
+  </div>
+  <button type="submit" class="btn btn--primary">Entrar</button>
+</form>
+{% endblock %}

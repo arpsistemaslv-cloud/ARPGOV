@@ -1,0 +1,11 @@
+{# Label + ícone ? com dica ao passar o mouse ou focar (teclado). #}
+{% macro robo_label(for_id, text, tip, required=false) %}
+<label class="robo-label"{% if for_id %} for="{{ for_id }}"{% endif %}>
+  <span class="robo-label__text">{{ text }}{% if required %} <span class="robo-label__req" aria-hidden="true">*</span>{% endif %}</span>
+  <span class="robo-tip" tabindex="0" role="button" aria-label="Ajuda: {{ text }}" data-tip="{{ tip }}">?</span>
+</label>
+{% endmacro %}
+
+{% macro robo_option_tip(tip) %}
+<span class="robo-tip robo-tip--inline" tabindex="0" role="button" data-tip="{{ tip }}">?</span>
+{% endmacro %}

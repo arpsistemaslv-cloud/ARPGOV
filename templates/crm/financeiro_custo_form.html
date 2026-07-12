@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Novo custo{% endblock %}
+{% block body %}
+{% include "crm/_subnav.html" %}
+<p class="meta"><a href="{{ url_for('crm_financeiro_custos') }}">← Custos</a></p>
+<h1 style="margin-top:0">Novo custo</h1>
+<form method="post" class="form-grid form-grid--wide" style="max-width:560px" enctype="multipart/form-data" novalidate>
+  <div>
+    <label for="title">Título *</label>
+    <input id="title" name="title" required placeholder="Ex.: NF hospedagem servidor">
+  </div>
+  <div>
+    <label for="category">Categoria</label>
+    <input id="category" name="category" placeholder="Infra, marketing, pessoal…">
+  </div>
+  <div>
+    <label for="amount_brl">Valor (R$)</label>
+    <input id="amount_brl" name="amount_brl" placeholder="0,00">
+  </div>
+  <div>
+    <label for="expense_date">Data da despesa</label>
+    <input id="expense_date" name="expense_date" type="date">
+  </div>
+  <div>
+    <label for="notes">Observações</label>
+    <textarea id="notes" name="notes" rows="3"></textarea>
+  </div>
+  <div>
+    <label for="attachments">Anexos (NF, comprovantes)</label>
+    <input id="attachments" type="file" name="attachments" multiple accept=".pdf,.xml,.zip,image/*,.doc,.docx,application/pdf">
+    <p class="meta" style="margin:0.35rem 0 0">Até 15 arquivos, 15 MB cada — PDF, XML, ZIP, imagens, Word.</p>
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn--primary">Salvar</button>
+    <a class="btn btn--ghost" href="{{ url_for('crm_financeiro_custos') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

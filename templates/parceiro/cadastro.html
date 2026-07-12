@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "macros/partner_profile_fields.html" import partner_profile_fields %}
+{% block title %}Cadastro — área do parceiro{% endblock %}
+{% block body %}
+<div class="page-shell page-shell--narrow">
+  <h1 style="margin-top:0">Cadastro de parceiro</h1>
+
+  <form method="post" class="client-profile-form br-lookup-form" action="{{ url_for('parceiro_cadastro', next=request.args.get('next')) if request.args.get('next') else url_for('parceiro_cadastro') }}">
+    {{ partner_profile_fields(show_login=True, show_password=True, password_required=True) }}
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Cadastrar</button>
+      <a class="btn btn--ghost" href="{{ url_for('parceiro_login') }}">Já tenho conta</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

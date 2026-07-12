@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Kanban — intranet{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="width:100%;overflow-x:auto">
+    <h1 style="margin-top:0">Kanban — comunicação entre setores</h1>
+    <p class="meta">Arraste os cartões entre colunas. Todos os colaboradores veem o mesmo quadro. Ao criar um cartão, opcionalmente associe um <strong>setor</strong> para identificação.</p>
+
+    <section class="kanban-new" style="margin:1rem 0;padding:1rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);max-width:720px">
+      <h2 style="font-size:1rem;margin:0 0 0.75rem">Novo cartão</h2>
+      <form method="post" action="{{ url_for('empresa.kanban_card_new') }}" class="form-grid" style="align-items:end">
+        <div>
+          <label for="kcol">Coluna</label>
+          <select id="kcol" name="column_id" required>
+            {% for col in columns %}
+            <option value="{{ col.id }}">{{ col.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="ktitle">Título</label>
+          <input id="ktitle" name="title" required maxlength="300" placeholder="Ex.: Aguardando retorno do fornecedor">
+        </div>
+        <div>
+          <label for="kdept">Setor (opcional)</label>
+          <select id="kdept" name="department_slug">
+            <option value="">— Geral / todos —</option>
+            {% for slug, label in setores %}
+            <option value="{{ slug }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label for="kdesc">Descrição</label>
+          <textarea id="kdesc" name="description" rows="2" placeholder="Detalhes para outros setores…"></textarea>
+        </div>
+        <button type="submit" class="btn btn--primary">Adicionar ao quadro</button>
+      </form>
+    </section>
+
+    <div class="kanban-board" id="kanban-board" data-sync-url="{{ url_for('empresa.api_kanban_sincronizar') }}" style="display:flex;gap:1rem;align-items:flex-start;padding-bottom:2rem;min-width:min-content">
+      {% for col in columns %}
+      <div class="kanban-col" style="flex:0 0 260px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.75rem">
+        <h2 style="font-size:0.95rem;margin:0 0 0.5rem">{{ col.title }}</h2>
+        <ul class="kanban-col__list" data-column-id="{{ col.id }}" style="list-style:none;margin:0;padding:0;min-height:120px">
+          {% for card in col.cards %}
+          <li class="kanban-card" data-card-id="{{ card.id }}" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.6rem 0.65rem;margin-bottom:0.5rem;cursor:grab">
+            <div style="font-weight:600;font-size:0.9rem">{{ card.title }}</div>
+            {% if card.department_slug %}
+            <div class="meta" style="margin:0.25rem 0 0">{% for s, lab in setores %}{% if s == card.department_slug %}{{ lab }}{% endif %}{% endfor %}</div>
+            {% endif %}
+            {% if card.description %}
+            <div class="meta" style="margin:0.35rem 0 0;white-space:pre-wrap;font-size:0.85rem">{{ card.description[:200] }}{% if card.description|length > 200 %}…{% endif %}</div>
+            {% endif %}
+            {% if card.created_by %}
+            <div class="meta" style="margin:0.35rem 0 0">Por {{ card.created_by.name }}</div>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+(function(){
+  var board = document.getElementById('kanban-board');
+  if (!board || typeof Sortable === 'undefined') return;
+  var syncUrl = board.getAttribute('data-sync-url');
+  function syncBoard() {
+    var columns = [];
+    board.querySelectorAll('.kanban-col__list').forEach(function(ul) {
+      var cid = parseInt(ul.getAttribute('data-column-id'), 10);
+      var card_ids = Array.from(ul.querySelectorAll('.kanban-card')).map(function(li) {
+        return parseInt(li.getAttribute('data-card-id'), 10);
+      });
+      columns.push({ id: cid, card_ids: card_ids });
+    });
+    fetch(syncUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ columns: columns })
+    }).catch(function(){});
+  }
+  board.querySelectorAll('.kanban-col__list').forEach(function(el) {
+    new Sortable(el, {
+      group: 'intranet-kanban',
+      animation: 150,
+      onEnd: function() { syncBoard(); }
+    });
+  });
+})();
+</script>
+{% endblock %}

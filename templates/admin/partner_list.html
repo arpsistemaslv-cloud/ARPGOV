@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Parceiros{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Parceiros</h1>
+<p class="meta">Cadastro de fornecedores com acesso à área <strong>Parceiros</strong> no site (<a href="{{ url_for('parceiro_cadastro') }}">cadastro público</a>). Novos produtos são enviados para <a href="{{ url_for('admin_partner_products_pending') }}">aprovação no painel</a> antes de entrarem na loja.</p>
+<p style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
+  <a class="btn btn--primary" href="{{ url_for('admin_partner_new') }}">Novo parceiro</a>
+  <a class="btn btn--ghost" href="{{ url_for('admin_partner_products_pending') }}">Produtos pendentes de parceiros</a>
+</p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Empresa</th>
+        <th>CNPJ</th>
+        <th>E-mail</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in partners %}
+      <tr>
+        <td><strong>{{ p.name }}</strong></td>
+        <td class="meta">{{ p.company_name or p.razao_social or '—' }}</td>
+        <td class="meta">{{ p.cnpj or '—' }}</td>
+        <td class="meta">{{ p.email }}</td>
+        <td>{% if p.is_active %}<span class="pill" style="background:#e8f5e9;color:#1b5e20">Ativo</span>{% else %}<span class="pill">Inativo</span>{% endif %}</td>
+        <td><a href="{{ url_for('admin_partner_edit', partner_id=p.id) }}">Editar</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="meta">Nenhum parceiro. <a href="{{ url_for('admin_partner_new') }}">Cadastrar o primeiro</a>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

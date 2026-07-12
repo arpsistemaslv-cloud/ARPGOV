@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% from "macros/catalog_product_picker.html" import catalog_product_picker %}
+{% block title %}Contato{% endblock %}
+{% block body %}
+
+<section class="contact-hero">
+  <div class="contact-hero__inner page-shell">
+    <nav class="breadcrumb breadcrumb--light" aria-label="Navegação">
+      <a href="{{ url_for('home') }}">Início</a>
+      <span class="breadcrumb__sep">/</span>
+      <span>Contato</span>
+    </nav>
+    <p class="contact-hero__eyebrow">Solicitação de adesão</p>
+    <h1>Fale com a equipe ARPGOV</h1>
+    <p class="contact-hero__lead">Envie sua demanda de adesão à ata, orçamento ou dúvida. Nossa equipe comercial retorna com orientação sobre documentação, prazos e próximos passos.</p>
+  </div>
+</section>
+
+<div class="page-shell contact-page">
+  {% if portal_client %}
+  <div class="contact-session-banner" role="status">
+    <div class="contact-session-banner__text">
+      <strong>{{ portal_client.name }}</strong> — você está logado. Esta solicitação será vinculada aos <a href="{{ url_for('cliente_meus_leads') }}">seus leads</a>.
+    </div>
+    <a class="btn btn--ghost btn--compact" href="{{ url_for('cliente_perfil') }}">Meu perfil</a>
+  </div>
+  {% endif %}
+
+  <div class="contact-layout">
+    <aside class="contact-sidebar">
+      <div class="contact-sidebar__card">
+        <h2 class="contact-sidebar__title">Canais diretos</h2>
+        {% if site_settings and site_settings.contact_intro %}
+        <div class="contact-sidebar__intro">{{ site_settings.contact_intro|safe }}</div>
+        {% else %}
+        <p class="meta contact-sidebar__intro">Adesão às atas, orçamentos ou esclarecimentos. Cada envio gera um lead na área comercial.</p>
+        {% endif %}
+        <ul class="contact-channels">
+          <li class="contact-channel">
+            <span class="contact-channel__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </span>
+            <div>
+              <span class="contact-channel__label">E-mail</span>
+              {% if site_settings and site_settings.contact_email %}
+              <a href="mailto:{{ site_settings.contact_email }}">{{ site_settings.contact_email }}</a>
+              {% else %}
+              <span class="meta">—</span>
+              {% endif %}
+            </div>
+          </li>
+          <li class="contact-channel">
+            <span class="contact-channel__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </span>
+            <div>
+              <span class="contact-channel__label">Telefone</span>
+              {% if site_settings and site_settings.contact_phone %}
+              <span>{{ site_settings.contact_phone }}</span>
+              {% else %}
+              <span class="meta">—</span>
+              {% endif %}
+            </div>
+          </li>
+          {% if site_settings and site_settings.contact_address %}
+          <li class="contact-channel">
+            <span class="contact-channel__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </span>
+            <div>
+              <span class="contact-channel__label">Endereço</span>
+              <span>{{ site_settings.contact_address }}</span>
+            </div>
+          </li>
+          {% endif %}
+        </ul>
+
+        {% if site_social_links.whatsapp or site_social_links.instagram or site_social_links.tiktok %}
+        <div class="contact-social">
+          <span class="contact-social__label">Redes sociais</span>
+          <div class="contact-social__buttons">
+            {% if site_social_links.whatsapp %}
+            <a class="contact-social-btn contact-social-btn--whatsapp" href="{{ site_social_links.whatsapp }}" target="_blank" rel="noopener noreferrer">
+              <svg class="contact-social-btn__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+              WhatsApp
+            </a>
+            {% endif %}
+            {% if site_social_links.instagram %}
+            <a class="contact-social-btn contact-social-btn--instagram" href="{{ site_social_links.instagram }}" target="_blank" rel="noopener noreferrer">
+              <svg class="contact-social-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              Instagram
+            </a>
+            {% endif %}
+            {% if site_social_links.tiktok %}
+            <a class="contact-social-btn contact-social-btn--tiktok" href="{{ site_social_links.tiktok }}" target="_blank" rel="noopener noreferrer">
+              <svg class="contact-social-btn__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.75a8.18 8.18 0 0 0 4.76 1.52V6.82a4.85 4.85 0 0 1-1-.13z"/></svg>
+              TikTok
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="contact-sidebar__card contact-sidebar__card--steps">
+        <h2 class="contact-sidebar__title">Como funciona</h2>
+        <ol class="contact-steps">
+          <li><strong>Preencha o formulário</strong> com órgão, contato e produtos de interesse.</li>
+          <li><strong>Nossa equipe analisa</strong> e registra o lead no CRM comercial.</li>
+          <li><strong>Retorno personalizado</strong> com orientação sobre adesão e documentação.</li>
+        </ol>
+      </div>
+    </aside>
+
+    <section class="contact-form-card">
+      <header class="contact-form-card__head">
+        <h2>Enviar solicitação</h2>
+        <p class="meta">Informe e-mail <em>ou</em> telefone, e órgão <em>ou</em> nome do contato.</p>
+      </header>
+
+      {% if produto_from_url %}
+      <div class="contact-interest">
+        <span class="contact-interest__label">Interesse registrado</span>
+        <p class="contact-interest__text">{{ produto_from_url.title }}</p>
+        <a class="contact-interest__link" href="{{ url_for('produto', slug=produto_from_url.slug) }}">Ver produto na loja</a>
+      </div>
+      {% elif portal_client and selected_catalog_lines %}
+      <div class="contact-interest">
+        <span class="contact-interest__label">Solicitação de adesão</span>
+        <p class="contact-interest__text"><strong>{{ selected_catalog_lines|length }}</strong> produto(s) do seu carrinho já selecionado(s) abaixo. Informe a quantidade de adesão de cada item.</p>
+        <a class="contact-interest__link" href="{{ url_for('carrinho') }}">Revisar carrinho</a>
+      </div>
+      {% endif %}
+
+      <form method="post" action="{% if request.args.get('produto') %}{{ url_for('contato', produto=request.args.get('produto')) }}{% else %}{{ url_for('contato') }}{% endif %}" class="contact-form">
+
+        <fieldset class="contact-form__section">
+          <legend>Produtos de interesse</legend>
+          {{ catalog_product_picker(
+            selected_lines=selected_catalog_lines,
+            hint='Busque pelo nome ou fabricante, adicione os itens e informe a quantidade que deseja aderir. O valor estimado é calculado automaticamente.'
+          ) }}
+        </fieldset>
+
+        <fieldset class="contact-form__section">
+          <legend>Sua solicitação</legend>
+          <div class="contact-form__grid">
+            <div class="contact-form__full">
+              <label for="subject">Assunto (opcional)</label>
+              <input id="subject" name="subject" maxlength="200" placeholder="Ex.: Adesão à ata, orçamento…" value="{{ request.form.get('subject', '') }}">
+            </div>
+            <div class="contact-form__full">
+              <label for="notes">Mensagem</label>
+              <textarea id="notes" name="notes" rows="5" placeholder="Detalhe necessidade, quantidade, prazo, observações…">{{ request.form.get('notes', '') }}</textarea>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="contact-form__section">
+          <legend>Órgão / empresa</legend>
+          <div class="contact-form__grid">
+            <div>
+              <label for="organization">Nome do órgão ou empresa</label>
+              <input id="organization" name="organization" maxlength="200" value="{{ request.form.get('organization', '') or (portal_client.organization if portal_client and portal_client.organization else '') }}">
+            </div>
+            <div>
+              <label for="sphere">Esfera</label>
+              <select id="sphere" name="sphere">
+                <option value="">Selecione…</option>
+                {% for s in catalog_sphere_choices %}
+                <option value="{{ s }}" {% if request.form.get('sphere', '') == s or (not request.form.get('sphere') and portal_client and portal_client.sphere == s) %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="cnpj">CNPJ</label>
+              <input id="cnpj" name="cnpj" maxlength="22" placeholder="00.000.000/0001-00" value="{{ request.form.get('cnpj', '') or (portal_client.cnpj if portal_client and portal_client.cnpj else '') }}" autocomplete="off">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="contact-form__section">
+          <legend>Contato</legend>
+          <div class="contact-form__grid">
+            <div>
+              <label for="contact_name">Nome do contato</label>
+              <input id="contact_name" name="contact_name" maxlength="120" autocomplete="name" value="{{ request.form.get('contact_name', '') or (portal_client.name if portal_client else '') }}">
+            </div>
+            <div>
+              <label for="email">E-mail</label>
+              <input id="email" name="email" type="email" maxlength="120" autocomplete="email" value="{{ request.form.get('email', '') or (portal_client.email if portal_client else '') }}">
+            </div>
+            <div>
+              <label for="phone">Telefone</label>
+              <input id="phone" name="phone" maxlength="40" autocomplete="tel" value="{{ request.form.get('phone', '') or (portal_client.phone if portal_client and portal_client.phone else '') }}">
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="contact-form__actions">
+          <button type="submit" class="btn btn--primary">Enviar solicitação</button>
+          <a class="btn btn--ghost" href="{{ url_for('loja') }}">Consultar atas</a>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/catalog-product-picker.js') }}?v={{ catalog_picker_js_v }}" defer></script>
+{% endblock %}

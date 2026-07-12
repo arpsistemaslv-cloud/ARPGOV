@@ -1,0 +1,33 @@
+  <div style="margin-top:0.5rem">
+    <label>Comissão por ARP (itens do catálogo / atas do site)</label>
+    <p class="meta" style="margin:0 0 0.5rem">Cada linha: escolha a ARP, preencha <strong>valor R$</strong> ou <strong>%</strong>, opcional observação. Até <strong>{{ nrows }}</strong> ARPs por produto.</p>
+    <div class="table-wrap" style="margin:0">
+      <table class="data" style="font-size:0.85rem">
+        <thead>
+          <tr>
+            <th>ARP (catálogo)</th>
+            <th>Comissão R$</th>
+            <th>%</th>
+            <th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(nrows) %}
+          <tr>
+            <td>
+              <select name="commission_catalog_id" style="max-width:100%;font-size:0.8rem">
+                <option value="">—</option>
+                {% for item in catalog_choices %}
+                <option value="{{ item.id }}" {% if i < comms|length and comms[i].catalog_item_id == item.id %}selected{% endif %}>#{{ item.id }} · {{ item.title[:55] }}{% if item.title|length > 55 %}…{% endif %}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td><input name="commission_brl" placeholder="0,00" value="{% if i < comms|length and comms[i].commission_brl is not none %}{{ comms[i].commission_brl|brl_decimal }}{% endif %}" style="min-width:6rem"></td>
+            <td><input name="commission_percent" placeholder="%" type="text" value="{% if i < comms|length and comms[i].commission_percent is not none %}{{ comms[i].commission_percent }}{% endif %}" style="min-width:4rem"></td>
+            <td><input name="commission_note" placeholder="Opcional" value="{{ comms[i].note if i < comms|length and comms[i].note else '' }}" style="min-width:8rem"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>

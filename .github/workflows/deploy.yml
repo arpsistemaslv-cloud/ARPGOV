@@ -1,0 +1,28 @@
+# Deploy automático no VPS após push na branch main.
+#
+# Secrets necessários no GitHub (Settings → Secrets → Actions):
+#   VPS_HOST      — IP ou domínio do VPS Hostinger
+#   VPS_USER      — usuário SSH (ex.: deploy)
+#   VPS_SSH_KEY   — chave privada SSH (conteúdo de id_rsa)
+#   VPS_APP_PATH  — caminho do app (ex.: /var/www/arpgov)
+#
+name: Deploy ARPGOV
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ${{ secrets.VPS_APP_PATH }}
+            chmod +x deploy.sh
+            ./deploy.sh

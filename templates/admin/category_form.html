@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{% if category %}Editar{% else %}Nova{% endif %} categoria{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">{% if category %}Editar categoria{% elif parent %}Novo subcatálogo{% else %}Novo catálogo principal{% endif %}</h1>
+
+<form method="post" class="form-grid" style="max-width:480px;margin-top:1rem">
+  {% if category %}
+  <p class="meta">
+    {% if category.parent %}
+    Subcatálogo de <strong>{{ category.parent.name }}</strong>. O nível (principal / sub) não é alterado por este formulário.
+    {% else %}
+    <strong>Catálogo principal</strong>.
+    {% endif %}
+  </p>
+  {% elif parent %}
+  <p class="meta">Este item será um <strong>subcatálogo</strong> de <strong>{{ parent.name }}</strong>.</p>
+  <input type="hidden" name="parent_id" value="{{ parent.id }}">
+  {% else %}
+  <div>
+    <label for="parent_id">Catálogo pai (opcional)</label>
+    <select id="parent_id" name="parent_id">
+      <option value="">— Nenhum: criar catálogo principal —</option>
+      {% for r in roots %}
+      <option value="{{ r.id }}">{{ r.name }}</option>
+      {% endfor %}
+    </select>
+    <p class="meta" style="margin-top:0.25rem">Se escolher um pai, será criado um <em>subcatálogo</em> (apenas um nível de profundidade).</p>
+  </div>
+  {% endif %}
+  <div>
+    <label for="name">Nome *</label>
+    <input id="name" name="name" required value="{{ category.name if category else '' }}" placeholder="Ex.: Veículos, TI, Serviços">
+  </div>
+  <div>
+    <label for="slug">Slug (URL do filtro)</label>
+    <input id="slug" name="slug" value="{{ category.slug if category else '' }}" placeholder="Deixe em branco para gerar a partir do nome">
+  </div>
+  <div>
+    <label for="sort_order">Ordem na listagem</label>
+    <input id="sort_order" name="sort_order" type="number" value="{{ category.sort_order if category else 0 }}">
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn--primary">Salvar</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin_category_list') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

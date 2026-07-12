@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Chamados — Técnico{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.tecnico_hub') }}">← Técnico</a></p>
+    <h1 style="margin-top:0">Chamados técnicos</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.tecnico_chamados_new') }}">Novo chamado</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Nº</th><th>Título</th><th>Prioridade</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for c in chamados %}
+          <tr>
+            <td><code>{{ c.numero_interno }}</code></td>
+            <td>{{ c.titulo }}</td>
+            <td>{{ c.prioridade }}</td>
+            <td>{{ c.status }}</td>
+            <td><a href="{{ url_for('empresa.tecnico_chamados_edit', cid=c.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhum chamado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

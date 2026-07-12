@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{% if remessa %}Editar remessa{% else %}Nova remessa{% endif %} — Logística{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.logistica_remessas_list') }}">← Remessas</a></p>
+    <h1 style="margin-top:0">{% if remessa %}Editar remessa{% else %}Nova remessa{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div style="grid-column:1/-1">
+        <label for="destino_orgao">Órgão / destino *</label>
+        <input id="destino_orgao" name="destino_orgao" required maxlength="400" value="{{ remessa.destino_orgao if remessa else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="endereco_resumo">Endereço (resumo)</label>
+        <input id="endereco_resumo" name="endereco_resumo" maxlength="500" value="{{ remessa.endereco_resumo if remessa else '' }}">
+      </div>
+      <div>
+        <label for="codigo_rastreio">Código de rastreio</label>
+        <input id="codigo_rastreio" name="codigo_rastreio" value="{{ remessa.codigo_rastreio if remessa else '' }}">
+      </div>
+      <div>
+        <label for="nf_referencia">NF referência</label>
+        <input id="nf_referencia" name="nf_referencia" value="{{ remessa.nf_referencia if remessa else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="empenho_id">Vincular a empenho (opcional)</label>
+        <select id="empenho_id" name="empenho_id">
+          <option value="">— nenhum —</option>
+          {% for e in empenhos %}
+          <option value="{{ e.id }}" {% if remessa and remessa.empenho_id == e.id %}selected{% endif %}>{{ e.numero }} — {{ e.orgao_nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = remessa.status if remessa else 'em_transito' %}
+          {% for opt in ['em_transito', 'entregue', 'ocorrencia', 'cancelado'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="data_prevista">Data prevista</label>
+        <input id="data_prevista" name="data_prevista" type="date" value="{{ remessa.data_prevista.isoformat() if remessa and remessa.data_prevista else '' }}">
+      </div>
+      <div>
+        <label for="data_entrega">Data entrega</label>
+        <input id="data_entrega" name="data_entrega" type="date" value="{{ remessa.data_entrega.isoformat() if remessa and remessa.data_entrega else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="3">{{ remessa.observacoes if remessa else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.logistica_remessas_list') }}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

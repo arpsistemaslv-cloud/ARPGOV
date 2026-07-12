@@ -1,0 +1,82 @@
+{% macro finance_rateio_groups(groups, empty_message) %}
+<div class="finance-rateio-list">
+  {% for g in groups %}
+  <div class="finance-rateio-group" data-finance-group>
+    <button type="button" class="finance-rateio-group__head" data-finance-toggle aria-expanded="false">
+      <span class="finance-rateio-group__icon" aria-hidden="true">+</span>
+      <span class="finance-rateio-group__main">
+        <strong class="finance-rateio-group__title">
+          {% if g.kind == 'sale' and g.sale %}
+          <a href="{{ url_for('crm.crm_commission_sale_edit', sale_id=g.sale.id) }}" onclick="event.stopPropagation()">{{ g.title }}</a>
+          {% elif g.opportunity %}
+          <a href="{{ url_for('crm.crm_op_edit', opp_id=g.opportunity.id) }}" onclick="event.stopPropagation()">{{ g.title }}</a>
+          {% else %}{{ g.title }}{% endif %}
+        </strong>
+        <span class="finance-rateio-group__meta meta">
+          {% if g.kind == 'sale' %}<span class="finance-rateio-badge">Venda avulsa</span> · {% endif %}
+          {% if g.process_ref %}Processo {{ g.process_ref }} · {% endif %}
+          {% if g.subtitle %}{{ g.subtitle }} · {% endif %}
+          {{ g.splits|length }} participante{% if g.splits|length != 1 %}s{% endif %}
+        </span>
+      </span>
+      <span class="finance-rateio-group__amounts">
+        {% if g.all_paid %}
+        <strong class="finance-rateio-group__total finance-rateio-group__total--paid">{{ g.paid_amount|float|brl }}</strong>
+        <span class="meta">quitado</span>
+        {% else %}
+        <strong class="finance-rateio-group__total">{{ g.open_amount|float|brl }}</strong>
+        <span class="meta">em aberto</span>
+        {% if g.paid_amount|float > 0 %}
+        <span class="meta finance-rateio-group__partial">{{ g.paid_amount|float|brl }} pago</span>
+        {% endif %}
+        {% endif %}
+      </span>
+    </button>
+    <div class="finance-rateio-group__body" hidden>
+      <div class="table-wrap">
+        <table class="data data--compact">
+          <thead>
+            <tr>
+              <th>Participante</th>
+              <th>%</th>
+              <th>Valor</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in g.splits %}
+            <tr class="{% if row.payout_status == 'pago' %}finance-rateio-row--paid{% endif %}">
+              <td>
+                {{ row.recipient_name }}
+                {% if row.organization %}<br><span class="meta">{{ row.organization }}</span>{% endif %}
+              </td>
+              <td class="meta">{% if row.share_percent is not none %}{{ '%.4f'|format(row.share_percent|float) }}%{% else %}—{% endif %}</td>
+              <td>{% if row.amount_brl is not none %}<strong>{{ row.amount_brl|float|brl }}</strong>{% else %}—{% endif %}</td>
+              <td>
+                <form method="post" action="{% if g.split_kind == 'sale' %}{{ url_for('crm.crm_commission_sale_split_status', split_id=row.id) }}{% else %}{{ url_for('crm.crm_commission_split_status', split_id=row.id) }}{% endif %}" style="margin:0">
+                  <select name="status" onchange="this.form.submit()" class="crm-inline-select">
+                    {% for key, label in payout_statuses %}
+                    <option value="{{ key }}" {% if row.payout_status == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2"><strong>Total</strong></td>
+              <td><strong>{{ g.total_amount|float|brl }}</strong></td>
+              <td class="meta">{% if g.all_paid %}Quitado{% else %}Em aberto{% endif %}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p class="meta finance-rateio-empty">{{ empty_message }}</p>
+  {% endfor %}
+</div>
+{% endmacro %}

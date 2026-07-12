@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% from "crm/_finance_rateio_groups.html" import finance_rateio_groups %}
+{% block title %}CRM — Financeiro (comissões){% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <h1 style="margin-top:0">Financeiro — Comissões</h1>
+    <p class="meta">Rateio por sócios e vendedor, agrupado por lead. <a href="{{ url_for('crm.crm_metas_home') }}">Metas</a> · <a href="{{ url_for('crm.crm_commission_projects') }}">Comissionamento</a></p>
+
+    <div class="crm-kpi-grid" style="margin-top:1.25rem">
+      <div class="crm-kpi">
+        <strong>{{ total_commission|float|brl }}</strong>
+        <span>Comissão vendedor (leads)</span>
+      </div>
+      <div class="crm-kpi crm-kpi--warn">
+        <strong>{{ total_splits_open|float|brl }}</strong>
+        <span>Rateio em aberto</span>
+      </div>
+      <div class="crm-kpi crm-kpi--ok">
+        <strong>{{ total_splits_paid|float|brl }}</strong>
+        <span>Rateio pago</span>
+      </div>
+      <div class="crm-kpi">
+        <strong>{{ total_documents_paid|float|brl }}</strong>
+        <span>Docs. representantes pagos</span>
+      </div>
+    </div>
+
+    <section class="finance-rateio-section">
+      <header class="finance-rateio-section__head">
+        <h2 class="finance-rateio-section__title">Rateio em aberto</h2>
+        <span class="finance-rateio-section__count meta">{{ lead_groups_open|length }} lead{% if lead_groups_open|length != 1 %}s{% endif %}</span>
+      </header>
+      <p class="meta finance-rateio-section__desc">Leads com parcelas ainda não quitadas. Clique em <strong>+</strong> para ver todos os beneficiários.</p>
+      <div class="crm-table-card">
+        {{ finance_rateio_groups(lead_groups_open, 'Nenhum rateio em aberto.') }}
+      </div>
+    </section>
+
+    <section class="finance-rateio-section finance-rateio-section--paid">
+      <header class="finance-rateio-section__head">
+        <h2 class="finance-rateio-section__title">Rateio quitado</h2>
+        <span class="finance-rateio-section__count meta">{{ lead_groups_paid|length }} lead{% if lead_groups_paid|length != 1 %}s{% endif %}</span>
+      </header>
+      <p class="meta finance-rateio-section__desc">Leads com todas as parcelas marcadas como <strong>Pago</strong>.</p>
+      <div class="crm-table-card">
+        {{ finance_rateio_groups(lead_groups_paid, 'Nenhum lead totalmente quitado ainda.') }}
+      </div>
+    </section>
+
+    <h2 style="font-size:1.05rem;margin-top:2rem">Comissões por lead</h2>
+    <div class="crm-table-card" style="margin-top:0.75rem">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Lead</th>
+              <th>Representante</th>
+              <th>Produtos</th>
+              <th>Processo</th>
+              <th>Comissão</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in leads_with_commission %}
+            <tr>
+              <td><strong>{{ l.title }}</strong></td>
+              <td class="meta">{% if l.sales_rep %}{{ l.sales_rep.name }}{% else %}—{% endif %}</td>
+              <td class="meta" style="max-width:200px">{% if l.catalog_lines %}{% for ln in l.catalog_lines %}{{ ln.catalog_item.title if ln.catalog_item else '—' }}{% if ln.quantity > 1 %} (×{{ ln.quantity }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}—{% endif %}</td>
+              <td class="meta">{{ l.process_ref or '—' }}</td>
+              <td>
+                {% if l.rep_commission_brl is not none %}<strong>{{ l.rep_commission_brl|float|brl }}</strong>{% elif l.commission_tier %}<span class="meta">{{ tier_label_fn(l.commission_tier) }}</span>{% else %}—{% endif %}
+              </td>
+              <td><a href="{{ url_for('crm.crm_op_edit', opp_id=l.id) }}">Lead</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="meta">Nenhuma comissão cadastrada nos leads.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h2 style="font-size:1.05rem;margin-top:2rem">Documentos enviados (representantes)</h2>
+    <div class="crm-table-card" style="margin-top:0.75rem">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Representante</th>
+              <th>Lead</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Atualizado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in entries %}
+            <tr>
+              <td class="meta">{% if e.sales_rep %}{{ e.sales_rep.name }}{% else %}—{% endif %}</td>
+              <td>{% if e.opportunity %}{{ e.opportunity.title }}{% else %}<span class="meta">Sem lead</span>{% endif %}</td>
+              <td>{% if e.amount_brl is not none %}{{ e.amount_brl|float|brl }}{% else %}—{% endif %}</td>
+              <td>
+                <form method="post" action="{{ url_for('crm.crm_finance_entry_status', entry_id=e.id) }}" style="margin:0;display:flex;gap:0.35rem;align-items:center">
+                  <select name="status" onchange="this.form.submit()" style="max-width:140px;padding:0.35rem">
+                    {% for key, label in commission_statuses %}
+                    <option value="{{ key }}" {% if e.status == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </td>
+              <td class="meta">{{ e.updated_at.strftime('%d/%m/%Y %H:%M') if e.updated_at else '—' }}</td>
+              <td class="meta">{{ e.note or '' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="meta">Nenhum documento enviado ainda.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/finance-rateio-groups.js') }}" defer></script>
+{% endblock %}

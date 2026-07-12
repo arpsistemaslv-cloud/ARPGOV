@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}{{ planilha.titulo }} — Fechamento{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:1100px">
+    <p class="meta"><a href="{{ url_for('empresa.fechamento_preco_planilhas') }}">← Planilhas</a></p>
+    <h1 style="margin-top:0">{{ planilha.titulo }}</h1>
+    <p class="meta">
+      Status: <strong>{{ planilha.status }}</strong>
+      {% if planilha.uf_entrega %}· <strong>UF entrega:</strong> {{ planilha.uf_entrega }}{% endif %}
+      {% if planilha.aprovacao_prejuizo %}· <strong>Aprovação prejuízo</strong>{% endif %}
+      {% if planilha.compras_aprovado %}· <strong>OK Compras</strong>{% endif %}
+    </p>
+    {% if bloqueado and snapshot %}
+    <p style="padding:0.65rem 0.9rem;background:rgba(80,120,200,0.12);border-radius:8px;border:1px solid var(--border,#ddd);margin:0.75rem 0">
+      <strong>Planilha fechada</strong> — valores congelados em {{ snapshot.fechada_em or '—' }}.
+      {% if snapshot.uf_entrega %}UF de entrega no fechamento: <strong>{{ snapshot.uf_entrega }}</strong>.{% endif %}
+    </p>
+    {% endif %}
+    {% if planilha.licitacao %}
+    <p class="meta">Licitação: <a href="{{ url_for('empresa.licitacoes_edit', lid=planilha.licitacao.id) }}">{{ planilha.licitacao.titulo }}</a></p>
+    {% endif %}
+    {% if planilha.local_entrega %}
+    <p><strong>Local de entrega</strong></p>
+    <p style="white-space:pre-wrap">{{ planilha.local_entrega }}</p>
+    {% endif %}
+    <ul class="meta" style="margin:0 0 1rem;padding-left:1.2rem">
+      <li>% Frete (s/ custo): {{ planilha.percentual_frete if planilha.percentual_frete is not none else '—' }}</li>
+      <li>% Custo financeiro (s/ custo): {{ planilha.custo_financeiro_percent if planilha.custo_financeiro_percent is not none else '—' }}</li>
+      <li>% Mark-up final: {{ planilha.markup_final_percent if planilha.markup_final_percent is not none else '—' }}</li>
+    </ul>
+    {% if planilha.beneficio_fiscal %}<p><strong>Benefício fiscal (cabeçalho)</strong> — {{ planilha.beneficio_fiscal }}</p>{% endif %}
+    {% if planilha.observacoes %}<p style="white-space:pre-wrap">{{ planilha.observacoes }}</p>{% endif %}
+    <p style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
+      {% if not bloqueado %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.fechamento_preco_planilha_edit', fid=planilha.id) }}">Editar cabeçalho</a>
+      {% endif %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.imposto_hub') }}">Matriz impostos (produto × UF)</a>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.fechamento_preco_relatorio_comissoes') }}">Relatório de comissões</a>
+    </p>
+
+    <div style="margin:1rem 0;padding:0.9rem 1rem;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--surface)">
+      <h2 style="font-size:1rem;margin:0 0 0.5rem">Account e comissões</h2>
+      <p class="meta" style="margin:0 0 0.5rem;line-height:1.5">Percentuais aplicados sobre o <strong>total geral sugerido</strong> (R$ {{ total_geral }}). Valores são estimativas para repasse; o faturamento real mensal pode ser lançado depois em financeiro.</p>
+      <p style="margin:0"><strong>Account:</strong> {% if planilha.account %}{{ planilha.account.name }} <span class="meta">({{ planilha.account.email }})</span>{% else %}—{% endif %}</p>
+      {% if planilha.competencia_faturamento %}
+      <p style="margin:0.35rem 0 0"><strong>Competência faturamento:</strong> {{ planilha.competencia_faturamento.strftime('%m/%Y') }}</p>
+      {% endif %}
+      {% if comissoes_valores %}
+      <div class="table-wrap" style="margin-top:0.75rem">
+        <table class="data" style="font-size:0.92rem">
+          <thead><tr><th>Pessoa</th><th>Papel</th><th>%</th><th>Estimado (R$)</th></tr></thead>
+          <tbody>
+            {% for cv in comissoes_valores %}
+            <tr>
+              <td>{% if cv.com.employee %}{{ cv.com.employee.name }}<br><span class="meta">{{ cv.com.employee.email }}</span>{% else %}?{% endif %}</td>
+              <td>{{ cv.com.papel or '—' }}</td>
+              <td>{{ cv.com.percentual_comissao }}%</td>
+              <td><strong>R$ {{ cv.valor_estimado }}</strong></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="meta" style="margin:0.5rem 0 0">Sem equipe de comissão. Use <a href="{{ url_for('empresa.fechamento_preco_planilha_edit', fid=planilha.id) }}">editar cabeçalho</a> para incluir.</p>
+      {% endif %}
+    </div>
+
+    <div style="margin:1.25rem 0;padding:0.9rem 1rem;background:var(--surface);border-radius:8px;border:1px solid var(--border, #ddd)">
+      <p style="margin:0 0 0.5rem;font-size:0.95rem"><strong>Cálculo (estimativa interna)</strong></p>
+      <p class="meta" style="margin:0;line-height:1.55">
+        Por linha: <code>custo = qtd × custo unit.</code>; frete e financeiro sobre esse custo;
+        imposto estimado = (custo + frete + financeiro) × (soma ICMS+IPI+PIS+COFINS) ÷ 100.
+        <strong>Fonte das alíquotas:</strong> se a planilha tiver <strong>UF de entrega</strong> e existir cadastro na
+        <a href="{{ url_for('empresa.imposto_matriz') }}">matriz produto × UF</a>, usa <code>produto_uf</code>; senão, perfil por <a href="{{ url_for('empresa.fechamento_preco_ncm_list') }}">NCM</a>.
+        Não substitui assessoria fiscal.
+      </p>
+    </div>
+
+    <h2 style="font-size:1.1rem;margin:1.25rem 0 0.75rem">Linhas</h2>
+    <div class="table-wrap" style="overflow-x:auto">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Produto / NCM</th>
+            <th>Qtd</th>
+            <th>Custo unit.</th>
+            <th>Fonte</th>
+            <th>Σ alíq.</th>
+            <th>Total sugerido</th>
+            {% if not bloqueado %}<th></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% if bloqueado and snapshot and snapshot.linhas %}
+          {% for sl in snapshot.linhas %}
+          <tr>
+            <td>
+              <code>{{ sl.part_number or '—' }}</code> — {{ sl.nome or '' }}<br>
+              <span class="meta">NCM {{ sl.ncm or '—' }}</span>
+            </td>
+            <td>{{ sl.quantidade }}</td>
+            <td>{{ sl.custo_unitario }}</td>
+            <td><span class="meta" title="Origem das alíquotas">{{ sl.fonte_imposto or '—' }}</span></td>
+            <td>{{ sl.aliquota_total_pct }}%</td>
+            <td><strong>R$ {{ sl.total_sugerido }}</strong></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="meta">Nenhuma linha no snapshot.</td></tr>
+          {% endfor %}
+          {% else %}
+          {% for row in linhas %}
+          {% set c = row.calc %}
+          <tr>
+            <td>
+              <code>{{ row.item.produto.part_number if row.item.produto else '?' }}</code> — {{ row.item.produto.nome if row.item.produto else '' }}<br>
+              <span class="meta">NCM {{ c.ncm_produto or '—' }}
+              {% if c.fonte_imposto == 'ncm' and not c.perfil_encontrado and c.ncm_produto %}(sem perfil NCM){% endif %}
+              {% if c.fonte_imposto == '—' and c.ncm_produto %}(sem NCM nem matriz UF){% endif %}
+              </span>
+              {% if row.item.produto and row.item.produto.beneficio_fiscal %}<br><span class="meta">Ben. fiscal produto: {{ row.item.produto.beneficio_fiscal[:80] }}{% if row.item.produto.beneficio_fiscal|length > 80 %}…{% endif %}</span>{% endif %}
+              {% if row.imposto_uf and row.imposto_uf.beneficio_fiscal %}<br><span class="meta">Ben. fiscal UF: {{ row.imposto_uf.beneficio_fiscal[:80] }}{% if row.imposto_uf.beneficio_fiscal|length > 80 %}…{% endif %}</span>{% endif %}
+            </td>
+            <td>{{ row.item.quantidade }}</td>
+            <td>{{ row.item.custo_unitario }}</td>
+            <td><span class="meta" title="produto_uf = matriz impostos; ncm = tabela NCM">{{ c.fonte_imposto }}</span></td>
+            <td>{{ c.aliquota_total_pct }}%</td>
+            <td><strong>R$ {{ c.total_sugerido }}</strong></td>
+            {% if not bloqueado %}
+            <td>
+              <form method="post" action="{{ url_for('empresa.fechamento_preco_item_delete', iid=row.item.id) }}" style="display:inline" onsubmit="return confirm('Remover linha?');">
+                <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.5rem;font-size:0.85rem">Excluir</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% else %}
+          <tr><td colspan="{% if bloqueado %}6{% else %}7{% endif %}" class="meta">Nenhuma linha. Inclua produtos com NCM ou <a href="{{ url_for('empresa.imposto_matriz') }}">cadastro na matriz</a> para a UF de entrega.</td></tr>
+          {% endfor %}
+          {% endif %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" style="text-align:right"><strong>Total geral sugerido</strong></td>
+            <td colspan="{% if bloqueado %}1{% else %}2{% endif %}"><strong>R$ {% if bloqueado and snapshot and snapshot.total_geral is defined %}{{ snapshot.total_geral }}{% else %}{{ total_geral }}{% endif %}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    {% if not bloqueado %}
+    <h3 style="font-size:1rem;margin:1.25rem 0 0.5rem">Adicionar linha</h3>
+    {% if produtos %}
+    <form method="post" action="{{ url_for('empresa.fechamento_preco_item_add', fid=planilha.id) }}" class="form-grid" style="align-items:end;max-width:100%">
+      <div>
+        <label for="produto_id">Produto</label>
+        <select id="produto_id" name="produto_id" required>
+          <option value="">—</option>
+          {% for p in produtos %}
+          <option value="{{ p.id }}">{{ p.part_number }} — {{ p.nome }}{% if p.ncm %} [NCM {{ p.ncm }}]{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="quantidade">Qtd</label>
+        <input id="quantidade" name="quantidade" value="1">
+      </div>
+      <div>
+        <label for="custo_unitario">Custo unitário</label>
+        <input id="custo_unitario" name="custo_unitario" value="0" required>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacao">Obs. linha</label>
+        <input id="observacao" name="observacao" maxlength="500">
+      </div>
+      <button type="submit" class="btn btn--primary">Incluir</button>
+    </form>
+    <p class="meta" style="margin-top:0.5rem">É necessário <strong>NCM</strong> no produto ou <strong>matriz imposto</strong> para o produto e a <strong>UF de entrega</strong> da planilha (defina no cabeçalho).</p>
+    {% else %}
+    <p class="meta">Cadastre produtos em Compras.</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('empresa.fechamento_preco_planilha_fechar', fid=planilha.id) }}" style="margin:1.5rem 0 0" onsubmit="return confirm('Fechar esta planilha? Não será mais possível editar cabeçalho nem linhas; os valores ficam registrados no snapshot.');">
+      <button type="submit" class="btn btn--primary">Fechar planilha e registrar snapshot</button>
+    </form>
+    {% endif %}
+
+    {% set contexto = 'fechamento_preco' %}
+    {% set ref_id = planilha.id %}
+    {% set next_url = request.path %}
+    {% set read_only = bloqueado %}
+    {% include "empresa/_anexos.html" %}
+  </div>
+</div>
+{% endblock %}

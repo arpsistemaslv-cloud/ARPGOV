@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}CRM — Importar planilha{% endblock %}
+{% block body %}
+{% include "crm/_subnav.html" %}
+<div style="max-width:720px">
+  <h1 style="margin-top:0">Importar oportunidades (Google Planilhas / CSV)</h1>
+  <p class="meta">Exporte sua planilha no Google Sheets em <strong>Arquivo → Fazer download → Valores separados por vírgula (.csv)</strong>, depois envie o arquivo aqui. Cada linha vira uma <strong>oportunidade</strong> no CRM (não atualiza registros existentes).</p>
+
+  <p style="margin-top:1rem">
+    <a href="{{ url_for('crm_import_sheets_sample') }}" class="pill">Baixar modelo de colunas (CSV)</a>
+    <span class="meta" style="margin-left:0.5rem">Use como referência ou renomeie as colunas da sua planilha para bater com os nomes aceitos.</span>
+  </p>
+
+  <h2 class="section-title" style="margin-top:1.75rem;font-size:1.05rem">Colunas reconhecidas</h2>
+  <p class="meta">O cabeçalho pode estar em português ou inglês; acentos são aceitos. Exemplos de nomes:</p>
+  <ul class="meta" style="margin-top:0.5rem;line-height:1.5">
+    <li><strong>Título:</strong> titulo, title, assunto, oportunidade…</li>
+    <li><strong>Órgão / empresa:</strong> organizacao, orgao, empresa, cliente…</li>
+    <li><strong>Contato, CNPJ, e-mail, telefone, esfera, observações, origem</strong></li>
+    <li><strong>Estágio:</strong> lead, qualificado, proposta, negociação, ganho, perdido (ou os rótulos em português)</li>
+    <li><strong>Valor (R$):</strong> valor, value… (ex.: 1.234,56)</li>
+    <li><strong>Produtos do catálogo:</strong> <code>slugs_produtos</code> — slugs separados por vírgula ou ponto e vírgula (iguais à URL <code>/produto/&lt;slug&gt;</code>), ou use <code>ids_catalogo</code> com números #id</li>
+    <li><strong>Representante:</strong> <code>email_representante</code> — e-mail de um representante <em>ativo</em> já cadastrado</li>
+  </ul>
+  <p class="meta">Linhas totalmente vazias (sem título, órgão e contato) são ignoradas. Limite: {{ crm_import_max_rows }} linhas de dados por arquivo.</p>
+
+  <form method="post" enctype="multipart/form-data" class="form-grid" style="margin-top:1.5rem;max-width:480px">
+    <div>
+      <label for="csv">Arquivo .csv</label>
+      <input id="csv" name="csv" type="file" accept=".csv,text/csv" required>
+    </div>
+    <div>
+      <button type="submit" class="btn btn--primary">Importar</button>
+      <a href="{{ url_for('crm_dashboard') }}" class="btn" style="margin-left:0.5rem">Voltar às oportunidades</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

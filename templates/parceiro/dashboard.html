@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Meus produtos — parceiro{% endblock %}
+{% block body %}
+{% include "parceiro/_subnav.html" %}
+<h1 style="margin-top:0">Meus produtos</h1>
+<p class="meta">Olá, <strong>{{ partner.name }}</strong>{% if partner.company_name %} — {{ partner.company_name }}{% endif %}. Use <strong>Novo produto</strong> para enviar uma ata com os mesmos dados do cadastro administrativo; após a <strong>aprovação no painel</strong>, o item aparece na loja. Cadastros antigos (somente comissão por ARP) continuam como <em>legado</em>.</p>
+<p><a class="btn btn--primary" href="{{ url_for('parceiro_product_new') }}">Novo produto</a></p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>Status</th>
+        <th>Onde vende</th>
+        <th>ARPs / comissão</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in products %}
+      <tr>
+        <td>
+          <strong>{{ p.title }}</strong>
+          {% if not p.is_active %}<span class="pill" style="margin-left:0.35rem">Inativo</span>{% endif %}
+          {% if p.description %}<br><span class="meta">{{ p.description[:120] }}{% if p.description|length > 120 %}…{% endif %}</span>{% endif %}
+        </td>
+        <td class="meta">
+          {% if p.is_approved_in_catalog %}
+          <span class="pill" style="background:#e8f5e9;color:#0d5c2e">Publicado</span>
+          {% elif p.approval_status == 'pending' %}
+          <span class="pill">Aguardando aprovação</span>
+          {% elif p.approval_status == 'rejected' %}
+          <span class="pill" style="background:#fff8e1;color:#b45309">Recusado</span>
+          {% elif p.is_legacy_commission_profile %}
+          <span class="pill">Legado</span>
+          {% else %}
+          <span class="pill">—</span>
+          {% endif %}
+        </td>
+        <td class="meta">
+          {% set ufs = p.allowed_ufs_codes() %}
+          {% if ufs and ufs[0] == 'BR' %}
+          <strong>Todo o Brasil</strong>
+          {% elif ufs %}
+          {{ ufs|join(', ') }}
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        <td class="meta">
+          {% if p.is_approved_in_catalog or p.is_legacy_commission_profile %}
+            {% if p.commissions %}
+            {% for c in p.commissions %}
+            <div style="margin-bottom:0.35rem">#{{ c.catalog_item.id }} — {{ c.catalog_item.title[:40] }}{% if c.catalog_item.title|length > 40 %}…{% endif %}<br>
+              {% if c.commission_brl is not none %}{{ c.commission_brl|float|brl }}{% elif c.commission_percent is not none %}{{ c.commission_percent }}%{% else %}—{% endif %}
+              {% if c.note %}<span class="meta"> — {{ c.note[:50] }}{% if c.note|length > 50 %}…{% endif %}</span>{% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <em>Nenhuma ARP vinculada</em>
+            {% endif %}
+          {% else %}
+          <em>Após aprovação</em>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('parceiro_product_edit', product_id=p.id) }}">Editar</a>
+          {% if p.has_pending_deletion_request %}
+          <span class="pill" style="margin-left:0.35rem">Exclusão solicitada</span>
+          <form method="post" action="{{ url_for('parceiro_product_cancel_deletion_request', product_id=p.id) }}" style="display:inline;margin-left:0.35rem" onsubmit="return confirm('Cancelar o pedido de exclusão?');">
+            <button type="submit" class="btn btn--ghost" style="padding:0.25rem 0.5rem;font-size:0.8rem">Cancelar pedido</button>
+          </form>
+          {% elif p.is_approved_in_catalog or p.is_legacy_commission_profile %}
+          <a href="{{ url_for('parceiro_product_request_deletion', product_id=p.id) }}" class="btn btn--ghost" style="padding:0.25rem 0.5rem;font-size:0.8rem;margin-left:0.35rem;display:inline-block;text-decoration:none">Solicitar exclusão</a>
+          {% endif %}
+          {% if p.is_pending_catalog_proposal and not p.has_pending_deletion_request %}
+          <form method="post" action="{{ url_for('parceiro_product_delete', product_id=p.id) }}" style="display:inline;margin-left:0.35rem" onsubmit="return confirm('Excluir esta solicitação?');">
+            <button type="submit" class="btn btn--ghost" style="padding:0.25rem 0.5rem;font-size:0.8rem">Excluir</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="meta">Nenhum produto ainda. Use <strong>Novo produto</strong> para enviar uma solicitação.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

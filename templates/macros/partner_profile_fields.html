@@ -1,0 +1,108 @@
+{% macro partner_profile_fields(partner=None, show_login=False, show_password=False, password_required=False, show_active=False) %}
+{% from "macros/br_ufs.html" import address_state_select %}
+{% set p = partner %}
+
+<h2 class="form-section-title">Dados do contato</h2>
+<div class="form-grid form-grid--2col">
+  <div class="form-grid__full">
+    <label for="name">Nome do contato *</label>
+    <input id="name" name="name" required autocomplete="name" maxlength="120" value="{{ p.name if p else '' }}">
+  </div>
+  {% if show_login %}
+  <div class="form-grid__full">
+    <label for="email">E-mail * (login)</label>
+    <input id="email" name="email" type="email" required autocomplete="email" maxlength="120" value="{{ p.email if p else '' }}">
+  </div>
+  {% endif %}
+  <div>
+    <label for="phone">Telefone</label>
+    <input id="phone" name="phone" maxlength="40" autocomplete="tel" value="{{ p.phone if p and p.phone else '' }}">
+  </div>
+  <div>
+    <label for="job_title">Cargo / função</label>
+    <input id="job_title" name="job_title" maxlength="120" placeholder="Ex.: Diretor comercial" value="{{ p.job_title if p and p.job_title else '' }}">
+  </div>
+  <div>
+    <label for="sector">Segmento / ramo</label>
+    <input id="sector" name="sector" maxlength="120" placeholder="Ex.: TI, mobiliário, limpeza" value="{{ p.sector if p and p.sector else '' }}">
+  </div>
+</div>
+
+<h2 class="form-section-title">Empresa fornecedora</h2>
+<div class="form-grid form-grid--2col">
+  <div>
+    <label for="company_name">Nome fantasia</label>
+    <input id="company_name" name="company_name" maxlength="200" value="{{ p.company_name if p and p.company_name else '' }}">
+  </div>
+  <div>
+    <label for="razao_social">Razão social</label>
+    <input id="razao_social" name="razao_social" maxlength="300" value="{{ p.razao_social if p and p.razao_social else '' }}">
+  </div>
+  <div>
+    <label for="cnpj">CNPJ</label>
+    <div class="br-lookup-inline">
+      <input id="cnpj" name="cnpj" data-br-cnpj maxlength="22" autocomplete="off" placeholder="00.000.000/0001-00" value="{{ p.cnpj if p and p.cnpj else '' }}">
+      <button type="button" class="btn btn--ghost btn--compact" data-br-cnpj-btn>Buscar</button>
+    </div>
+    <p class="meta br-lookup-status" data-br-cnpj-status hidden aria-live="polite"></p>
+  </div>
+  <div>
+    <label for="website">Site da empresa</label>
+    <input id="website" name="website" type="url" maxlength="300" placeholder="https://…" value="{{ p.website if p and p.website else '' }}">
+  </div>
+</div>
+
+<h2 class="form-section-title">Endereço</h2>
+<div class="form-grid form-grid--2col">
+  <div>
+    <label for="address_zip">CEP</label>
+    <input id="address_zip" name="address_zip" data-br-cep maxlength="10" autocomplete="postal-code" placeholder="00000-000" value="{{ p.address_zip if p and p.address_zip else '' }}">
+    <p class="meta br-lookup-status" data-br-cep-status hidden aria-live="polite"></p>
+  </div>
+  <div class="form-grid__full">
+    <label for="address_street">Logradouro</label>
+    <input id="address_street" name="address_street" maxlength="200" autocomplete="address-line1" value="{{ p.address_street if p and p.address_street else '' }}">
+  </div>
+  <div>
+    <label for="address_number">Número</label>
+    <input id="address_number" name="address_number" maxlength="20" value="{{ p.address_number if p and p.address_number else '' }}">
+  </div>
+  <div>
+    <label for="address_complement">Complemento</label>
+    <input id="address_complement" name="address_complement" maxlength="120" value="{{ p.address_complement if p and p.address_complement else '' }}">
+  </div>
+  <div>
+    <label for="address_neighborhood">Bairro</label>
+    <input id="address_neighborhood" name="address_neighborhood" maxlength="120" value="{{ p.address_neighborhood if p and p.address_neighborhood else '' }}">
+  </div>
+  <div>
+    <label for="address_city">Cidade</label>
+    <input id="address_city" name="address_city" maxlength="120" value="{{ p.address_city if p and p.address_city else '' }}">
+  </div>
+  <div>
+    <label for="address_state">UF</label>
+    {{ address_state_select(p.address_state if p else none) }}
+  </div>
+</div>
+
+{% if show_active and p %}
+<div class="form-grid" style="margin-top:0.5rem">
+  <label><input type="checkbox" name="is_active" value="1" {% if p.is_active %}checked{% endif %}> Ativo (pode entrar na área Parceiros)</label>
+</div>
+{% endif %}
+
+{% if show_password %}
+<h2 class="form-section-title">{% if password_required %}Senha de acesso{% else %}Alterar senha{% endif %}</h2>
+<div class="form-grid form-grid--2col">
+  <div>
+    <label for="password">{% if password_required %}Senha *{% else %}Nova senha{% endif %}</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" {% if password_required %}required minlength="8"{% else %}minlength="8"{% endif %}>
+    {% if not password_required %}<p class="meta form-field-hint">Deixe em branco para manter a senha atual.</p>{% endif %}
+  </div>
+  <div>
+    <label for="password_confirm">{% if password_required %}Confirmar senha *{% else %}Confirmar nova senha{% endif %}</label>
+    <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" {% if password_required %}required minlength="8"{% else %}minlength="8"{% endif %}>
+  </div>
+</div>
+{% endif %}
+{% endmacro %}

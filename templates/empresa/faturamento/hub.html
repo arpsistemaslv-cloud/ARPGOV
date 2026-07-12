@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Faturamento — cadastros{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='faturamento') }}">← Faturamento</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Faturamento — controle de NF</h1>
+    <p class="meta">Registro interno de <strong>notas fiscais emitidas</strong> (número, valor, referência de empenho em texto).</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.faturamento_notas_list') }}"><strong>Notas emitidas</strong><span>{{ n_notas }} registro(s)</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

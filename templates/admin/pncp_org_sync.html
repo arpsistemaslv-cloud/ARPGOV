@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Sincronizar órgãos PNCP{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Sincronizar órgãos públicos (PNCP)</h1>
+<p class="meta">Alimenta a tabela bruta de órgãos PNCP e pode ser <strong>copiada para o diretório nacional</strong> em <a href="{{ url_for('admin_br_orgaos_import') }}">Órgãos públicos BR</a> (área comercial). Os dados vêm da <a href="https://pncp.gov.br/api/consulta/swagger-ui/index.html" target="_blank" rel="noopener">API pública de consulta do PNCP</a> (contratos e/ou atas). Cada execução aceita um intervalo de <strong>no máximo 365 dias</strong>. E-mail e telefone do setor de licitações não vêm da API — o representante pode atualizar no diretório.</p>
+<p class="meta"><strong>Registros atuais na base:</strong> {{ total_orgaos }} órgão(s) / unidade(s).</p>
+<form method="post" class="form-grid form-grid--wide" style="max-width:520px">
+  <div>
+    <label for="data_inicial">Data inicial *</label>
+    <input id="data_inicial" name="data_inicial" type="date" required value="{{ request.form.get('data_inicial', '') or '2025-01-01' }}">
+  </div>
+  <div>
+    <label for="data_final">Data final *</label>
+    <input id="data_final" name="data_final" type="date" required value="{{ request.form.get('data_final', '') or '2025-12-31' }}">
+  </div>
+  <div>
+    <label for="max_paginas">Máx. páginas por fonte</label>
+    <input id="max_paginas" name="max_paginas" type="number" min="1" max="500" value="{{ request.form.get('max_paginas', '25') }}">
+    <p class="meta" style="margin:0.35rem 0 0">Cada página traz vários contratos ou atas; valores maiores demoram mais e aumentam a carga na API.</p>
+  </div>
+  <div>
+    <label>Fontes</label>
+    <label class="form-check-row"><input type="checkbox" name="fonte_contratos" value="1" checked> Contratos (traz CNPJ, UF, município, esfera)</label>
+    <label class="form-check-row"><input type="checkbox" name="fonte_atas" value="1" checked> Atas de registro de preço (complementa órgãos)</label>
+  </div>
+  <button type="submit" class="btn btn--primary">Sincronizar agora</button>
+</form>
+<p class="meta" style="margin-top:1.5rem"><a href="{{ url_for('admin_import_pncp') }}">← Importar atas para o catálogo do site</a></p>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Início{% endblock %}
+{% block body %}
+<section class="hero hero--home">
+  <div class="hero__inner">
+    <p class="hero__eyebrow">Representação comercial · Mercado público</p>
+    <h1>{% if site_settings and site_settings.hero_headline %}{{ site_settings.hero_headline }}{% else %}Atas de registro de preço com representação comercial especializada{% endif %}</h1>
+    <p class="hero__lead">{% if site_settings and site_settings.hero_text %}{{ site_settings.hero_text }}{% else %}Consulte itens por esfera administrativa, valores e prazos de vigência. Nossa equipe conduz a adesão com conformidade, transparência e agilidade — no padrão do ecossistema de contratações públicas.{% endif %}</p>
+    <div class="hero__actions">
+      <a class="btn btn--primary" href="{{ url_for('loja') }}">Consultar atas</a>
+      <a class="btn btn--ghost hero__btn-ghost" href="{{ url_for('contato') }}">Solicitar adesão</a>
+      <a class="btn btn--ghost hero__btn-ghost hero__btn-ghost--muted" href="{{ url_for('institucional') }}">Conheça a ARPGOV</a>
+    </div>
+  </div>
+</section>
+
+<section class="home-highlight" aria-labelledby="home-highlight-title">
+  <div class="page-shell">
+    <div class="home-section__head">
+      <div class="home-section__intro">
+        <p class="home-eyebrow">Catálogo</p>
+        <h2 class="section-heading" id="home-highlight-title">Atas em destaque</h2>
+        <p class="meta home-section__desc">Produtos com destaque para adesão imediata. Consulte o catálogo completo com filtros por categoria e esfera.</p>
+      </div>
+      <a href="{{ url_for('loja') }}" class="btn btn--ghost">Ver todas as atas</a>
+    </div>
+    <div class="card-grid card-grid--home">
+      {% for item in atas %}
+      <article class="card card--catalog card--home">
+        {% if item.image_paths %}
+        <a href="{{ url_for('produto', slug=item.slug) }}" class="card__thumb"><img src="{{ url_for('static', filename=item.image_paths[0]) }}" alt="" loading="lazy"></a>
+        {% endif %}
+        <div class="card__body">
+          {% if item.highlight %}<span class="pill pill--highlight">Ata em destaque</span>{% else %}<span class="pill">{{ item.section }}</span>{% endif %}
+          <h3><a href="{{ url_for('produto', slug=item.slug) }}">{{ item.title }}</a></h3>
+          <p class="meta card__meta-line">Esfera: <strong>{{ item.sphere }}</strong> · Qtd: <strong>{{ item.quantity }}</strong>{% if item.valid_until %} · Validade: <strong>{{ item.valid_until.strftime('%d/%m/%Y') }}</strong>{% endif %}</p>
+          <p class="price">{{ item.unit_price|brl }}</p>
+          <a class="btn btn--primary btn--block" href="{{ url_for('contato', produto=item.slug) }}">Quero aderir</a>
+        </div>
+      </article>
+      {% else %}
+      <p class="meta home-highlight__empty">Nenhum item publicado ainda. <a href="{{ url_for('admin_catalog_list') }}">Cadastre produtos no painel</a>.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="home-stats" aria-label="Destaques">
+  <div class="home-stats__grid">
+    <div class="home-stat">
+      <strong>{{ catalog_count or '—' }}</strong>
+      <span>Itens no catálogo</span>
+    </div>
+    <div class="home-stat">
+      <strong>ARP</strong>
+      <span>Atas de registro de preço vigentes</span>
+    </div>
+    <div class="home-stat">
+      <strong>B2G</strong>
+      <span>Representação para o setor público</span>
+    </div>
+    <div class="home-stat">
+      <strong>360°</strong>
+      <span>Da consulta à adesão assistida</span>
+    </div>
+  </div>
+</section>
+
+<section class="home-features">
+  <div class="home-features__inner">
+    <div class="home-features__head">
+      <p class="home-eyebrow">Como trabalhamos</p>
+      <h2 class="section-heading">Do catálogo à adesão</h2>
+    </div>
+    <div class="home-features__grid">
+      <article class="home-feature">
+        <div class="home-feature__icon" aria-hidden="true">01</div>
+        <h3>Consulta de atas</h3>
+        <p>Catálogo com filtros por categoria e esfera, no padrão de transparência do mercado público brasileiro.</p>
+      </article>
+      <article class="home-feature">
+        <div class="home-feature__icon" aria-hidden="true">02</div>
+        <h3>Adesão assistida</h3>
+        <p>Equipe comercial especializada para conduzir órgãos e fornecedores na adesão às atas com agilidade.</p>
+      </article>
+      <article class="home-feature">
+        <div class="home-feature__icon" aria-hidden="true">03</div>
+        <h3>Rede comercial</h3>
+        <p>Representantes capacitados em inteligência de mercado público e relacionamento institucional.</p>
+      </article>
+      <article class="home-feature">
+        <div class="home-feature__icon" aria-hidden="true">04</div>
+        <h3>Conformidade</h3>
+        <p>Processos alinhados às exigências legais de contratações e registros de preço no Brasil.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="home-cta">
+  <div class="home-cta__inner">
+    <div>
+      <h2>Pronto para aderir a uma ata?</h2>
+      <p>Fale com nossa equipe comercial. Enviamos orientações sobre documentação, prazos e procedimentos de adesão.</p>
+    </div>
+    <div class="hero__actions home-cta__actions">
+      <a class="btn btn--primary home-cta__btn-primary" href="{{ url_for('contato') }}">Fale conosco</a>
+      <a class="btn btn--ghost home-cta__btn-ghost" href="{{ url_for('loja') }}">Ver catálogo</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

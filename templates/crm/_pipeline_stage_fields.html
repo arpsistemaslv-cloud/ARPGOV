@@ -1,0 +1,90 @@
+{% macro pipeline_field_value(opp, stage_key, field) %}
+  {% if opp %}
+    {% set block = opp.pipeline_stage_data(stage_key) %}
+    {% if field == 'date' %}{{ block.get('date') or '' }}
+    {% elif field == 'forecast_date' %}{{ block.get('forecast_date') or '' }}
+    {% elif field == 'notes' %}{{ block.get('notes') or '' }}
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
+<div id="pipeline-stage-fields" class="lead-pipeline-fields" hidden>
+  <input type="hidden" name="pipeline_data_json" id="pipeline_data_json" value='{{ (opp.pipeline_data if opp else {})|tojson }}'>
+  {% for stage_key, defs in pipeline_stage_field_defs.items() %}
+  <div
+    class="lead-pipeline-panel"
+    data-pipeline-panel="{{ stage_key }}"
+    id="pipeline-panel-{{ stage_key }}"
+    hidden
+  >
+    <h3 class="lead-pipeline-panel__title">{{ pipeline_stage_labels[stage_key] }}</h3>
+    {% if defs.hint %}
+    <p class="lead-pipeline-panel__hint meta">{{ defs.hint }}</p>
+    {% endif %}
+
+    {% if defs.attachments %}
+    <div class="lead-form-field lead-form-field--wide">
+      <label for="pipeline_files_{{ stage_key }}">Anexos</label>
+      {% if opp %}
+        {% set attachments = opp.pipeline_attachments(stage_key) %}
+        {% if attachments %}
+        <ul class="lead-pipeline-attachments">
+          {% for att in attachments %}
+          <li data-relpath="{{ att.relpath }}" data-name="{{ att.name or 'Anexo' }}">
+            <a href="{{ url_for('crm.crm_op_pipeline_anexo', opp_id=opp.id, stage_key=stage_key, idx=loop.index0) }}">{{ att.name or 'Anexo' }}</a>
+            <label class="lead-pipeline-remove">
+              <input type="checkbox" name="pipeline_remove_{{ stage_key }}" value="{{ loop.index0 }}"> Remover
+            </label>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      {% endif %}
+      <input
+        type="file"
+        id="pipeline_files_{{ stage_key }}"
+        name="pipeline_files_{{ stage_key }}"
+        multiple
+        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif,.xml,.zip"
+      >
+    </div>
+    {% endif %}
+
+    {% if defs.date %}
+    <div class="lead-form-field">
+      <label for="pipeline_date_{{ stage_key }}">{{ defs.date }}</label>
+      <input
+        type="date"
+        id="pipeline_date_{{ stage_key }}"
+        name="pipeline_date_{{ stage_key }}"
+        value="{{ pipeline_field_value(opp, stage_key, 'date') }}"
+      >
+    </div>
+    {% endif %}
+
+    {% if defs.forecast_date %}
+    <div class="lead-form-field">
+      <label for="pipeline_forecast_{{ stage_key }}">{{ defs.forecast_date }}</label>
+      <input
+        type="date"
+        id="pipeline_forecast_{{ stage_key }}"
+        name="pipeline_forecast_{{ stage_key }}"
+        value="{{ pipeline_field_value(opp, stage_key, 'forecast_date') }}"
+      >
+    </div>
+    {% endif %}
+
+    {% if defs.notes %}
+    <div class="lead-form-field lead-form-field--wide">
+      <label for="pipeline_notes_{{ stage_key }}">{{ defs.notes }}</label>
+      <textarea
+        id="pipeline_notes_{{ stage_key }}"
+        name="pipeline_notes_{{ stage_key }}"
+        rows="3"
+        placeholder="Registre contatos, retornos e próximos passos…"
+      >{{ pipeline_field_value(opp, stage_key, 'notes') }}</textarea>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>

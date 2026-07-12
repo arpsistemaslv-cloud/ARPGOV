@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "macros/partner_profile_fields.html" import partner_profile_fields %}
+{% block title %}CRM — {% if partner %}Editar{% else %}Novo{% endif %} fornecedor{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <h1 style="margin-top:0">{% if partner %}Editar fornecedor{% else %}Novo fornecedor{% endif %}</h1>
+    <p class="meta">Cadastro completo do parceiro / empresa dona da ata. Obrigatório para salvar leads no CRM.</p>
+
+    <form method="post" class="client-profile-form br-lookup-form" style="margin-top:1rem;max-width:920px">
+      {{ partner_profile_fields(
+        partner=partner,
+        show_login=True,
+        show_password=True,
+        password_required=not partner,
+        show_active=partner is not none
+      ) }}
+      <div class="form-actions" style="margin-top:1.25rem">
+        <button type="submit" class="btn btn--primary">Salvar</button>
+        <a class="btn btn--ghost" href="{{ url_for('crm.crm_partners_list') }}">Voltar</a>
+      </div>
+    </form>
+
+    {% if partner and leads %}
+    <section class="crm-table-card" style="margin-top:2rem">
+      <header style="padding:1rem 1.1rem 0">
+        <h2 style="font-size:1.05rem;margin:0">Leads vinculados</h2>
+      </header>
+      <div class="table-wrap" style="padding:0.75rem 1.1rem 1.1rem">
+        <table class="data">
+          <thead><tr><th>Título</th><th>Cliente</th><th>Estágio</th><th></th></tr></thead>
+          <tbody>
+            {% for o in leads %}
+            <tr>
+              <td>{{ o.title }}</td>
+              <td class="meta">{{ o.portal_client.name if o.portal_client else '—' }}</td>
+              <td class="meta">{{ stage_label_fn(o.stage) if stage_label_fn is defined else o.stage }}</td>
+              <td><a href="{{ url_for('crm.crm_op_edit', opp_id=o.id) }}">Abrir</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

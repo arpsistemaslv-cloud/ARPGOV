@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}{% if licitacao %}Editar licitação{% else %}Nova licitação{% endif %}{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:900px">
+    <p class="meta"><a href="{{ url_for('empresa.licitacoes_lista') }}">← Licitações</a>
+      · <a href="{{ url_for('empresa.documentos_repositorio_hub') }}">Repositório de documentos</a></p>
+    <h1 style="margin-top:0">{% if licitacao %}Análise do edital{% else %}Nova licitação{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div style="grid-column:1/-1"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Identificação</h2></div>
+      <div style="grid-column:1/-1">
+        <label for="titulo">Título / objeto *</label>
+        <input id="titulo" name="titulo" required maxlength="400" value="{{ licitacao.titulo if licitacao else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="orgao">Órgão</label>
+        <input id="orgao" name="orgao" maxlength="400" value="{{ licitacao.orgao if licitacao else '' }}">
+      </div>
+      <div>
+        <label for="modalidade">Modalidade</label>
+        <input id="modalidade" name="modalidade" maxlength="120" value="{{ licitacao.modalidade if licitacao else '' }}" placeholder="Pregão, concorrência…">
+      </div>
+      <div>
+        <label for="numero_edital">Nº edital</label>
+        <input id="numero_edital" name="numero_edital" maxlength="160" value="{{ licitacao.numero_edital if licitacao else '' }}">
+      </div>
+      <div>
+        <label for="data_abertura">Data abertura / sessão pública</label>
+        <input id="data_abertura" name="data_abertura" type="date" value="{{ licitacao.data_abertura.isoformat() if licitacao and licitacao.data_abertura else '' }}">
+      </div>
+      <div>
+        <label for="data_envio_proposta">Prazo envio da proposta</label>
+        <input id="data_envio_proposta" name="data_envio_proposta" type="date" value="{{ licitacao.data_envio_proposta.isoformat() if licitacao and licitacao.data_envio_proposta else '' }}">
+      </div>
+      <div>
+        <label for="data_limite_esclarecimento">Limite pedido de esclarecimento</label>
+        <input id="data_limite_esclarecimento" name="data_limite_esclarecimento" type="date" value="{{ licitacao.data_limite_esclarecimento.isoformat() if licitacao and licitacao.data_limite_esclarecimento else '' }}">
+      </div>
+      <div>
+        <label for="data_limite_impugnacao">Limite impugnação ao edital</label>
+        <input id="data_limite_impugnacao" name="data_limite_impugnacao" type="date" value="{{ licitacao.data_limite_impugnacao.isoformat() if licitacao and licitacao.data_limite_impugnacao else '' }}">
+      </div>
+      <div>
+        <label for="prazo_entrega_objeto">Prazo entrega do objeto (conforme edital)</label>
+        <input id="prazo_entrega_objeto" name="prazo_entrega_objeto" type="date" value="{{ licitacao.prazo_entrega_objeto.isoformat() if licitacao and licitacao.prazo_entrega_objeto else '' }}">
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = licitacao.status if licitacao else 'estudo' %}
+          {% for opt in ['estudo', 'proposta_em_elaboracao', 'proposta_enviada', 'ganha', 'perdida', 'desistencia'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="valor_proposta">Valor proposta (R$)</label>
+        <input id="valor_proposta" name="valor_proposta" value="{{ licitacao.valor_proposta if licitacao and licitacao.valor_proposta is not none else '' }}">
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Análise do edital</h2></div>
+      <div style="grid-column:1/-1">
+        <label for="local_entrega_edital">Local de entrega exigido no edital</label>
+        <textarea id="local_entrega_edital" name="local_entrega_edital" rows="2" placeholder="Endereço, município, UF, observações">{{ licitacao.local_entrega_edital if licitacao else '' }}</textarea>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="multas_edital">Multas e penalidades previstas</label>
+        <textarea id="multas_edital" name="multas_edital" rows="3" placeholder="Percentuais, causas, prazos de notificação…">{{ licitacao.multas_edital if licitacao else '' }}</textarea>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="documentacao_solicitada">Documentação solicitada no edital (resumo)</label>
+        <textarea id="documentacao_solicitada" name="documentacao_solicitada" rows="4" placeholder="Liste ou cole trechos relevantes do edital sobre habilitação, proposta de preços, etc.">{{ licitacao.documentacao_solicitada if licitacao else '' }}</textarea>
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Esclarecimentos, questionamento e impugnação</h2></div>
+      <div style="grid-column:1/-1">
+        <label for="esclarecimentos">Esclarecimentos (pedidos, respostas do órgão, anotações)</label>
+        <textarea id="esclarecimentos" name="esclarecimentos" rows="5" placeholder="Registre protocolos, prazos de resposta e síntese das manifestações do licitante e do órgão.">{{ licitacao.esclarecimentos if licitacao else '' }}</textarea>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="questionamento_impugnacao">Questionamento e impugnação</label>
+        <textarea id="questionamento_impugnacao" name="questionamento_impugnacao" rows="5" placeholder="Fundamentos, trechos do edital impugnados, decisões, recursos…">{{ licitacao.questionamento_impugnacao if licitacao else '' }}</textarea>
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Checklist — documentos do edital</h2></div>
+      <p class="meta" style="grid-column:1/-1;margin:0">Marque o que já foi providenciado; use observações para número de certidão, validade ou link no repositório.</p>
+      {% if checklist_items %}
+      <div style="grid-column:1/-1" class="table-wrap">
+        <table class="data" style="font-size:0.92rem">
+          <thead>
+            <tr>
+              <th>Documento / exigência</th>
+              <th style="width:4rem">OK</th>
+              <th>Obs.</th>
+              <th style="width:5rem">Excluir</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in checklist_items %}
+            {% set i = loop.index0 %}
+            <tr>
+              <td>{{ item.text }}</td>
+              <td style="text-align:center"><label><input type="checkbox" name="checklist_ok_{{ i }}" value="1" {% if item.ok %}checked{% endif %}></label></td>
+              <td><input type="text" name="checklist_obs_{{ i }}" value="{{ item.obs or '' }}" maxlength="500" style="width:100%;min-width:180px" placeholder="Opcional"></td>
+              <td style="text-align:center"><label title="Remover da lista"><input type="checkbox" name="checklist_remover_{{ i }}" value="1"></label></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      <div style="grid-column:1/-1">
+        <label for="checklist_novos">Incluir itens no checklist (um por linha)</label>
+        <textarea id="checklist_novos" name="checklist_novos" rows="5" placeholder="Ex.: Certidão negativa de débitos estaduais&#10;Procuração do representante legal&#10;Declaração de ME/EPP"></textarea>
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Demais observações</h2></div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações gerais</label>
+        <textarea id="observacoes" name="observacoes" rows="3">{{ licitacao.observacoes if licitacao else '' }}</textarea>
+      </div>
+
+      <div style="grid-column:1/-1">
+        <button type="submit" class="btn btn--primary">Salvar</button>
+        <a class="btn btn--ghost" href="{{ url_for('empresa.licitacoes_lista') }}">Cancelar</a>
+      </div>
+    </form>
+
+    {% if licitacao %}
+    {% set contexto = 'licitacao' %}
+    {% set ref_id = licitacao.id %}
+    {% set next_url = url_for('empresa.licitacoes_edit', lid=licitacao.id) %}
+    {% include "empresa/_anexos.html" %}
+    {% else %}
+    <p class="meta" style="margin-top:1rem">Salve o cadastro uma vez para anexar PDFs do edital, retificações, prints, etc.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

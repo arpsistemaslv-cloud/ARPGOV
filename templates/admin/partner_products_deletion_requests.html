@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Exclusões solicitadas — parceiros{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Exclusões solicitadas por parceiros</h1>
+<p class="meta">O parceiro pediu a remoção. <strong>Confirmar exclusão</strong> remove o cadastro dele e, se o produto foi publicado via aprovação, também remove o item da loja. <strong>Recusar</strong> apenas cancela o pedido.</p>
+
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Parceiro</th>
+        <th>Produto</th>
+        <th>Tipo</th>
+        <th>Solicitado em</th>
+        <th>Obs.</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in products %}
+      <tr>
+        <td>
+          <strong>{{ row.partner.name }}</strong>
+          {% if row.partner.company_name %}<br><span class="meta">{{ row.partner.company_name }}</span>{% endif %}
+        </td>
+        <td>{{ row.title }}</td>
+        <td class="meta">
+          {% if row.is_approved_in_catalog and row.catalog_item %}
+          Publicado · <a href="{{ url_for('produto', slug=row.catalog_item.slug) }}" target="_blank" rel="noopener">ver na loja</a>
+          {% elif row.is_legacy_commission_profile %}
+          Legado (sem item próprio no catálogo)
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        <td class="meta">{{ row.deletion_requested_at.strftime('%d/%m/%Y %H:%M') if row.deletion_requested_at else '—' }}</td>
+        <td class="meta">{{ row.deletion_request_note or '—' }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin_partner_product_confirm_deletion', product_id=row.id) }}" style="display:inline;margin:0 0 0.35rem" onsubmit="return confirm('Confirmar exclusão definitiva?');">
+            <button type="submit" class="btn btn--danger" style="padding:0.35rem 0.65rem;font-size:0.8rem">Confirmar exclusão</button>
+          </form>
+          <form method="post" action="{{ url_for('admin_partner_product_dismiss_deletion', product_id=row.id) }}" style="display:inline;margin:0" onsubmit="return confirm('Recusar o pedido e manter o cadastro?');">
+            <button type="submit" class="btn btn--ghost" style="padding:0.35rem 0.65rem;font-size:0.8rem">Recusar pedido</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="meta">Nenhum pedido de exclusão pendente.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

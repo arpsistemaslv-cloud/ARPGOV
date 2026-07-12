@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Como aderir{% endblock %}
+{% block body %}
+
+<section class="contact-hero">
+  <div class="contact-hero__inner page-shell">
+    <nav class="breadcrumb breadcrumb--light" aria-label="Navegação">
+      <a href="{{ url_for('home') }}">Início</a>
+      <span class="breadcrumb__sep">/</span>
+      <span>Como aderir</span>
+    </nav>
+    <p class="contact-hero__eyebrow">Adesão à ata de registro de preços</p>
+    <h1>Como aderir a uma ARP</h1>
+    <p class="contact-hero__lead">Entenda o passo a passo para que seu órgão utilize itens de uma ata vigente com possibilidade de adesão — e como a ARPGOV pode apoiar sua equipe nesse processo.</p>
+  </div>
+</section>
+
+<div class="page-shell como-aderir">
+  <section class="institucional-block" aria-labelledby="ca-oque">
+    <h2 id="ca-oque">O que é adesão à ata?</h2>
+    <p>A <strong>adesão</strong> (ou carona) permite que um órgão público utilize os preços, fornecedores e condições já homologados em uma <strong>ata de registro de preços (ARP)</strong> de outro órgão gerenciador, sem abrir nova licitação para aqueles itens — desde que a ata preveja essa possibilidade e haja saldo disponível.</p>
+    <p>Cada ata tem regras próprias (quantidade máxima por adesão, documentação exigida, prazos e taxa de administração). Por isso, a consulta ao <strong>órgão gerenciador</strong> e a leitura do instrumento convocatório são etapas indispensáveis.</p>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="ca-passos">
+    <h2 id="ca-passos">Passo a passo</h2>
+    <ol class="institucional-flow como-aderir__steps">
+      <li>
+        <strong>Identifique a ata</strong>
+        <span>Consulte itens vigentes na <a href="{{ url_for('loja') }}">loja de atas</a> ou fale conosco se já souber o objeto desejado.</span>
+      </li>
+      <li>
+        <strong>Confirme a possibilidade de adesão</strong>
+        <span>Verifique se a ata está vigente, se permite adesão de outros órgãos e se há quantidade disponível para o que você precisa.</span>
+      </li>
+      <li>
+        <strong>Reúna a documentação</strong>
+        <span>Solicitação formal, dados do órgão aderente, justificativa da necessidade e documentos exigidos pelo órgão gerenciador (podem variar por ata).</span>
+      </li>
+      <li>
+        <strong>Envie ao órgão gerenciador</strong>
+        <span>O pedido de adesão é analisado pelo órgão que gerencia a ata. A autorização depende das regras do edital e da disponibilidade de saldo.</span>
+      </li>
+      <li>
+        <strong>Formalize a contratação</strong>
+        <span>Após autorização, seguem-se empenho, entrega e demais etapas previstas na ata e na legislação aplicável.</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="ca-papel">
+    <h2 id="ca-papel">Como a ARPGOV ajuda</h2>
+    <div class="institucional-offers">
+      <article class="institucional-offer">
+        <h3>Orientação comercial</h3>
+        <p>Esclarecemos dúvidas sobre atas disponíveis, itens, prazos de vigência e encaminhamento da sua demanda.</p>
+      </article>
+      <article class="institucional-offer">
+        <h3>Conexão com fornecedores</h3>
+        <p>Atuamos na representação comercial, aproximando órgãos interessados e empresas registradas na ata.</p>
+      </article>
+      <article class="institucional-offer">
+        <h3>Acompanhamento da solicitação</h3>
+        <p>Ao enviar o formulário de contato, sua demanda vira um lead acompanhado pela equipe comercial.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="ca-docs">
+    <h2 id="ca-docs">Documentação usual (pode variar)</h2>
+    <ul class="como-aderir__list">
+      <li>Ofício ou solicitação de adesão assinada pela autoridade competente do órgão aderente</li>
+      <li>Dados cadastrais do órgão (CNPJ, endereço, contato)</li>
+      <li>Relação dos itens, quantidades e estimativa de valor</li>
+      <li>Justificativa da vantagem da adesão e da necessidade da contratação</li>
+      <li>Declarações e anexos exigidos no edital da ata gerenciada</li>
+    </ul>
+    <p class="meta">A lista exata depende de cada órgão gerenciador. Nossa equipe orienta com base na ata escolhida.</p>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="ca-quem">
+    <h2 id="ca-quem">Quem pode aderir</h2>
+    <div class="institucional-audience">
+      <article>
+        <h3>Órgãos e entidades públicas</h3>
+        <p>Administração direta e indireta, autarquias, fundações e demais entes previstos na ata e na legislação de registro de preços.</p>
+      </article>
+      <article>
+        <h3>Equipes de compras e gestores</h3>
+        <p>Profissionais responsáveis por planejar a contratação, preparar documentação e acompanhar o processo junto ao gerenciador.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="institucional-block institucional-commitment como-aderir__cta" aria-labelledby="ca-inicio">
+    <h2 id="ca-inicio">Pronto para começar?</h2>
+    <p>Escolha uma ata na loja ou envie sua necessidade — retornamos com orientação sobre viabilidade e próximos passos.</p>
+    <p style="margin-top:1.25rem;display:flex;flex-wrap:wrap;gap:0.75rem">
+      <a class="btn btn--primary" href="{{ url_for('contato') }}">Solicitar adesão</a>
+      <a class="btn btn--ghost" href="{{ url_for('loja') }}">Ver atas disponíveis</a>
+    </p>
+  </section>
+</div>
+{% endblock %}

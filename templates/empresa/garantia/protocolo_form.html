@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{% if protocolo %}Editar protocolo{% else %}Novo protocolo{% endif %} — Garantia{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.garantia_protocolos_list') }}">← Protocolos</a></p>
+    <h1 style="margin-top:0">{% if protocolo %}Editar protocolo{% else %}Novo protocolo{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div>
+        <label for="numero_protocolo">Número do protocolo</label>
+        <input id="numero_protocolo" name="numero_protocolo" maxlength="80" value="{{ protocolo.numero_protocolo if protocolo else '' }}" placeholder="Em branco gera PG-00001">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="orgao_solicitante">Órgão solicitante *</label>
+        <input id="orgao_solicitante" name="orgao_solicitante" required maxlength="400" value="{{ protocolo.orgao_solicitante if protocolo else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="produto_id">Produto do catálogo Compras (opcional)</label>
+        <select id="produto_id" name="produto_id">
+          <option value="">— texto livre abaixo —</option>
+          {% for pr in produtos %}
+          <option value="{{ pr.id }}" {% if protocolo and protocolo.produto_id == pr.id %}selected{% endif %}>{{ pr.part_number }} — {{ pr.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="descricao_produto">Descrição do produto (se não usar catálogo)</label>
+        <input id="descricao_produto" name="descricao_produto" maxlength="500" value="{{ protocolo.descricao_produto if protocolo else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="defeito_relato">Relato do defeito</label>
+        <textarea id="defeito_relato" name="defeito_relato" rows="4">{{ protocolo.defeito_relato if protocolo else '' }}</textarea>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = protocolo.status if protocolo else 'aberto' %}
+          {% for opt in ['aberto', 'em_analise', 'aprovado', 'negado', 'concluido'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="data_abertura">Data abertura</label>
+        <input id="data_abertura" name="data_abertura" type="date" value="{{ protocolo.data_abertura.isoformat() if protocolo and protocolo.data_abertura else '' }}">
+      </div>
+      <div>
+        <label for="data_conclusao">Data conclusão</label>
+        <input id="data_conclusao" name="data_conclusao" type="date" value="{{ protocolo.data_conclusao.isoformat() if protocolo and protocolo.data_conclusao else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="3">{{ protocolo.observacoes if protocolo else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.garantia_protocolos_list') }}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

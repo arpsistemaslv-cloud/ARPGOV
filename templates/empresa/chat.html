@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Chat interno{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:920px">
+    <h1 style="margin-top:0">Chat interno</h1>
+    <p class="meta">Canal: <strong>{{ channel_label }}</strong> {% if channel != 'geral' %}<span class="meta">({{ channel }})</span>{% endif %}</p>
+
+    <div class="filters" style="flex-wrap:wrap;margin:1rem 0">
+      <a href="{{ url_for('empresa.chat', canal='geral') }}" class="{{ 'active' if channel == 'geral' else '' }}">Geral</a>
+      {% for slug, label in setores %}
+      <a href="{{ url_for('empresa.chat', canal=slug) }}" class="{{ 'active' if channel == slug else '' }}">{{ label }}</a>
+      {% endfor %}
+    </div>
+
+    <div id="intranet-chat-log" class="intranet-chat-log" style="border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:1rem;min-height:280px;max-height:55vh;overflow-y:auto;margin-bottom:1rem">
+      {% for m in messages %}
+      <div class="intranet-chat-msg" data-id="{{ m.id }}" style="margin-bottom:0.85rem;padding-bottom:0.85rem;border-bottom:1px solid var(--border)">
+        <div class="meta" style="margin:0"><strong>{{ m.author.name if m.author else '?' }}</strong> · {{ m.created_at.strftime('%d/%m/%Y %H:%M') }} UTC</div>
+        <div style="white-space:pre-wrap;margin-top:0.35rem">{{ m.body }}</div>
+      </div>
+      {% else %}
+      <p class="meta" style="margin:0">Nenhuma mensagem neste canal ainda.</p>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{{ url_for('empresa.chat_send') }}" class="form-grid" style="max-width:100%">
+      <input type="hidden" name="channel" value="{{ channel }}">
+      <div style="grid-column:1/-1">
+        <label for="body">Mensagem</label>
+        <textarea id="body" name="body" rows="3" required maxlength="12000" placeholder="Escreva para todos do canal…"></textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Enviar</button>
+    </form>
+  </div>
+</div>
+<script>
+(function(){
+  var log = document.getElementById('intranet-chat-log');
+  if (log) log.scrollTop = log.scrollHeight;
+  var channel = {{ channel|tojson }};
+  var lastId = 0;
+  var nodes = log.querySelectorAll('.intranet-chat-msg');
+  if (nodes.length) lastId = parseInt(nodes[nodes.length-1].getAttribute('data-id'), 10) || 0;
+  var url = {{ url_for('empresa.api_chat_messages')|tojson }} + '?canal=' + encodeURIComponent(channel) + '&apos=';
+  setInterval(function(){
+    fetch(url + lastId).then(function(r){ return r.json(); }).then(function(data){
+      var msgs = data.messages || [];
+      msgs.forEach(function(m){
+        if (m.id <= lastId) return;
+        lastId = m.id;
+        var div = document.createElement('div');
+        div.className = 'intranet-chat-msg';
+        div.setAttribute('data-id', m.id);
+        div.style.cssText = 'margin-bottom:0.85rem;padding-bottom:0.85rem;border-bottom:1px solid var(--border)';
+        var head = document.createElement('div');
+        head.className = 'meta';
+        head.style.margin = '0';
+        var t = (m.created_at || '').replace('T',' ').slice(0,16);
+        head.innerHTML = '<strong></strong> · ' + t + ' UTC';
+        head.querySelector('strong').textContent = m.author || '?';
+        var body = document.createElement('div');
+        body.style.whiteSpace = 'pre-wrap';
+        body.style.marginTop = '0.35rem';
+        body.textContent = m.body;
+        div.appendChild(head);
+        div.appendChild(body);
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      });
+    }).catch(function(){});
+  }, 12000);
+})();
+</script>
+{% endblock %}

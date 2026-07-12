@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Financeiro — {{ rep.name }}{% endblock %}
+{% block body %}
+{% include "crm/_subnav.html" %}
+<p class="meta"><a href="{{ url_for('crm_financeiro_reps') }}">← Representantes</a></p>
+<h1 style="margin-top:0">Financeiro — {{ rep.name }}</h1>
+<p class="meta">{{ rep.email }}{% if rep.phone %} · {{ rep.phone }}{% endif %}</p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Título</th>
+        <th>Negociação</th>
+        <th>Valor (R$)</th>
+        <th>Status</th>
+        <th>Anexos</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td class="meta">{{ e.created_at.strftime('%d/%m/%Y %H:%M') if e.created_at else '—' }}</td>
+        <td><strong>{{ e.title }}</strong>{% if e.notes %}<br><span class="meta">{{ e.notes[:100] }}{% if e.notes|length > 100 %}…{% endif %}</span>{% endif %}</td>
+        <td class="meta">{% if e.opportunity %}#{{ e.opportunity.id }} — {{ e.opportunity.title[:50] }}{% if e.opportunity.title|length > 50 %}…{% endif %}{% else %}—{% endif %}</td>
+        <td>{% if e.amount_brl is not none %}{{ e.amount_brl|float|brl }}{% else %}—{% endif %}</td>
+        <td>
+          <form method="post" action="{{ url_for('crm_financeiro_rep_status', entry_id=e.id) }}" style="margin:0;display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">
+            <select name="status" style="max-width:130px;padding:0.35rem;font-size:0.85rem">
+              {% for key, label in statuses %}
+              <option value="{{ key }}" {% if e.status == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn--primary" style="font-size:0.8rem;padding:0.35rem 0.6rem">OK</button>
+          </form>
+        </td>
+        <td class="meta">
+          {% if e.attachment_list %}
+          {% for a in e.attachment_list %}
+          <div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap;margin:0.2rem 0">
+            <a href="{{ url_for('crm_financeiro_anexo_rep', entry_id=e.id, idx=loop.index0) }}">{{ a.name or 'Arquivo' }}</a>
+            <form method="post" action="{{ url_for('crm_financeiro_anexo_rep_excluir', entry_id=e.id, idx=loop.index0) }}" style="margin:0" onsubmit="return confirm('Excluir este anexo?')">
+              <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.45rem">Excluir</button>
+            </form>
+          </div>
+          {% endfor %}
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="meta">Nenhum envio deste representante.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

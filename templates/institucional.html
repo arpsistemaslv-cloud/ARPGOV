@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Institucional{% endblock %}
+{% block body %}
+<div class="institucional-inner">
+  <header class="institucional-hero">
+    <h1>Institucional</h1>
+    <p class="institucional-lead">Somos uma plataforma especializada em geração de negócios no mercado público, conectando oportunidades reais de órgãos governamentais a fornecedores preparados para atender com eficiência e conformidade.</p>
+  </header>
+
+  <section class="institucional-block" aria-labelledby="inst-sobre">
+    <h2 id="inst-sobre">Sobre a empresa</h2>
+    <p>Atuamos como uma rede estruturada de representação comercial e inteligência de mercado, criando um ecossistema onde empresas ampliam suas vendas e profissionais independentes encontram novas fontes de renda.</p>
+    <p>Nosso foco é transformar o acesso às compras públicas — tradicionalmente complexo — em um processo estratégico, acessível e escalável.</p>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="inst-missao">
+    <h2 id="inst-missao">Nossa missão</h2>
+    <p>Facilitar e ampliar o acesso de empresas ao mercado governamental, gerando oportunidades reais de negócios e renda através de uma rede organizada de inteligência comercial.</p>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="inst-visao">
+    <h2 id="inst-visao">Visão</h2>
+    <p>Ser referência nacional como a principal plataforma de geração de negócios B2G (Business to Government), conectando fornecedores, representantes e oportunidades em todo o Brasil.</p>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="inst-oferecemos">
+    <h2 id="inst-oferecemos">O que oferecemos</h2>
+    <div class="institucional-offers">
+      <article class="institucional-offer">
+        <h3>Inteligência de mercado público</h3>
+        <p>Mapeamento contínuo de oportunidades em órgãos públicos, com base em dados de plataformas oficiais como o Compras.gov.br.</p>
+      </article>
+      <article class="institucional-offer">
+        <h3>Rede de representação comercial</h3>
+        <p>Estruturamos uma rede de agentes capacitados para identificar demandas e conectar fornecedores a oportunidades reais de venda. Toda atuação segue as diretrizes da Lei nº 4.886/1965.</p>
+      </article>
+      <article class="institucional-offer">
+        <h3>Conexão com fornecedores</h3>
+        <p>Disponibilizamos uma base de empresas preparadas para atender o setor público, com produtos e serviços alinhados às exigências legais.</p>
+      </article>
+      <article class="institucional-offer">
+        <h3>Plataforma de oportunidades</h3>
+        <p>Sistema digital onde demandas são registradas, oportunidades são distribuídas e conexões são realizadas de forma organizada.</p>
+      </article>
+      <article class="institucional-offer">
+        <h3>Geração de receita por performance</h3>
+        <p>Nosso modelo é baseado em resultado: fornecedores ampliam suas vendas, agentes são remunerados por oportunidades geradas e nossa plataforma conecta e viabiliza os negócios.</p>
+      </article>
+      <article class="institucional-offer">
+        <h3>Conformidade e segurança</h3>
+        <p>Atuamos com total respeito às normas que regem as compras públicas no Brasil, especialmente a Lei nº 14.133/2021. Nosso modelo garante transparência nas relações comerciais, contratos formais com parceiros e atuação ética e estruturada.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="inst-como">
+    <h2 id="inst-como">Como funciona</h2>
+    <ol class="institucional-flow">
+      <li>Nossa rede identifica demandas em órgãos públicos.</li>
+      <li>As oportunidades são registradas na plataforma.</li>
+      <li>Fornecedores compatíveis são acionados.</li>
+      <li>A empresa realiza a venda por meios legais (licitação ou ata).</li>
+      <li>O negócio é concluído e as partes são remuneradas conforme contrato.</li>
+    </ol>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="inst-diferencial">
+    <h2 id="inst-diferencial">Nosso diferencial</h2>
+    <ul>
+      <li>Atuação nacional</li>
+      <li>Rede descentralizada de geração de oportunidades</li>
+      <li>Modelo escalável baseado em performance</li>
+      <li>Integração entre inteligência, representação e tecnologia</li>
+    </ul>
+  </section>
+
+  <section class="institucional-block" aria-labelledby="inst-publico">
+    <h2 id="inst-publico">Para quem é</h2>
+    <div class="institucional-audience">
+      <article>
+        <h3>Fornecedores</h3>
+        <p>Empresas que desejam vender mais para o governo com apoio estratégico e geração ativa de oportunidades.</p>
+      </article>
+      <article>
+        <h3>Representantes e agentes</h3>
+        <p>Profissionais que buscam renda atuando na identificação de demandas no setor público.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="institucional-block institucional-commitment" aria-labelledby="inst-compromisso">
+    <h2 id="inst-compromisso">Nosso compromisso</h2>
+    <p>Criar um ambiente onde:</p>
+    <ul>
+      <li>empresas crescem;</li>
+      <li>pessoas geram renda;</li>
+      <li>o acesso ao mercado público se torna mais eficiente.</li>
+    </ul>
+    <p style="margin-top:1rem"><a class="btn btn--primary" href="{{ url_for('contato') }}">Fale conosco</a></p>
+  </section>
+</div>
+{% endblock %}

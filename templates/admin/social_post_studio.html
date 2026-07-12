@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Arte — {{ item.title }}{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<div class="product-form-page social-studio">
+  <header class="product-form-page__header">
+    <nav class="breadcrumb" aria-label="Navegação" style="margin-bottom:0.75rem">
+      <a href="{{ url_for('admin_social_posts') }}">Redes sociais</a>
+      <span class="breadcrumb__sep">/</span>
+      <span>{{ item.title }}</span>
+    </nav>
+    <h1>Gerador de arte</h1>
+    <p class="product-form-page__lead">Monte o layout, visualize em tempo real e baixe em PNG para publicar no Instagram ou TikTok.</p>
+  </header>
+
+  <div class="social-studio__layout">
+    <form id="social_studio_form" class="social-studio__controls" method="post" action="{{ url_for('admin_social_post_generate', item_id=item.id) }}">
+      <section class="product-form__card">
+        <header class="product-form__card-head">
+          <h2>Formato</h2>
+          <p>Tamanho otimizado para cada rede.</p>
+        </header>
+        <div class="product-form__card-body social-studio__options">
+          {% for key, fmt in social_formats.items() %}
+          <label class="social-studio__radio">
+            <input type="radio" name="format" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+            <span><strong>{{ fmt.platform }}</strong> — {{ fmt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="product-form__card">
+        <header class="product-form__card-head">
+          <h2>Layout</h2>
+          <p>Estilo visual da marca ARPGOV.</p>
+        </header>
+        <div class="product-form__card-body social-studio__options">
+          {% for key, label in social_layouts.items() %}
+          <label class="social-studio__radio">
+            <input type="radio" name="layout" value="{{ key }}" {% if key == 'gov_pro' %}checked{% endif %}>
+            <span>{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="product-form__card">
+        <header class="product-form__card-head">
+          <h2>Conteúdo</h2>
+        </header>
+        <div class="product-form__card-body form-grid">
+          <div class="product-form__field product-form__span-2">
+            <label>Link do produto na publicação</label>
+            <div class="social-studio__link-box">
+              <input type="text" id="product_public_url" value="{{ product_url }}" readonly class="social-studio__link-input">
+              <button type="button" class="btn btn--ghost btn--compact" id="copy_product_url">Copiar link</button>
+            </div>
+            <p class="field-hint">No Instagram/TikTok, cole este link na bio, no botão do Reels ou na legenda. A arte também exibe o endereço com destaque.</p>
+          </div>
+          {% if whatsapp_url %}
+          <div class="product-form__field product-form__span-2">
+            <label>WhatsApp na publicação</label>
+            <div class="social-studio__link-box">
+              <input type="text" id="whatsapp_public_url" value="{{ whatsapp_url }}" readonly class="social-studio__link-input social-studio__link-input--whatsapp">
+              <button type="button" class="btn btn--ghost btn--compact" id="copy_whatsapp_url">Copiar WhatsApp</button>
+            </div>
+            <p class="field-hint">Use na bio ou no botão de contato do post. A arte exibe um botão verde com este link.</p>
+          </div>
+          {% else %}
+          <p class="field-hint product-form__span-2">Configure o WhatsApp em <a href="{{ url_for('admin_site_edit') }}">Aparência e textos</a> para exibir o botão na arte.</p>
+          {% endif %}
+          <div class="product-form__field product-form__span-2">
+            <label for="headline">Título na arte</label>
+            <input id="headline" name="headline" type="text" maxlength="180" placeholder="{{ item.title }}">
+            <p class="field-hint">Deixe em branco para usar o título do produto.</p>
+          </div>
+          <div class="product-form__field">
+            <label for="cta">Chamada principal</label>
+            <input id="cta" name="cta" type="text" maxlength="120" value="Quero aderir à ata">
+          </div>
+          <div class="product-form__field">
+            <label for="link_cta">Texto do link</label>
+            <input id="link_cta" name="link_cta" type="text" maxlength="40" value="CLIQUE AQUI">
+          </div>
+          {% if whatsapp_url %}
+          <div class="product-form__field">
+            <label for="whatsapp_cta">Texto do WhatsApp</label>
+            <input id="whatsapp_cta" name="whatsapp_cta" type="text" maxlength="40" value="CHAME NO WHATSAPP">
+          </div>
+          <label class="social-studio__check"><input type="checkbox" name="show_whatsapp" value="1" checked> Exibir botão WhatsApp na arte</label>
+          {% endif %}
+          <label class="social-studio__check"><input type="checkbox" name="show_product_link" value="1" checked> Exibir link do produto na arte</label>
+          <label class="social-studio__check"><input type="checkbox" name="show_price" value="1" checked> Exibir preço</label>
+          <label class="social-studio__check"><input type="checkbox" name="show_manufacturer" value="1" checked> Exibir fabricante</label>
+          <label class="social-studio__check"><input type="checkbox" name="show_sphere" value="1" checked> Exibir esfera</label>
+          <label class="social-studio__check"><input type="checkbox" name="show_category" value="1" checked> Exibir categoria</label>
+        </div>
+      </section>
+
+      <div class="social-studio__actions">
+        <button type="submit" class="btn btn--primary" name="download" value="1">Baixar PNG</button>
+        <button type="submit" class="btn btn--ghost">Salvar no painel</button>
+        <a class="btn btn--ghost" href="{{ url_for('produto', slug=item.slug) }}" target="_blank" rel="noopener">Ver produto no site</a>
+      </div>
+    </form>
+
+    <aside class="social-studio__preview-wrap">
+      <div class="social-studio__preview-head">
+        <h2>Pré-visualização</h2>
+        <p class="meta">Atualiza ao alterar as opções.</p>
+      </div>
+      <div class="social-studio__preview-frame" id="social_preview_frame">
+        <img
+          id="social_preview_img"
+          src="{{ url_for('admin_social_post_preview', item_id=item.id) }}?format=instagram_feed&layout=gov_pro"
+          alt="Pré-visualização da arte"
+          class="social-studio__preview-img"
+        >
+      </div>
+      <p class="meta social-studio__preview-note">Dica: no Instagram use feed 1:1; no TikTok e Reels use 9:16.</p>
+    </aside>
+  </div>
+
+  <section class="product-form__card social-studio__video-soon">
+    <header class="product-form__card-head">
+      <h2>Vídeos para TikTok</h2>
+      <p class="meta" style="margin:0">Em breve: gerador de vídeo curto com imagem, preço e CTA animados para Reels e TikTok.</p>
+    </header>
+  </section>
+
+  {% if exports %}
+  <section class="product-form__card">
+    <header class="product-form__card-head">
+      <h2>Artes salvas deste produto</h2>
+    </header>
+    <div class="product-form__card-body">
+      <div class="social-studio__exports">
+        {% for ex in exports %}
+        <a class="social-studio__export" href="{{ url_for('static', filename=ex.path) }}" download>
+          <img src="{{ url_for('static', filename=ex.path) }}" alt="" loading="lazy">
+          <span class="meta">{{ ex.name }}{% if ex.mtime %} · {{ ex.mtime.strftime('%d/%m/%Y %H:%M') }}{% endif %}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/social-post-studio.js') }}" defer></script>
+{% endblock %}

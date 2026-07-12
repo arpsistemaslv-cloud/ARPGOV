@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Financeiro — CRM{% endblock %}
+{% block body %}
+{% include "crm/_subnav.html" %}
+<h1 style="margin-top:0">Financeiro</h1>
+<p class="meta">Custos internos da empresa e documentos de comissão enviados pelos representantes.</p>
+<div class="admin-dash-grid" style="margin-top:1.25rem">
+  <a class="admin-dash-card" href="{{ url_for('crm_financeiro_custos') }}">
+    <strong>Custos da empresa</strong>
+    <span>Despesas, notas fiscais e anexos</span>
+  </a>
+  <a class="admin-dash-card" href="{{ url_for('crm_financeiro_reps') }}">
+    <strong>Representantes comerciais</strong>
+    <span>Comissões, NFs e histórico por vendedor</span>
+  </a>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}CRM — Excluir tipo de comissão{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <h1 style="margin-top:0">Excluir tipo de comissão</h1>
+    <p>Remover <strong>{{ project.title }}</strong>?</p>
+    {% if in_use %}
+    <p class="meta" style="color:var(--danger, #b42318)">Este tipo está vinculado a leads. Desative-o em vez de excluir.</p>
+    <a class="btn btn--ghost" href="{{ url_for('crm.crm_commission_project_detail', project_id=project.id) }}">Voltar</a>
+    {% else %}
+    <form method="post" style="margin-top:1rem;display:flex;gap:0.75rem">
+      <button type="submit" class="btn btn--danger">Confirmar exclusão</button>
+      <a class="btn btn--ghost" href="{{ url_for('crm.crm_commission_project_detail', project_id=project.id) }}">Cancelar</a>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

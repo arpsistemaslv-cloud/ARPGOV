@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "macros/backoffice_hub.html" import hub_card %}
+
+{% block title %}Painel ARPGOV{% endblock %}
+
+{% block body %}
+<div class="backoffice-hub">
+    <header class="backoffice-hub__hero backoffice-hub__hero--admin">
+      <div class="backoffice-hub__hero-top">
+        {% set switcher_in_hero = true %}
+        {% include "backoffice/_area_switcher.html" %}
+      </div>
+      <div class="backoffice-hub__hero-main">
+        <div class="backoffice-hub__hero-content">
+        <p class="backoffice-hub__eyebrow">Painel do site</p>
+        <h1 class="backoffice-hub__title">Gerencie o catálogo e o site público</h1>
+        <p class="backoffice-hub__lead">Produtos, páginas, parceiros e integrações em um só lugar. Para leads e comissões, alterne para o <strong>CRM</strong>.</p>
+        </div>
+      <div class="backoffice-hub__hero-mark" aria-hidden="true">
+        <img src="{{ url_for('static', filename='images/arpgov-mark.svg') }}" width="72" height="72" alt="">
+      </div>
+      </div>
+    </header>
+
+    <section class="hub-section">
+      <header class="hub-section__head">
+        <h2 class="hub-section__title">Catálogo e conteúdo</h2>
+        <p class="hub-section__desc">O que o visitante vê na loja e nas páginas institucionais.</p>
+      </header>
+      <div class="hub-grid">
+        {{ hub_card('Catálogos e subcatégorias', 'Filtros da loja e hierarquia de produtos', url_for('admin_category_list'), icon='catalog', accent='blue') }}
+        {{ hub_card('Produtos do site', 'Itens, preços, imagens e destaques da home', url_for('admin_catalog_list'), icon='products', accent='blue') }}
+        {{ hub_card('Artes para redes sociais', 'Instagram, Stories, Reels e TikTok a partir do catálogo', url_for('admin_social_posts'), icon='social', accent='pink') }}
+        {{ hub_card('Produtos de parceiros', 'Aprovar ou recusar solicitações antes de publicar', url_for('admin_partner_products_pending'), icon='partners', accent='blue') }}
+        {{ hub_card('Aparência e textos', 'Logo, CSS, início, contato, rodapé e SEO', url_for('admin_site_edit'), icon='appearance', accent='yellow') }}
+        {{ hub_card('Marca e Brand Kit', 'Cores, logotipos, tipografia e assinatura de e-mail', url_for('admin_brand_kit'), icon='appearance', accent='blue') }}
+        {{ hub_card('Páginas', 'Criar páginas novas e links no menu', url_for('admin_page_list'), icon='pages', accent='blue') }}
+      </div>
+    </section>
+
+    <section class="hub-section">
+      <header class="hub-section__head">
+        <h2 class="hub-section__title">ARP &amp; licitações</h2>
+        <p class="hub-section__desc">Cadastro manual e acompanhamento do dia a dia comercial.</p>
+      </header>
+      <div class="hub-grid">
+        {{ hub_card('Análise prévia de ARPs', 'Cadastre links, negocie parceria e publique no site', url_for('admin_arp_analysis_list'), icon='arp', accent='green') }}
+        {{ hub_card('Licitações em andamento', 'Acompanhe processos que virarão ARP com adesão', url_for('admin_licitacao_watch_list'), icon='auction', accent='orange') }}
+      </div>
+    </section>
+
+    <section class="hub-section">
+      <header class="hub-section__head">
+        <h2 class="hub-section__title">Equipe e parceiros</h2>
+        <p class="hub-section__desc">Acessos comerciais e cadastro de fornecedores.</p>
+      </header>
+      <div class="hub-grid">
+        {{ hub_card('Representantes comerciais', 'Cadastro de vendedores e login da área Comercial', url_for('admin_rep_list'), icon='reps', accent='blue') }}
+        {{ hub_card('Parceiros', 'Cadastro de fornecedores com login no site', url_for('admin_partner_list'), icon='partners', accent='blue') }}
+        {{ hub_card('Exclusões solicitadas', 'Pedidos de remoção de produto ou cadastro legado', url_for('admin_partner_products_deletion_requests'), icon='grid', accent='blue') }}
+        {{ hub_card('Ir para o CRM', 'Clientes, leads, comissões e financeiro', url_for('crm.crm_dashboard'), icon='crm', accent='navy') }}
+      </div>
+    </section>
+
+    <details class="hub-dev">
+      <summary>Em desenvolvimento <span class="hub-dev__badge">experimental</span></summary>
+      <p class="hub-dev__hint">Ferramentas em teste — os links continuam funcionando.</p>
+      <div class="hub-grid">
+        {{ hub_card('Robô Contratos.gov.br', 'Busca automática de atas com adesão', url_for('admin_robo_contratos'), icon='robot', accent='blue', dev=true) }}
+        {{ hub_card('Mercado público (PNCP)', 'Gráficos de compras para a área do cliente', url_for('admin_mercado_publico'), icon='grid', accent='blue', dev=true) }}
+        {{ hub_card('Importar PNCP', 'Importação em lote pela API nacional', url_for('admin_import_pncp'), icon='grid', accent='blue', dev=true) }}
+        {{ hub_card('Sincronizar órgãos PNCP', 'Cache local de órgãos e unidades', url_for('admin_sync_pncp_orgaos'), icon='grid', accent='blue', dev=true) }}
+        {{ hub_card('Órgãos públicos BR', 'Importação do diretório nacional', url_for('admin_br_orgaos_import'), icon='grid', accent='blue', dev=true) }}
+      </div>
+    </details>
+</div>
+{% endblock %}

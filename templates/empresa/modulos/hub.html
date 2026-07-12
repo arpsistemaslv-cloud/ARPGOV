@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Módulos por setor — intranet{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.dashboard') }}">← Intranet</a></p>
+    <h1 style="margin-top:0">Cadastros operacionais por setor</h1>
+    <p class="meta">Cada área possui telas para registrar o dia a dia (entregas, chamados, contratos, NF, pendências, etc.). O setor <strong>Compras</strong> mantém produtos e empenhos; os demais estão abaixo.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.compras_hub') }}"><strong>Compras</strong><span>Produtos, empenhos e itens</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.logistica_hub') }}"><strong>Logística</strong><span>Remessas e rastreio</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.tecnico_hub') }}"><strong>Técnico</strong><span>Chamados de suporte</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.juridico_hub') }}"><strong>Jurídico</strong><span>Processos e prazos</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.garantia_hub') }}"><strong>Garantia</strong><span>Protocolos de troca</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.contratos_hub') }}"><strong>Contratos e empenhos</strong><span>Contratos com órgãos</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.faturamento_hub') }}"><strong>Faturamento</strong><span>NF emitidas (controle)</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.pendencias_hub') }}"><strong>Pendências</strong><span>Itens multi-setor</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.projetos_hub') }}"><strong>Projetos</strong><span>Projetos e marcos</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.licitacoes_hub') }}"><strong>Licitações</strong><span>Pipeline de editais</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.fechamento_preco_hub') }}"><strong>Fechamento de preço</strong><span>Planilha, snapshot, NCM e matriz UF</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.imposto_hub') }}"><strong>Impostos (produto × UF)</strong><span>Alíquotas por estado</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.documentos_repositorio_hub') }}"><strong>Repositório de documentos</strong><span>Arquivos corporativos</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

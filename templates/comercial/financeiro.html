@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Financeiro — comercial{% endblock %}
+{% block body %}
+{% include "comercial/_subnav.html" %}
+<h1 style="margin-top:0">Meu financeiro</h1>
+<p class="meta">Acompanhe comissões informadas pelo CRM nos seus leads, envie notas fiscais e veja o status dos documentos.</p>
+
+<div class="table-wrap" style="margin:1rem 0;display:grid;gap:0.75rem;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));max-width:720px">
+  <div class="card" style="margin:0;padding:0.85rem 1rem">
+    <p class="meta" style="margin:0">Total em comissões nos leads</p>
+    <p style="margin:0.25rem 0 0;font-size:1.15rem"><strong>{{ total_commission_brl|float|brl }}</strong></p>
+    <p class="meta" style="margin:0.35rem 0 0">Soma dos valores cadastrados pelo CRM por lead.</p>
+  </div>
+  <div class="card" style="margin:0;padding:0.85rem 1rem">
+    <p class="meta" style="margin:0">Valores em documentos (todos os envios)</p>
+    <p style="margin:0.25rem 0 0;font-size:1.15rem"><strong>{{ total_enviado_valores_brl|float|brl }}</strong></p>
+    <p class="meta" style="margin:0.35rem 0 0">Soma dos valores informados nas NFs / envios.</p>
+  </div>
+  <div class="card" style="margin:0;padding:0.85rem 1rem">
+    <p class="meta" style="margin:0">Confirmado como pago (CRM)</p>
+    <p style="margin:0.25rem 0 0;font-size:1.15rem"><strong>{{ total_pago_brl|float|brl }}</strong></p>
+    <p class="meta" style="margin:0.35rem 0 0">Soma dos envios com status <strong>Pago</strong>.</p>
+  </div>
+</div>
+
+<p class="meta" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+  <a class="btn btn--primary" href="{{ url_for('comercial_financeiro_novo') }}">Enviar documento / NF</a>
+  <span>Filtros:</span>
+  {% if so_comissao %}
+  <a href="{{ url_for('comercial_financeiro') }}">Todos os meus leads</a>
+  {% else %}
+  <a href="{{ url_for('comercial_financeiro', so_comissao='1') }}">Só leads com comissão</a>
+  {% endif %}
+  <a href="#leads-comissao">Ir para leads</a>
+  <a href="#documentos-enviados">Ir para documentos</a>
+</p>
+
+<section id="leads-comissao" style="margin-top:1.5rem">
+  <h2 style="font-size:1.05rem">Leads e comissões</h2>
+  <p class="meta">Cada linha é um lead seu. Use <strong>Anexar NF</strong> para vincular a nota ao negócio.</p>
+  <div class="table-wrap" style="margin-top:0.5rem">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Lead</th>
+          <th>Comissão (CRM)</th>
+          <th>Documentos</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in lead_rows %}
+        {% set o = row.opp %}
+        <tr>
+          <td><strong>#{{ o.id }}</strong> — {{ o.title[:56] }}{% if o.title|length > 56 %}…{% endif %}</td>
+          <td>{% if o.rep_commission_brl is not none %}{{ o.rep_commission_brl|float|brl }}{% else %}—{% endif %}</td>
+          <td class="meta">{{ row.nf_count }} envio(s)</td>
+          <td><a href="{{ url_for('comercial_financeiro_novo') }}?oportunidade={{ o.id }}">Anexar NF</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="meta">{% if so_comissao %}Nenhum lead com comissão informada.{% else %}Nenhum lead atribuído a você.{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="documentos-enviados" style="margin-top:2rem">
+  <h2 style="font-size:1.05rem">Documentos enviados</h2>
+  <p class="meta">Histórico de NFs e anexos encaminhados ao financeiro.</p>
+  <div class="table-wrap" style="margin-top:0.5rem">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Título</th>
+          <th>Negociação</th>
+          <th>Valor (R$)</th>
+          <th>Status</th>
+          <th>Anexos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in entries %}
+        <tr>
+          <td class="meta">{{ e.created_at.strftime('%d/%m/%Y %H:%M') if e.created_at else '—' }}</td>
+          <td><strong>{{ e.title }}</strong></td>
+          <td class="meta">{% if e.opportunity %}#{{ e.opportunity.id }} — {{ e.opportunity.title[:40] }}{% if e.opportunity.title|length > 40 %}…{% endif %}{% else %}—{% endif %}</td>
+          <td>{% if e.amount_brl is not none %}{{ e.amount_brl|float|brl }}{% else %}—{% endif %}</td>
+          <td>
+            <form method="post" action="{{ url_for('comercial_financeiro_status', entry_id=e.id) }}" style="margin:0;display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">
+              <select name="status" style="max-width:140px;padding:0.35rem;font-size:0.85rem">
+                {% for key, label in statuses %}
+                <option value="{{ key }}" {% if e.status == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn--primary" style="font-size:0.8rem;padding:0.3rem 0.55rem">OK</button>
+            </form>
+          </td>
+          <td class="meta">
+            {% if e.attachment_list %}
+            {% for a in e.attachment_list %}
+            <div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap;margin:0.2rem 0">
+              <a href="{{ url_for('comercial_financeiro_anexo', entry_id=e.id, idx=loop.index0) }}">{{ a.name or 'Arquivo' }}</a>
+              <form method="post" action="{{ url_for('comercial_financeiro_anexo_excluir', entry_id=e.id, idx=loop.index0) }}" style="margin:0" onsubmit="return confirm('Excluir este anexo?')">
+                <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.45rem">Excluir</button>
+              </form>
+            </div>
+            {% endfor %}
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="meta">Nenhum envio ainda. Use o botão <strong>Enviar documento / NF</strong> acima.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

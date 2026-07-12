@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}CRM — Clientes{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;justify-content:space-between">
+      <div>
+        <h1 style="margin-top:0">Clientes</h1>
+        <p class="meta">Contas do portal público vinculadas aos leads.</p>
+      </div>
+      <a class="btn btn--primary" href="{{ url_for('crm.crm_client_new') }}">Novo cliente</a>
+    </div>
+    <form method="get" action="{{ url_for('crm.crm_clients_list') }}" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <label for="q">Buscar</label>
+        <input id="q" name="q" value="{{ q or '' }}" placeholder="Nome, e-mail, órgão, CNPJ…">
+      </div>
+      <button type="submit" class="btn btn--ghost">Filtrar</button>
+      {% if q %}<a href="{{ url_for('crm.crm_clients_list') }}" class="btn btn--ghost">Limpar</a>{% endif %}
+    </form>
+    <div class="crm-table-card">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Órgão / empresa</th>
+              <th>CNPJ</th>
+              <th>Telefone</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in clients %}
+            <tr>
+              <td><strong>{{ c.name }}</strong></td>
+              <td class="meta">{{ c.email }}</td>
+              <td>{{ c.organization or '—' }}</td>
+              <td class="meta">{{ c.cnpj or '—' }}</td>
+              <td class="meta">{{ c.phone or '—' }}</td>
+              <td><a href="{{ url_for('crm.crm_client_edit', client_id=c.id) }}">Editar</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="meta">Nenhum cliente. <a href="{{ url_for('crm.crm_client_new') }}">Cadastre o primeiro</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

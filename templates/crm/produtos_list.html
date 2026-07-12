@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}CRM — Produtos{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;justify-content:space-between">
+      <div>
+        <h1 style="margin-top:0">Produtos</h1>
+        <p class="meta">Cadastre itens do catálogo com imagens, preços e dados da ata.</p>
+      </div>
+      <a class="btn btn--primary" href="{{ url_for('crm.crm_product_new') }}">Novo produto</a>
+    </div>
+    <form method="get" action="{{ url_for('crm.crm_products_list') }}" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <label for="q">Buscar</label>
+        <input id="q" name="q" value="{{ q or '' }}" placeholder="Título ou slug…">
+      </div>
+      <button type="submit" class="btn btn--ghost">Filtrar</button>
+      {% if q %}<a href="{{ url_for('crm.crm_products_list') }}" class="btn btn--ghost">Limpar</a>{% endif %}
+    </form>
+    <div class="crm-table-card">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Imagem</th>
+              <th>#</th>
+              <th>Título</th>
+              <th>Seção</th>
+              <th>Fabricante</th>
+              <th>Preço</th>
+              <th>Empresa da ata</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in products %}
+            <tr>
+              <td>
+                {% if p.image_paths %}
+                <img src="{{ url_for('static', filename=p.image_paths[0]) }}" alt="" width="56" height="56" loading="lazy" style="object-fit:contain;background:#f5f7fa;padding:2px;box-sizing:border-box;border-radius:6px;border:1px solid var(--border)">
+                {% else %}
+                <span class="meta">—</span>
+                {% endif %}
+              </td>
+              <td class="meta">{{ p.id }}</td>
+              <td><strong>{{ p.title }}</strong><br><span class="meta"><code>{{ p.slug }}</code></span></td>
+              <td class="meta">{{ p.section or '—' }}</td>
+              <td class="meta">{{ p.manufacturer or '—' }}</td>
+              <td>{% if p.unit_price is not none %}{{ p.unit_price|brl }}{% else %}—{% endif %}</td>
+              <td class="meta">{{ p.ata_owner_company or '—' }}</td>
+              <td>
+                <a href="{{ url_for('crm.crm_product_edit', item_id=p.id) }}">Editar</a>
+                · <a href="{{ url_for('produto', slug=p.slug) }}" target="_blank" rel="noopener">Loja</a>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="meta">Nenhum produto. <a href="{{ url_for('crm.crm_product_new') }}">Cadastre o primeiro</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

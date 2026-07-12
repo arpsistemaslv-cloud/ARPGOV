@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Funcionários — intranet{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Colaboradores (área da empresa)</h1>
+<p><a class="btn btn--primary" href="{{ url_for('admin_empresa_staff_new') }}">Novo colaborador</a></p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>E-mail</th>
+        <th>Setor</th>
+        <th>Ativo</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in staff %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td>{{ s.email }}</td>
+        <td>{% for slug, lab in setores %}{% if slug == s.department_slug %}{{ lab }}{% endif %}{% endfor %}</td>
+        <td>{{ 'Sim' if s.is_active else 'Não' }}</td>
+        <td><a href="{{ url_for('admin_empresa_staff_edit', sid=s.id) }}">Editar</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="meta">Nenhum colaborador. Cadastre o primeiro para liberar a intranet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="meta" style="margin-top:1rem"><a href="{{ url_for('admin_home') }}">← Início do painel</a></p>
+{% endblock %}

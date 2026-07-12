@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Área da empresa — entrar{% endblock %}
+{% block body %}
+<h1 style="margin-top:0">Área administrativa da empresa</h1>
+<p class="meta">Intranet da empresa (setores, chat, Kanban). Administradores comerciais entram com o mesmo e-mail e senha da área Comercial.</p>
+<form method="post" class="form-grid" style="max-width:360px;margin-top:1rem">
+  {% if request.args.get('next') %}
+  <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+  {% endif %}
+  <div>
+    <label for="email">E-mail</label>
+    <input id="email" name="email" type="email" required autocomplete="username" maxlength="120">
+  </div>
+  <div>
+    <label for="password">Senha</label>
+    <input id="password" name="password" type="password" required autocomplete="current-password">
+  </div>
+  <button type="submit" class="btn btn--primary">Entrar</button>
+</form>
+<p class="meta" style="margin-top:1.5rem"><a href="{{ url_for('home') }}">← Voltar ao site</a></p>
+{% endblock %}

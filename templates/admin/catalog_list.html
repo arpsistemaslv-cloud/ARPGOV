@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Catálogo do site{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Catálogo do site</h1>
+<p class="meta">Tudo que você cadastrar aqui aparece na loja e na página inicial (por seção).</p>
+
+<form method="get" action="{{ url_for('admin_catalog_list') }}" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+  <div>
+    <label for="catalog-q" class="meta" style="display:block;margin-bottom:0.25rem">Busca</label>
+    <input id="catalog-q" type="search" name="q" value="{{ qtext }}" placeholder="Título, seção, esfera, empresa (painel)…" style="max-width:280px">
+  </div>
+  <div>
+    <label for="catalog-empresa" class="meta" style="display:block;margin-bottom:0.25rem">Empresa dona da ata</label>
+    <select id="catalog-empresa" name="empresa" style="min-width:220px">
+      <option value="">Todas</option>
+      {% for name in company_choices %}
+      <option value="{{ name }}" {% if filter_empresa == name %}selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn--primary">Filtrar</button>
+  {% if qtext or filter_empresa %}<a href="{{ url_for('admin_catalog_list') }}" class="btn btn--ghost">Limpar filtros</a>{% endif %}
+</form>
+
+<p style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center">
+  <a class="btn btn--primary" href="{{ url_for('admin_catalog_new') }}">Novo produto</a>
+  {% if items %}<a class="btn btn--danger" href="{{ url_for('admin_catalog_delete_all') }}">Excluir todos os produtos</a>{% endif %}
+</p>
+
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Título</th>
+        <th>Empresa (painel)</th>
+        <th>Categoria</th>
+        <th>Seção</th>
+        <th>Esfera</th>
+        <th>Fabricante</th>
+        <th>Qtd (ata)</th>
+        <th>Estoque</th>
+        <th>Preço (R$)</th>
+        <th>Destaque</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td><strong>{{ it.title }}</strong><br><span class="meta">/{{ it.slug }}</span></td>
+        <td class="meta">{% if it.ata_owner_company %}{{ it.ata_owner_company }}{% else %}—{% endif %}</td>
+        <td class="meta">{% if it.category %}{% if it.category.parent %}{{ it.category.parent.name }} › {% endif %}{{ it.category.name }}{% else %}—{% endif %}</td>
+        <td>{{ it.section }}</td>
+        <td>{{ it.sphere }}</td>
+        <td class="meta">{% if it.manufacturer %}{{ it.manufacturer }}{% else %}—{% endif %}</td>
+        <td>{{ it.quantity }}</td>
+        <td><strong>{{ it.stock_on_hand }}</strong></td>
+        <td>{{ it.unit_price|brl_decimal }}</td>
+        <td>{% if it.highlight %}Sim{% else %}—{% endif %}</td>
+        <td>
+          <a href="{{ url_for('produto', slug=it.slug) }}">Ver no site</a>
+          · <a href="{{ url_for('admin_catalog_edit', item_id=it.id) }}">Editar</a>
+          · <a href="{{ url_for('admin_social_post_studio', item_id=it.id) }}">Arte IG/TikTok</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="11" class="meta">Nenhum produto. <a href="{{ url_for('admin_catalog_new') }}">Cadastre o primeiro</a>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

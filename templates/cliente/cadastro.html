@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "macros/portal_client_fields.html" import portal_client_profile_fields %}
+{% block title %}Cadastro — área do cliente{% endblock %}
+{% block body %}
+<div class="page-shell page-shell--narrow">
+  <h1 style="margin-top:0">Criar conta</h1>
+  <p class="meta">Cadastre-se para acompanhar solicitações, montar pedidos com vários produtos e manter seus dados de órgão sempre atualizados.</p>
+
+  <form method="post" class="client-profile-form br-lookup-form" action="{{ url_for('cliente_cadastro', next=request.args.get('next')) if request.args.get('next') else url_for('cliente_cadastro') }}">
+    {{ portal_client_profile_fields(show_login=True, show_password=True, password_required=True) }}
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Cadastrar</button>
+      <a class="btn btn--ghost" href="{{ url_for('cliente_entrar') }}">Já tenho conta</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

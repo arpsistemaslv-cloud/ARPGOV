@@ -1,0 +1,39 @@
+{% macro lead_chat_bubble(m, client_area=false, allow_delete=false) %}
+<div class="lead-chat__msg lead-chat__msg--{{ m.sender }}" title="{{ m.created_at.strftime('%d/%m/%Y %H:%M') if m.created_at else '' }}">
+  <span class="lead-chat__msg-label">{% if m.sender == 'staff' %}Equipe{% elif client_area %}Você{% else %}Cliente{% endif %}</span>
+  {% if m.body and m.body.strip() %}
+  <div class="lead-chat__msg-body">{{ m.body }}</div>
+  {% endif %}
+  {% if m.attachment_list %}
+  <div class="lead-chat__attachments">
+    {% for att in m.attachment_list %}
+      {% set base = (att.relpath.split('/')|last) if att.relpath else '' %}
+      {% set ext = (base.rsplit('.', 1)[-1]|lower) if base and '.' in base else '' %}
+      {% if ext in ['png', 'jpg', 'jpeg', 'webp', 'gif'] %}
+      <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap">
+        <a href="{{ url_for('lead_chat_attachment', message_id=m.id, idx=loop.index0) }}" class="lead-chat__thumb-link" target="_blank" rel="noopener noreferrer">
+          <img src="{{ url_for('lead_chat_attachment', message_id=m.id, idx=loop.index0) }}" alt="" class="lead-chat__thumb" loading="lazy" width="160" height="160">
+        </a>
+        {% if allow_delete %}
+        <form method="post" action="{{ url_for('lead_chat_attachment_delete', message_id=m.id, idx=loop.index0) }}" style="margin:0" onsubmit="return confirm('Excluir este anexo?')">
+          <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.45rem">Excluir</button>
+        </form>
+        {% endif %}
+      </div>
+      {% else %}
+      {% set kind = 'PDF' if ext == 'pdf' else ('Word' if ext in ['doc', 'docx'] else 'Arquivo') %}
+      <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap">
+        <a href="{{ url_for('lead_chat_attachment', message_id=m.id, idx=loop.index0) }}" class="lead-chat__file-link lead-chat__file-link--{{ ext or 'bin' }}" target="_blank" rel="noopener noreferrer" download><span class="lead-chat__file-kind">{{ kind }}</span><span class="lead-chat__file-name">{{ att.name or ('documento.' + ext if ext else 'download') }}</span></a>
+        {% if allow_delete %}
+        <form method="post" action="{{ url_for('lead_chat_attachment_delete', message_id=m.id, idx=loop.index0) }}" style="margin:0" onsubmit="return confirm('Excluir este anexo?')">
+          <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.45rem">Excluir</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+  <time class="lead-chat__msg-time" datetime="{{ m.created_at.isoformat() if m.created_at else '' }}">{{ m.created_at.strftime('%d/%m/%Y %H:%M') if m.created_at else '' }}</time>
+</div>
+{% endmacro %}

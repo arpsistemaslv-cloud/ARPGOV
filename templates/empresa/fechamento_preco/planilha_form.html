@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{% if planilha %}Editar planilha{% else %}Nova planilha{% endif %} — Fechamento{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:920px">
+    <p class="meta"><a href="{{ url_for('empresa.fechamento_preco_planilhas') }}">← Planilhas</a>
+      · <a href="{{ url_for('empresa.fechamento_preco_relatorio_comissoes') }}">Relatório de comissões</a></p>
+    <h1 style="margin-top:0">{% if planilha %}Editar cabeçalho{% else %}Nova planilha{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div style="grid-column:1/-1"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Identificação</h2></div>
+      <div style="grid-column:1/-1">
+        <label for="titulo">Título *</label>
+        <input id="titulo" name="titulo" required maxlength="400" value="{{ planilha.titulo if planilha else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="local_entrega">Local de entrega</label>
+        <textarea id="local_entrega" name="local_entrega" rows="3" placeholder="Endereço / UF / observações de entrega">{{ planilha.local_entrega if planilha else '' }}</textarea>
+      </div>
+      <div>
+        <label for="uf_entrega">UF de entrega</label>
+        <select id="uf_entrega" name="uf_entrega">
+          <option value="">— selecione —</option>
+          {% for sig, nome in ufs %}
+          <option value="{{ sig }}" {% if planilha and planilha.uf_entrega == sig %}selected{% endif %}>{{ sig }} — {{ nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <p class="meta" style="grid-column:1/-1;margin:0">Usada para buscar alíquotas na <a href="{{ url_for('empresa.imposto_matriz') }}">matriz imposto (produto × UF)</a>.</p>
+      <div style="grid-column:1/-1">
+        <label for="licitacao_id">Vincular a licitação (opcional)</label>
+        <select id="licitacao_id" name="licitacao_id">
+          <option value="">— nenhuma —</option>
+          {% for L in licitacoes %}
+          <option value="{{ L.id }}" {% if planilha and planilha.licitacao_id == L.id %}selected{% endif %}>{{ L.titulo[:80] }}{% if L.numero_edital %} · Edital {{ L.numero_edital }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Account e faturamento</h2></div>
+      <div>
+        <label for="account_id">Account (responsável comercial)</label>
+        <select id="account_id" name="account_id">
+          <option value="">— não definido —</option>
+          {% for e in colaboradores %}
+          <option value="{{ e.id }}" {% if planilha and planilha.account_id == e.id %}selected{% endif %}>{{ e.name }} — {{ e.email }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="competencia_faturamento">Mês de competência do faturamento</label>
+        <input id="competencia_faturamento" name="competencia_faturamento" type="month" value="{{ planilha.competencia_faturamento.strftime('%Y-%m') if planilha and planilha.competencia_faturamento else '' }}">
+      </div>
+      <p class="meta" style="grid-column:1/-1;margin:0">Usado para filtrar o <a href="{{ url_for('empresa.fechamento_preco_relatorio_comissoes') }}">relatório de comissões</a>. Se vazio, usa o mês do fechamento da planilha.</p>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Comissões da equipe (% sobre o total sugerido)</h2></div>
+      <p class="meta" style="grid-column:1/-1;margin:0">Informe o percentual de cada pessoa sobre o <strong>total geral sugerido</strong> da planilha (valor após mark-up). Inclua linhas em branco abaixo para novos membros.</p>
+      <div style="grid-column:1/-1" class="table-wrap">
+        <table class="data" style="font-size:0.92rem">
+          <thead>
+            <tr>
+              <th>Colaborador</th>
+              <th style="width:6rem">% comissão</th>
+              <th>Papel / função (opcional)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in comissoes %}
+            <tr>
+              <td>
+                <select name="comissao_emp" style="max-width:100%">
+                  <option value="">—</option>
+                  {% for e in colaboradores %}
+                  <option value="{{ e.id }}" {% if c.employee_id == e.id %}selected{% endif %}>{{ e.name }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td><input name="comissao_pct" type="text" inputmode="decimal" value="{{ c.percentual_comissao if c.percentual_comissao is not none else '' }}" placeholder="0"></td>
+              <td><input name="comissao_papel" type="text" maxlength="120" value="{{ c.papel or '' }}" placeholder="Ex.: pré-vendas"></td>
+            </tr>
+            {% endfor %}
+            {% for _ in range(5) %}
+            <tr>
+              <td>
+                <select name="comissao_emp" style="max-width:100%">
+                  <option value="">—</option>
+                  {% for e in colaboradores %}
+                  <option value="{{ e.id }}">{{ e.name }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td><input name="comissao_pct" type="text" inputmode="decimal" placeholder="0"></td>
+              <td><input name="comissao_papel" type="text" maxlength="120" placeholder="Opcional"></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="grid-column:1/-1;margin-top:0.5rem"><h2 style="font-size:1rem;margin:0 0 0.5rem;border-bottom:1px solid var(--border,#ddd);padding-bottom:0.35rem">Custos e mark-up</h2></div>
+      <div>
+        <label for="percentual_frete">% Frete (sobre custo da linha)</label>
+        <input id="percentual_frete" name="percentual_frete" value="{{ planilha.percentual_frete if planilha and planilha.percentual_frete is not none else '' }}" placeholder="0">
+      </div>
+      <div>
+        <label for="custo_financeiro_percent">% Custo financeiro (sobre custo)</label>
+        <input id="custo_financeiro_percent" name="custo_financeiro_percent" value="{{ planilha.custo_financeiro_percent if planilha and planilha.custo_financeiro_percent is not none else '' }}" placeholder="0">
+      </div>
+      <div>
+        <label for="markup_final_percent">% Mark-up final (sobre subtotal + impostos estimados)</label>
+        <input id="markup_final_percent" name="markup_final_percent" value="{{ planilha.markup_final_percent if planilha and planilha.markup_final_percent is not none else '' }}" placeholder="0">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="beneficio_fiscal">Benefício fiscal (cabeçalho)</label>
+        <textarea id="beneficio_fiscal" name="beneficio_fiscal" rows="2">{{ planilha.beneficio_fiscal if planilha else '' }}</textarea>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="3">{{ planilha.observacoes if planilha else '' }}</textarea>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = planilha.status if planilha else 'rascunho' %}
+          {% for opt in ['rascunho', 'em_analise', 'enviado_compras', 'aprovado', 'cancelado'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="grid-column:1/-1">
+        <label><input type="checkbox" name="aprovacao_prejuizo" value="1" {% if planilha and planilha.aprovacao_prejuizo %}checked{% endif %}> Aprovação para fechar no prejuízo (registro interno)</label>
+      </div>
+      <div style="grid-column:1/-1">
+        <label><input type="checkbox" name="compras_aprovado" value="1" {% if planilha and planilha.compras_aprovado %}checked{% endif %}> Compras revisou / aprovou</label>
+      </div>
+      <div style="grid-column:1/-1">
+        <button type="submit" class="btn btn--primary">Salvar</button>
+        {% if planilha %}
+        <a class="btn btn--ghost" href="{{ url_for('empresa.fechamento_preco_planilha_detail', fid=planilha.id) }}">Ver planilha</a>
+        {% else %}
+        <a class="btn btn--ghost" href="{{ url_for('empresa.fechamento_preco_planilhas') }}">Cancelar</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{% if chamado %}Editar chamado{% else %}Novo chamado{% endif %} — Técnico{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.tecnico_chamados_list') }}">← Chamados</a></p>
+    <h1 style="margin-top:0">{% if chamado %}Editar chamado{% else %}Novo chamado{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div>
+        <label for="numero_interno">Número interno</label>
+        <input id="numero_interno" name="numero_interno" maxlength="64" value="{{ chamado.numero_interno if chamado else '' }}" placeholder="Em branco gera CH-00001">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="titulo">Título *</label>
+        <input id="titulo" name="titulo" required maxlength="400" value="{{ chamado.titulo if chamado else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="orgao_cliente">Órgão / cliente</label>
+        <input id="orgao_cliente" name="orgao_cliente" maxlength="400" value="{{ chamado.orgao_cliente if chamado else '' }}">
+      </div>
+      <div>
+        <label for="prioridade">Prioridade</label>
+        <select id="prioridade" name="prioridade">
+          {% set pr = chamado.prioridade if chamado else 'media' %}
+          {% for opt in ['baixa', 'media', 'alta', 'critica'] %}
+          <option value="{{ opt }}" {% if pr == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = chamado.status if chamado else 'aberto' %}
+          {% for opt in ['aberto', 'em_atendimento', 'aguardando', 'resolvido', 'fechado'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="descricao">Descrição</label>
+        <textarea id="descricao" name="descricao" rows="4">{{ chamado.descricao if chamado else '' }}</textarea>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="solucao_resumo">Solução (resumo)</label>
+        <textarea id="solucao_resumo" name="solucao_resumo" rows="3">{{ chamado.solucao_resumo if chamado else '' }}</textarea>
+      </div>
+      <div>
+        <label for="aberto_em">Aberto em</label>
+        <input id="aberto_em" name="aberto_em" type="date" value="{{ chamado.aberto_em.isoformat() if chamado and chamado.aberto_em else '' }}">
+      </div>
+      <div>
+        <label for="fechado_em">Fechado em</label>
+        <input id="fechado_em" name="fechado_em" type="date" value="{{ chamado.fechado_em.isoformat() if chamado and chamado.fechado_em else '' }}">
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.tecnico_chamados_list') }}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

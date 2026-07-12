@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}CRM — {{ project.title }}{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <p class="meta"><a href="{{ url_for('crm.crm_commission_projects') }}">← Comissionamento</a></p>
+    <header style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-start;justify-content:space-between">
+      <div>
+        <h1 style="margin-top:0">{{ project.title }}</h1>
+        {% if project.notes %}<p class="meta" style="margin:0.25rem 0 0">{{ project.notes }}</p>{% endif %}
+        <p class="meta" style="margin:0.5rem 0 0">
+          {{ rateio_mode_label_fn(project) }}
+          · {% if project.is_active %}Ativo{% else %}Inativo{% endif %}
+          {% if project.is_system %} · Padrão do sistema{% endif %}
+        </p>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_commission_project_edit', project_id=project.id) }}">Editar tipo</a>
+        {% if not project.is_system %}
+        <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_commission_project_delete', project_id=project.id) }}">Excluir…</a>
+        {% endif %}
+      </div>
+    </header>
+
+    {% if project.rateio_mode == 'custom' %}
+    <section class="crm-table-card" style="margin-top:1.5rem">
+      <header style="padding:1rem 1.1rem;border-bottom:1px solid var(--border, #e2e8f0)">
+        <h2 style="font-size:1.05rem;margin:0">Modelo de rateio personalizado</h2>
+        <p class="meta" style="margin:0.35rem 0 0">Defina quem recebe cada parte da comissão. As participações devem somar 100%.</p>
+        {% if project.tiers %}
+        <p class="meta" style="margin:0.35rem 0 0">Ao salvar alterações com faixas cadastradas, os percentuais das faixas são recalculados automaticamente.</p>
+        {% endif %}
+      </header>
+      <form method="post" action="{{ url_for('crm.crm_commission_rateio_line_add', project_id=project.id) }}" style="padding:1rem 1.1rem;display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;border-bottom:1px solid var(--border, #e2e8f0)">
+        <div>
+          <label for="recipient_kind">Tipo</label>
+          <select id="recipient_kind" name="recipient_kind" required style="min-width:200px">
+            <option value="seller">Vendedor</option>
+            <option value="stakeholder">Sócios (participação cadastrada)</option>
+            <option value="custom">Participante fixo</option>
+          </select>
+        </div>
+        <div>
+          <label for="label">Nome / rótulo</label>
+          <input id="label" name="label" maxlength="160" placeholder="Ex.: Representante externo" style="min-width:200px">
+        </div>
+        <div>
+          <label for="pool_share_percent">% da comissão</label>
+          <input id="pool_share_percent" name="pool_share_percent" required placeholder="Ex.: 40" style="min-width:100px">
+        </div>
+        <button type="submit" class="btn btn--primary btn--compact">Adicionar participante</button>
+      </form>
+      <div class="table-wrap" style="padding:0.75rem 1.1rem 1rem">
+        <table class="data data--compact">
+          <thead>
+            <tr><th>Participante</th><th>Tipo</th><th>% da comissão</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for line in project.rateio_lines|sort(attribute='sort_order') %}
+            {% if edit_line and edit_line.id == line.id %}
+            <tr>
+              <td colspan="4" style="background:var(--surface-muted, #f8fafc)">
+                <form method="post" action="{{ url_for('crm.crm_commission_rateio_line_edit', project_id=project.id, line_id=line.id) }}" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;padding:0.35rem 0">
+                  <div>
+                    <label>Tipo</label>
+                    <select name="recipient_kind" required style="min-width:180px">
+                      <option value="seller" {% if line.recipient_kind == 'seller' %}selected{% endif %}>Vendedor</option>
+                      <option value="stakeholder" {% if line.recipient_kind == 'stakeholder' %}selected{% endif %}>Sócios (participação cadastrada)</option>
+                      <option value="custom" {% if line.recipient_kind == 'custom' %}selected{% endif %}>Participante fixo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Nome / rótulo</label>
+                    <input name="label" maxlength="160" required value="{{ line.label }}" style="min-width:180px">
+                  </div>
+                  <div>
+                    <label>% da comissão</label>
+                    <input name="pool_share_percent" required value="{{ '%.2f'|format(line.pool_share_percent|float) }}" style="min-width:90px">
+                  </div>
+                  <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+                    <button type="submit" class="btn btn--primary btn--compact">Salvar</button>
+                    <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_commission_project_detail', project_id=project.id) }}">Cancelar</a>
+                  </div>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td>{{ line.label }}</td>
+              <td class="meta">{{ rateio_line_kind_label_fn(line.recipient_kind) }}</td>
+              <td>{{ '%.2f'|format(line.pool_share_percent|float) }}%</td>
+              <td>
+                <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+                  <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_commission_project_detail', project_id=project.id, edit_rateio=line.id) }}">Editar</a>
+                  <form method="post" action="{{ url_for('crm.crm_commission_rateio_line_delete', project_id=project.id, line_id=line.id) }}" style="margin:0" onsubmit="return confirm('Remover este participante?');">
+                    <button type="submit" class="btn btn--ghost btn--compact">Remover</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr><td colspan="4" class="meta">Nenhum participante. Adicione acima antes de criar faixas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% if project.rateio_lines %}
+        <p class="meta" style="margin:0.75rem 0 0">
+          Total: {{ '%.2f'|format(rateio_total|float) }}%
+          {% if (rateio_total|float - 100)|abs > 0.01 %}
+          <span style="color:var(--danger, #b91c1c)"> — deve somar 100%</span>
+          {% endif %}
+        </p>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="crm-table-card" style="margin-top:1.5rem">
+      <header style="padding:1rem 1.1rem;border-bottom:1px solid var(--border, #e2e8f0)">
+        <h2 style="font-size:1.05rem;margin:0">Adicionar faixa de comissão</h2>
+        <p class="meta" style="margin:0.35rem 0 0">Percentual total sobre o valor da operação (ex.: 0,5 · 1 · 1,5 · 2 · 4 · 5).</p>
+      </header>
+      <form method="post" action="{{ url_for('crm.crm_commission_tier_add', project_id=project.id) }}" style="padding:1rem 1.1rem;display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end">
+        <div>
+          <label for="percent_total">Percentual total (%)</label>
+          <input id="percent_total" name="percent_total" required placeholder="Ex.: 1,5" style="min-width:120px">
+        </div>
+        <button type="submit" class="btn btn--primary btn--compact">Adicionar faixa</button>
+      </form>
+    </section>
+
+    <h2 style="font-size:1.05rem;margin-top:2rem">Faixas cadastradas</h2>
+    {% for tier in project.tiers|sort(attribute='sort_order') %}
+    <section class="crm-table-card" style="margin-top:0.75rem">
+      <header style="padding:0.85rem 1.1rem;border-bottom:1px solid var(--border, #e2e8f0);display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;justify-content:space-between">
+        <div>
+          <strong>{{ tier_label_fn(tier) }}</strong>
+          <span class="meta"> — total {{ '%.2f'|format(tier.percent_total|float) }}% da operação</span>
+        </div>
+        <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+          <form method="post" action="{{ url_for('crm.crm_commission_tier_refresh', project_id=project.id, tier_id=tier.id) }}" style="margin:0">
+            <button type="submit" class="btn btn--ghost btn--compact">Recalcular rateio</button>
+          </form>
+          <form method="post" action="{{ url_for('crm.crm_commission_tier_delete', project_id=project.id, tier_id=tier.id) }}" style="margin:0" onsubmit="return confirm('Excluir esta faixa?');">
+            <button type="submit" class="btn btn--ghost btn--compact">Excluir faixa</button>
+          </form>
+        </div>
+      </header>
+      <div class="table-wrap" style="padding:0.5rem 1.1rem 1rem">
+        <table class="data data--compact">
+          <thead>
+            <tr><th>Beneficiário</th><th>% da operação</th><th>Ex. R$ 100.000</th></tr>
+          </thead>
+          <tbody>
+            {% for sp in tier.splits %}
+            <tr>
+              <td>{{ sp.label }}</td>
+              <td>{{ '%.4f'|format(sp.share_percent|float) }}%</td>
+              <td class="meta">{{ (100000 * sp.share_percent|float / 100)|brl }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% else %}
+    <p class="meta">Nenhuma faixa ainda. Use o formulário acima para criar percentuais — eles aparecerão na edição do lead.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

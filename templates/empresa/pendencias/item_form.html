@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{% if item %}Editar pendência{% else %}Nova pendência{% endif %}{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.pendencias_itens_list') }}">← Pendências</a></p>
+    <h1 style="margin-top:0">{% if item %}Editar pendência{% else %}Nova pendência{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div style="grid-column:1/-1">
+        <label for="titulo">Título *</label>
+        <input id="titulo" name="titulo" required maxlength="300" value="{{ item.titulo if item else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="descricao">Descrição</label>
+        <textarea id="descricao" name="descricao" rows="4">{{ item.descricao if item else '' }}</textarea>
+      </div>
+      <div>
+        <label for="setor_origem_slug">Setor origem</label>
+        <select id="setor_origem_slug" name="setor_origem_slug">
+          <option value="">—</option>
+          {% for slug, label in setores %}
+          <option value="{{ slug }}" {% if item and item.setor_origem_slug == slug %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="setor_responsavel_slug">Setor responsável</label>
+        <select id="setor_responsavel_slug" name="setor_responsavel_slug">
+          <option value="">—</option>
+          {% for slug, label in setores %}
+          <option value="{{ slug }}" {% if item and item.setor_responsavel_slug == slug %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="prioridade">Prioridade</label>
+        <select id="prioridade" name="prioridade">
+          {% set pr = item.prioridade if item else 'media' %}
+          {% for opt in ['baixa', 'media', 'alta', 'critica'] %}
+          <option value="{{ opt }}" {% if pr == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = item.status if item else 'aberta' %}
+          {% for opt in ['aberta', 'em_andamento', 'resolvida', 'cancelada'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="data_alvo">Data alvo</label>
+        <input id="data_alvo" name="data_alvo" type="date" value="{{ item.data_alvo.isoformat() if item and item.data_alvo else '' }}">
+      </div>
+      <div>
+        <label for="resolvida_em">Resolvida em</label>
+        <input id="resolvida_em" name="resolvida_em" type="date" value="{{ item.resolvida_em.isoformat() if item and item.resolvida_em else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes_fechamento">Obs. fechamento</label>
+        <textarea id="observacoes_fechamento" name="observacoes_fechamento" rows="2">{{ item.observacoes_fechamento if item else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.pendencias_itens_list') }}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

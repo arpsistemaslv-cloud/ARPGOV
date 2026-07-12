@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Enviar documento — financeiro{% endblock %}
+{% block body %}
+{% include "comercial/_subnav.html" %}
+<p class="meta"><a href="{{ url_for('comercial_financeiro') }}">← Meu financeiro</a></p>
+<h1 style="margin-top:0">Enviar NF / documento para comissão</h1>
+<p class="meta">Anexe a nota fiscal ou comprovante. Opcionalmente vincule a uma das suas negociações para organizar o histórico.</p>
+<form method="post" class="form-grid form-grid--wide" style="max-width:560px" enctype="multipart/form-data" novalidate>
+  <div>
+    <label for="title">Título *</label>
+    <input id="title" name="title" required placeholder="Ex.: NF comissão — Prefeitura X">
+  </div>
+  <div>
+    <label for="opportunity_id">Negociação (opcional)</label>
+    <select id="opportunity_id" name="opportunity_id">
+      <option value="">— Não vincular —</option>
+      {% for o in opportunities %}
+      <option value="{{ o.id }}" {% if pre_opp and pre_opp.id == o.id %}selected{% endif %}>#{{ o.id }} — {{ o.title[:70] }}{% if o.title|length > 70 %}…{% endif %}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="amount_brl">Valor (R$) — opcional</label>
+    <input id="amount_brl" name="amount_brl" placeholder="Valor da NF ou comissão" value="{{ prefill_amount or '' }}">
+  </div>
+  <div>
+    <label for="notes">Observações</label>
+    <textarea id="notes" name="notes" rows="3" placeholder="Número da NF, competência…"></textarea>
+  </div>
+  <div>
+    <label for="attachments">Arquivos *</label>
+    <input id="attachments" type="file" name="attachments" multiple required accept=".pdf,.xml,.zip,image/*,.doc,.docx,application/pdf">
+    <p class="meta" style="margin:0.35rem 0 0">Obrigatório ao menos um arquivo. PDF, XML, ZIP, imagens ou Word — até 15 MB cada.</p>
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn--primary">Enviar</button>
+    <a class="btn btn--ghost" href="{{ url_for('comercial_financeiro') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

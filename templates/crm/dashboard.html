@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% from "macros/backoffice_hub.html" import hub_card %}
+{% block title %}CRM — Painel{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner backoffice-hub">
+    <header class="backoffice-hub__hero backoffice-hub__hero--crm">
+      <div class="backoffice-hub__hero-top">
+        {% set switcher_in_hero = true %}
+        {% include "backoffice/_area_switcher.html" %}
+      </div>
+      <div class="backoffice-hub__hero-content">
+        <p class="backoffice-hub__eyebrow">CRM ARPGOV</p>
+        <h1 class="backoffice-hub__title">Do lead à comissão</h1>
+        <p class="backoffice-hub__lead">Clientes, oportunidades, rateio entre sócios e controle financeiro — integrado ao catálogo público.</p>
+        <div class="backoffice-hub__actions">
+          <a class="btn btn--primary" href="{{ url_for('crm.crm_op_new') }}">Novo lead</a>
+          <a class="btn btn--ghost btn--on-dark" href="{{ url_for('crm.crm_client_new') }}">Novo cliente</a>
+        </div>
+      </div>
+      <div class="backoffice-hub__kpi-strip">
+        <div class="backoffice-hub__kpi">
+          <strong>{{ total_clients }}</strong>
+          <span>Clientes</span>
+        </div>
+        <div class="backoffice-hub__kpi">
+          <strong>{{ total_products }}</strong>
+          <span>Produtos</span>
+        </div>
+        <div class="backoffice-hub__kpi">
+          <strong>{{ total_leads }}</strong>
+          <span>Leads</span>
+        </div>
+        <div class="backoffice-hub__kpi">
+          <strong>{{ commission_sum|float|brl }}</strong>
+          <span>Comissões</span>
+        </div>
+        <div class="backoffice-hub__kpi">
+          <strong>{{ pending_payments }}</strong>
+          <span>Pendentes</span>
+        </div>
+      </div>
+    </header>
+
+    {% include "crm/_module_nav.html" %}
+
+    <section class="hub-section hub-section--compact">
+      <header class="hub-section__head">
+        <h2 class="hub-section__title">Acesso rápido</h2>
+      </header>
+      <div class="hub-grid hub-grid--4">
+        {{ hub_card('Leads', 'Criar e acompanhar oportunidades', url_for('crm.crm_op_new'), icon='leads', accent='navy') }}
+        {{ hub_card('Comissionamento', 'Projetos, faixas e rateio automático', url_for('crm.crm_commission_projects'), icon='commission', accent='green') }}
+        {{ hub_card('Metas', 'Meta anual, mensal e simulação de ganhos', url_for('crm.crm_metas_home'), icon='finance', accent='green') }}
+        {{ hub_card('Financeiro', 'Rateio por beneficiário e NF dos reps', url_for('crm.crm_financeiro_home'), icon='finance', accent='blue') }}
+        {{ hub_card('Clientes', 'Cadastro e perfil no portal', url_for('crm.crm_clients_list'), icon='clients', accent='blue') }}
+        {{ hub_card('Fornecedores', 'Parceiros vinculados aos leads', url_for('crm.crm_partners_list'), icon='partners', accent='navy') }}
+      </div>
+    </section>
+
+    <section class="hub-section hub-section--table" id="leads">
+      <header class="hub-section__head hub-section__head--row">
+        <div>
+          <h2 class="hub-section__title">Leads recentes</h2>
+          <p class="hub-section__desc">Filtre por estágio do funil comercial.</p>
+        </div>
+        <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_op_new') }}">+ Novo lead</a>
+      </header>
+
+      <div class="crm-filters">
+        <a href="{{ url_for('crm.crm_dashboard') }}" class="{{ 'active' if not filter_stage else '' }}">Todas</a>
+        {% for key, label in stages %}
+        <a href="{{ url_for('crm.crm_dashboard', stage=key) }}" class="{{ 'active' if filter_stage == key else '' }}">{{ label }}</a>
+        {% endfor %}
+      </div>
+
+      <div class="crm-table-card">
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Organização</th>
+                <th>Produtos</th>
+                <th>Valor total da venda</th>
+                <th>Processo</th>
+                <th>Comissão</th>
+                <th>Estágio</th>
+                <th>Representante</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for o in leads %}
+              <tr>
+                <td><strong>{{ o.title }}</strong><br><span class="meta">{{ o.contact_name or '—' }}</span></td>
+                <td>{{ o.organization or '—' }}</td>
+                <td class="meta" style="max-width:180px">{% if o.catalog_lines %}{% for ln in o.catalog_lines %}{{ ln.catalog_item.title if ln.catalog_item else '—' }}{% if ln.quantity > 1 %} (×{{ ln.quantity }}){% endif %}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}—{% endif %}</td>
+                <td>{% if o.value_brl is not none %}<strong>{{ o.value_brl|float|brl }}</strong>{% else %}—{% endif %}</td>
+                <td class="meta">{{ o.process_ref or '—' }}</td>
+                <td>{% if o.rep_commission_brl is not none %}{{ o.rep_commission_brl|float|brl }}{% else %}—{% endif %}</td>
+                <td>
+                  <form method="post" action="{{ url_for('crm.crm_op_stage', opp_id=o.id, stage=filter_stage) }}" style="margin:0">
+                    <select name="stage" onchange="this.form.submit()" class="crm-inline-select">
+                      {% for key, label in stages %}
+                      <option value="{{ key }}" {% if stage_normalize_fn(o.stage) == key %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                  </form>
+                </td>
+                <td class="meta">{% if o.sales_rep %}{{ o.sales_rep.name }}{% else %}—{% endif %}</td>
+                <td><a href="{{ url_for('crm.crm_op_edit', opp_id=o.id) }}">Editar</a></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="9" class="meta">Nenhum lead. <a href="{{ url_for('crm.crm_op_new') }}">Criar o primeiro</a>.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

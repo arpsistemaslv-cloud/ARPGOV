@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+{% from "macros/catalog_product_fields.html" import sphere_select, partner_owner_select %}
+{% block title %}{% if product and product.is_approved_in_catalog %}Comissões — parceiro{% elif product and product.is_legacy_commission_profile %}Produto legado — parceiro{% elif product %}Editar solicitação — parceiro{% else %}Nova solicitação — parceiro{% endif %}{% endblock %}
+{% block body %}
+{% include "parceiro/_subnav.html" %}
+{% set nrows = 40 %}
+
+{% if product and product.is_approved_in_catalog %}
+<h1 style="margin-top:0">Produto no catálogo</h1>
+<p class="meta">Este item já foi <strong>aprovado</strong> e publicado. Abaixo você ajusta abrangência, observações e comissões por ARP. Os dados principais da ata podem ser alterados apenas pelo administrador no painel.</p>
+<p><strong>{{ product.catalog_item.title }}</strong> — <a href="{{ url_for('produto', slug=product.catalog_item.slug) }}">Ver no site</a></p>
+{% if product.has_pending_deletion_request %}
+<div class="flash flash--warning" style="margin-top:1rem">
+  Você enviou um <strong>pedido de exclusão</strong> em {{ product.deletion_requested_at.strftime('%d/%m/%Y às %H:%M') if product.deletion_requested_at else '—' }}.
+  O administrador ainda pode confirmar ou recusar.
+  <form method="post" action="{{ url_for('parceiro_product_cancel_deletion_request', product_id=product.id) }}" style="display:inline;margin-left:0.5rem" onsubmit="return confirm('Cancelar o pedido de exclusão?');">
+    <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.5rem;font-size:0.8rem">Cancelar pedido</button>
+  </form>
+</div>
+{% endif %}
+
+{% elif product and product.is_legacy_commission_profile %}
+<h1 style="margin-top:0">{% if product.id %}Editar{% else %}Novo{% endif %} produto (cadastro anterior)</h1>
+<p class="meta">Este é um cadastro <strong>legado</strong>: comissões por ARP já existentes no site. Novos produtos usam o mesmo formulário do painel e passam por aprovação.</p>
+{% if product.has_pending_deletion_request %}
+<div class="flash flash--warning" style="margin-bottom:1rem">
+  <strong>Pedido de exclusão</strong> enviado em {{ product.deletion_requested_at.strftime('%d/%m/%Y às %H:%M') if product.deletion_requested_at else '—' }} — aguardando o administrador.
+  <form method="post" action="{{ url_for('parceiro_product_cancel_deletion_request', product_id=product.id) }}" style="display:inline;margin-left:0.5rem" onsubmit="return confirm('Cancelar o pedido?');">
+    <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.5rem;font-size:0.8rem">Cancelar pedido</button>
+  </form>
+</div>
+{% endif %}
+{% set comms = product.commissions|list %}
+<form method="post" class="form-grid form-grid--wide" style="max-width:920px" novalidate>
+  <div>
+    <label for="title">Nome do produto *</label>
+    <input id="title" name="title" required maxlength="300" value="{{ product.title }}">
+  </div>
+  <div>
+    <label for="description">Descrição (opcional)</label>
+    <textarea id="description" name="description" rows="3">{{ product.description or '' }}</textarea>
+  </div>
+  <div>
+    <label>Onde este produto pode ser vendido *</label>
+    <p class="meta" style="margin:0 0 0.5rem">Marque <strong>Todo o Brasil</strong> ou selecione um ou mais estados.</p>
+    <label class="form-check-row" style="margin-bottom:0.5rem">
+      <input type="checkbox" name="venda_nacional" value="1" id="venda_nacional" {% if product.allowed_ufs_codes() and product.allowed_ufs_codes()[0] == 'BR' %}checked{% endif %}>
+      <span>Todo o Brasil</span>
+    </label>
+    <div id="ufs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.35rem 1rem;margin-top:0.5rem">
+      {% for sigla, nome in br_ufs %}
+      <label class="form-check-row" style="margin:0">
+        <input type="checkbox" name="allowed_uf" value="{{ sigla }}" class="allowed-uf-cb" {% if product.allowed_ufs_codes() and product.allowed_ufs_codes()[0] != 'BR' and sigla in product.allowed_ufs_codes() %}checked{% endif %}>
+        <span>{{ sigla }} — {{ nome }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  <div>
+    <label class="form-check-row">
+      <input type="checkbox" name="is_inactive" value="1" {% if not product.is_active %}checked{% endif %}>
+      <span>Desativar este cadastro</span>
+    </label>
+  </div>
+  {% include "parceiro/_commission_rows.html" %}
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn--primary">Salvar</button>
+    <a class="btn btn--ghost" href="{{ url_for('parceiro_dashboard') }}">Cancelar</a>
+  </div>
+</form>
+<script>
+(function () {
+  var nat = document.getElementById('venda_nacional');
+  var grid = document.getElementById('ufs-grid');
+  if (!nat || !grid) return;
+  function sync() {
+    var on = nat.checked;
+    grid.style.opacity = on ? '0.45' : '1';
+    grid.querySelectorAll('.allowed-uf-cb').forEach(function (cb) {
+      cb.disabled = on;
+      if (on) cb.checked = false;
+    });
+  }
+  nat.addEventListener('change', sync);
+  sync();
+})();
+</script>
+
+{% else %}
+{# Nova solicitação ou edição pendente / recusada #}
+<div class="product-form-page">
+  <header class="product-form-page__header">
+    <h1>{% if product %}Editar solicitação{% else %}Nova solicitação de produto{% endif %}</h1>
+    <p class="product-form-page__lead">Preencha os dados da ata. Após enviar, um administrador <strong>aprova</strong> e o item passa a aparecer na loja.</p>
+  </header>
+
+  {% if product and product.approval_status == 'rejected' and product.rejection_note %}
+  <div class="flash flash--error" style="margin-bottom:1rem">Motivo da última recusa: {{ product.rejection_note }}</div>
+  {% endif %}
+
+  <form method="post" class="product-form" enctype="multipart/form-data" novalidate>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Identificação</h2>
+        <p>Dados principais do produto na ata.</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__grid product-form__grid--2">
+          <div class="product-form__field product-form__span-2">
+            <label for="title">Título *</label>
+            <input id="title" name="title" required value="{{ product.title if product else '' }}" placeholder="Nome do produto ou serviço">
+          </div>
+          <div class="product-form__field product-form__span-2">
+            <label for="description">Observações para a equipe</label>
+            <textarea id="description" name="description" rows="3" placeholder="Informações internas; não substituem os campos da ata.">{{ product.description or '' if product else '' }}</textarea>
+          </div>
+          <div class="product-form__field">
+            <label for="section">Seção *</label>
+            <input id="section" name="section" required value="{{ product.draft_section if product and product.draft_section else 'ATA em destaque' }}" list="section-list">
+            <datalist id="section-list">
+              {% for s in section_suggestions %}
+              <option value="{{ s }}">
+              {% endfor %}
+            </datalist>
+          </div>
+          <div class="product-form__field">
+            <label for="slug">URL amigável (slug)</label>
+            <input id="slug" name="slug" placeholder="Gerado pelo administrador se vazio" value="{{ product.draft_slug if product and product.draft_slug else '' }}">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Classificação</h2>
+        <p>Esfera, catálogo, fabricante e empresa registrante.</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__grid product-form__grid--2">
+          <div class="product-form__field">
+            {{ sphere_select('sphere', product.draft_sphere if product and product.draft_sphere else '', true, catalog_sphere_choices) }}
+          </div>
+          <div class="product-form__field">
+            <label for="category_id">Catálogo / subcatálogo</label>
+            <select id="category_id" name="category_id">
+              <option value="">— Nenhum —</option>
+              {% for root in category_roots %}
+              <option value="{{ root.id }}" {% if product and product.draft_category_id == root.id %}selected{% endif %}>{{ root.name }} (catálogo)</option>
+              {% for ch in root.children %}
+              <option value="{{ ch.id }}" {% if product and product.draft_category_id == ch.id %}selected{% endif %}>└ {{ ch.name }}</option>
+              {% endfor %}
+              {% endfor %}
+            </select>
+          </div>
+          <div class="product-form__field">
+            <label for="manufacturer">Fabricante</label>
+            <input id="manufacturer" name="manufacturer" maxlength="200" list="manufacturer-list" placeholder="Ex.: Dell, HP, Volkswagen…" value="{{ product.draft_manufacturer if product and product.draft_manufacturer else '' }}">
+            <datalist id="manufacturer-list">
+              {% for m in manufacturer_suggestions %}
+              <option value="{{ m }}">
+              {% endfor %}
+            </datalist>
+            <p class="field-hint">Aparece na loja pública após aprovação.</p>
+          </div>
+          <div class="product-form__field product-form__span-2">
+            {% if current_partner %}
+            <label>Empresa dona da ata (parceiro)</label>
+            <div class="product-form__field--readonly">
+              <strong>{% if current_partner.company_name %}{{ current_partner.company_name }}{% else %}{{ current_partner.name }}{% endif %}</strong>
+            </div>
+            <input type="hidden" name="partner_id" value="{{ current_partner.id }}">
+            <p class="field-hint">Vinculado ao seu cadastro de parceiro.</p>
+            {% else %}
+            {{ partner_owner_select('partner_id', selected_partner_id, true, catalog_partners) }}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Origem da ATA (PNCP)</h2>
+        <p>Links para identificar a cópia da ARP e conferir a contratação original.</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__grid product-form__grid--2">
+          <div class="product-form__field product-form__span-2">
+            <label for="pncp_url">Link do PNCP</label>
+            <input id="pncp_url" name="pncp_url" type="url" maxlength="700" placeholder="https://pncp.gov.br/app/atas/..." value="{{ product.draft_pncp_url if product and product.draft_pncp_url else '' }}">
+            <p class="field-hint">Página da ata/compra no Portal Nacional de Contratações Públicas.</p>
+          </div>
+          <div class="product-form__field product-form__span-2">
+            <label for="contract_page_url">Link da página de contratação</label>
+            <input id="contract_page_url" name="contract_page_url" type="url" maxlength="700" placeholder="https://..." value="{{ product.draft_contract_page_url if product and product.draft_contract_page_url else '' }}">
+            <p class="field-hint">Página da contratação/processo de origem da ARP — facilita identificar a cópia da ata.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Valores e vigência</h2>
+        <p>Quantidades, preço e validade da ata.</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__grid product-form__grid--2">
+          <div class="product-form__field">
+            <label for="quantity">Quantidade na ata</label>
+            <input id="quantity" name="quantity" type="number" min="1" value="{{ product.draft_quantity if product and product.draft_quantity is not none else 1 }}">
+          </div>
+          <div class="product-form__field">
+            <label for="stock_on_hand">Estoque disponível</label>
+            <input id="stock_on_hand" name="stock_on_hand" type="number" min="0" step="1" value="{{ product.draft_stock_on_hand if product and product.draft_stock_on_hand is not none else 0 }}">
+          </div>
+          <div class="product-form__field">
+            <label for="warranty">Garantia (licitação)</label>
+            <input id="warranty" name="warranty" maxlength="300" placeholder="Ex.: 36 meses on-site conforme edital" value="{{ product.draft_warranty if product and product.draft_warranty else '' }}">
+            <p class="field-hint">Exibida na loja após aprovação, acima do preço.</p>
+          </div>
+          <div class="product-form__field">
+            <label for="unit_price">Preço unitário (R$) *</label>
+            <input id="unit_price" name="unit_price" type="text" required placeholder="0,00 ou 10.773,00" inputmode="decimal" autocomplete="off" value="{{ unit_price_display }}">
+          </div>
+          <div class="product-form__field">
+            <label for="valid_until">Validade da ata</label>
+            <input id="valid_until" name="valid_until" type="date" value="{{ product.draft_valid_until.strftime('%Y-%m-%d') if product and product.draft_valid_until else '' }}">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Descrição técnica</h2>
+        <p>Especificações do produto para a página pública (painel recolhível no site).</p>
+      </header>
+      <div class="product-form__card-body">
+        <div class="product-form__field">
+          <label for="technical_description">Especificações técnicas</label>
+          <textarea id="technical_description" name="technical_description" rows="10" placeholder="Processador, memória, armazenamento…">{{ product.draft_technical_description if product and product.draft_technical_description else '' }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Abrangência</h2>
+        <p>Estados onde o produto pode ser comercializado.</p>
+      </header>
+      <div class="product-form__card-body">
+        <label class="product-form__check" style="margin-bottom:0.75rem">
+          <input type="checkbox" name="venda_nacional" value="1" id="venda_nacional" {% if product and product.allowed_ufs_codes() and product.allowed_ufs_codes()[0] == 'BR' %}checked{% elif not product %}checked{% endif %}>
+          <span>Todo o Brasil</span>
+        </label>
+        <div id="ufs-grid2" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.35rem 1rem">
+          {% for sigla, nome in br_ufs %}
+          <label class="form-check-row" style="margin:0">
+            <input type="checkbox" name="allowed_uf" value="{{ sigla }}" class="allowed-uf-cb2" {% if product and product.allowed_ufs_codes() and product.allowed_ufs_codes()[0] != 'BR' and sigla in product.allowed_ufs_codes() %}checked{% endif %}>
+            <span>{{ sigla }} — {{ nome }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Imagens</h2>
+        <p>Fotos do produto para o catálogo.</p>
+      </header>
+      <div class="product-form__card-body product-form__upload">
+        <div class="product-form__field product-form__span-2">
+          <label for="source_product_url">Link do produto no site do fabricante</label>
+          <div class="product-form__import-url-row">
+            <input id="source_product_url" name="source_product_url" type="url" placeholder="https://www.fabricante.com.br/produto/..." value="{{ product.draft_source_product_url if product and product.draft_source_product_url else '' }}">
+            <button type="button" class="btn btn--ghost" id="btn-import-url-images">Buscar imagens</button>
+          </div>
+          <p class="field-hint">Cole a página do produto. Escolha as fotos que deseja enviar na solicitação.</p>
+        </div>
+        <div id="import-url-status" class="field-hint" aria-live="polite"></div>
+        <div id="import-url-gallery" class="import-url-gallery" hidden>
+          <p class="field-hint" style="margin:0 0 0.5rem"><strong>Selecione as imagens</strong> para incluir:</p>
+          <div id="import-url-grid" class="import-url-gallery__grid"></div>
+        </div>
+        <div class="product-form__upload-zone">
+          <input id="images" name="images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+          <span>PNG, JPG, WebP ou GIF</span>
+        </div>
+        {% if product and product.draft_image_paths() %}
+        <div class="product-form__field">
+          <label>Imagens atuais</label>
+          <div class="admin-catalog-thumbs" style="margin-top:0.5rem">
+            {% for path in product.draft_image_paths() %}
+            <div class="admin-catalog-thumbs__item">
+              <img src="{{ url_for('static', filename=path) }}" alt="" width="120" height="120" loading="lazy">
+              <label class="admin-catalog-thumbs__remove"><input type="checkbox" name="remove_image" value="{{ path }}"> Remover</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="product-form__card">
+      <header class="product-form__card-head">
+        <h2>Anexos e documentos</h2>
+        <p>Arquivos para análise do administrador.</p>
+      </header>
+      <div class="product-form__card-body product-form__upload">
+        <div class="product-form__field">
+          <label for="catalog_attachments">Anexos do catálogo</label>
+          <div class="product-form__upload-zone">
+            <input id="catalog_attachments" name="catalog_attachments" type="file" accept=".pdf,.doc,.docx,application/pdf" multiple>
+            <span>PDF ou DOC do produto</span>
+          </div>
+        </div>
+        {% if product and product.draft_catalog_attachment_paths() %}
+        <ul class="product-form__file-list">
+          {% for p in product.draft_catalog_attachment_paths() %}
+          <li>
+            <a href="{{ url_for('static', filename=p) }}" target="_blank" rel="noopener">{{ p.split('/')[-1] }}</a>
+            <label><input type="checkbox" name="remove_catalog_attachment" value="{{ p }}"> remover</label>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        <div class="product-form__field" style="margin-top:0.75rem">
+          <label for="ata_company_docs">Documentos da empresa dona da ata</label>
+          <div class="product-form__upload-zone">
+            <input id="ata_company_docs" name="ata_company_docs" type="file" accept=".pdf,.doc,.docx,application/pdf" multiple>
+            <span>PDF ou DOC da empresa registrante</span>
+          </div>
+        </div>
+        {% if product and product.draft_ata_company_doc_paths() %}
+        <ul class="product-form__file-list">
+          {% for p in product.draft_ata_company_doc_paths() %}
+          <li>
+            <a href="{{ url_for('static', filename=p) }}" target="_blank" rel="noopener">{{ p.split('/')[-1] }}</a>
+            <label><input type="checkbox" name="remove_ata_company_doc" value="{{ p }}"> remover</label>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </section>
+
+    <div class="product-form__field">
+      <label class="product-form__check">
+        <input type="checkbox" name="highlight" value="1" {% if product and product.draft_highlight %}checked{% endif %}>
+        <span>Solicitar destaque na listagem</span>
+      </label>
+    </div>
+    <div class="product-form__field">
+      <label class="product-form__check">
+        <input type="checkbox" name="is_inactive" value="1" {% if product and not product.is_active %}checked{% endif %}>
+        <span>Marcar cadastro como inativo até aprovação</span>
+      </label>
+    </div>
+
+    <footer class="product-form__actions product-form__actions--sticky">
+      <button type="submit" class="btn btn--primary">{% if product %}Atualizar e reenviar{% else %}Enviar para análise{% endif %}</button>
+      <a class="btn btn--ghost" href="{{ url_for('parceiro_dashboard') }}">Cancelar</a>
+    </footer>
+  </form>
+</div>
+<script>
+(function () {
+  var nat = document.getElementById('venda_nacional');
+  var grid = document.getElementById('ufs-grid2');
+  if (!nat || !grid) return;
+  function sync() {
+    var on = nat.checked;
+    grid.style.opacity = on ? '0.45' : '1';
+    grid.querySelectorAll('.allowed-uf-cb2').forEach(function (cb) {
+      cb.disabled = on;
+      if (on) cb.checked = false;
+    });
+  }
+  nat.addEventListener('change', sync);
+  sync();
+})();
+</script>
+<script>
+(function () {
+  var importApiUrl = {{ url_for('parceiro_import_images_from_url') | tojson }};
+  var btn = document.getElementById('btn-import-url-images');
+  var urlEl = document.getElementById('source_product_url');
+  var statusEl = document.getElementById('import-url-status');
+  var gallery = document.getElementById('import-url-gallery');
+  var grid = document.getElementById('import-url-grid');
+  var form = document.querySelector('form.product-form');
+  if (!btn || !urlEl || !form || !grid || !gallery) return;
+  function setPrefetch(path, on) {
+    var sel = 'input[name="prefetch_image"][data-import-path="' + path.replace(/"/g, '\\"') + '"]';
+    var existing = form.querySelector(sel);
+    if (on && !existing) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'prefetch_image';
+      inp.value = path;
+      inp.setAttribute('data-import-path', path);
+      form.appendChild(inp);
+    } else if (!on && existing) existing.remove();
+  }
+  btn.addEventListener('click', function () {
+    var url = (urlEl.value || '').trim();
+    if (!url) { alert('Cole o link da página do produto no site do fabricante.'); return; }
+    btn.disabled = true;
+    if (statusEl) statusEl.textContent = 'Buscando imagens…';
+    gallery.hidden = true;
+    grid.innerHTML = '';
+    form.querySelectorAll('input[name="prefetch_image"][data-import-path]').forEach(function (n) { n.remove(); });
+    fetch(importApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ url: url })
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      btn.disabled = false;
+      if (!data || !data.ok) {
+        if (statusEl) statusEl.textContent = '';
+        alert((data && data.error) ? data.error : 'Não foi possível buscar imagens.');
+        return;
+      }
+      var images = data.images || [];
+      if (!images.length) {
+        if (statusEl) statusEl.textContent = '';
+        alert('Nenhuma imagem utilizável encontrada.');
+        return;
+      }
+      if (statusEl) statusEl.textContent = images.length + ' imagem(ns). Marque as desejadas e salve.';
+      gallery.hidden = false;
+      images.forEach(function (img) {
+        var label = document.createElement('label');
+        label.className = 'import-url-gallery__item';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        var thumb = document.createElement('img');
+        thumb.src = img.preview || ('/static/' + img.path);
+        thumb.alt = '';
+        label.appendChild(cb);
+        label.appendChild(thumb);
+        cb.addEventListener('change', function () {
+          label.classList.toggle('import-url-gallery__item--selected', cb.checked);
+          setPrefetch(img.path, cb.checked);
+        });
+        grid.appendChild(label);
+      });
+    }).catch(function () {
+      btn.disabled = false;
+      if (statusEl) statusEl.textContent = '';
+      alert('Erro de rede ao buscar imagens.');
+    });
+  });
+})();
+</script>
+{% endif %}
+
+{% if product and product.is_approved_in_catalog %}
+{% if product.has_pending_deletion_request %}
+<div class="flash flash--warning" style="margin-top:1rem">Pedido de exclusão em análise — alterações abaixo ainda são permitidas até o administrador decidir.</div>
+{% endif %}
+<form method="post" class="form-grid form-grid--wide" style="max-width:920px;margin-top:1rem" novalidate>
+  <div>
+    <label for="description">Observações internas (opcional)</label>
+    <textarea id="description" name="description" rows="2">{{ product.description or '' }}</textarea>
+  </div>
+  <div>
+    <label>Onde este produto pode ser vendido *</label>
+    <p class="meta" style="margin:0 0 0.5rem">Marque <strong>Todo o Brasil</strong> ou selecione um ou mais estados.</p>
+    <label class="form-check-row" style="margin-bottom:0.5rem">
+      <input type="checkbox" name="venda_nacional" value="1" id="venda_nacional_ap" {% if product.allowed_ufs_codes() and product.allowed_ufs_codes()[0] == 'BR' %}checked{% endif %}>
+      <span>Todo o Brasil</span>
+    </label>
+    <div id="ufs-grid-ap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.35rem 1rem;margin-top:0.5rem">
+      {% for sigla, nome in br_ufs %}
+      <label class="form-check-row" style="margin:0">
+        <input type="checkbox" name="allowed_uf" value="{{ sigla }}" class="allowed-uf-ap" {% if product.allowed_ufs_codes() and product.allowed_ufs_codes()[0] != 'BR' and sigla in product.allowed_ufs_codes() %}checked{% endif %}>
+        <span>{{ sigla }} — {{ nome }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  <div>
+    <label class="form-check-row">
+      <input type="checkbox" name="is_inactive" value="1" {% if not product.is_active %}checked{% endif %}>
+      <span>Desativar este cadastro do parceiro</span>
+    </label>
+  </div>
+  {% set comms = product.commissions|list %}
+  {% include "parceiro/_commission_rows.html" %}
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn--primary">Salvar comissões</button>
+    <a class="btn btn--ghost" href="{{ url_for('parceiro_dashboard') }}">Voltar</a>
+  </div>
+</form>
+<script>
+(function () {
+  var nat = document.getElementById('venda_nacional_ap');
+  var grid = document.getElementById('ufs-grid-ap');
+  if (!nat || !grid) return;
+  function sync() {
+    var on = nat.checked;
+    grid.style.opacity = on ? '0.45' : '1';
+    grid.querySelectorAll('.allowed-uf-ap').forEach(function (cb) {
+      cb.disabled = on;
+      if (on) cb.checked = false;
+    });
+  }
+  nat.addEventListener('change', sync);
+  sync();
+})();
+</script>
+{% endif %}
+
+{% endblock %}

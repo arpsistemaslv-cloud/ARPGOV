@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Minha solicitação de adesão{% endblock %}
+{% block body %}
+<div class="page-shell page-shell--narrow" style="padding-top:2rem;padding-bottom:3rem">
+  <nav class="breadcrumb" aria-label="Navegação">
+    <a href="{{ url_for('home') }}">Início</a>
+    <span class="breadcrumb__sep">/</span>
+    <a href="{{ url_for('loja') }}">Atas</a>
+    <span class="breadcrumb__sep">/</span>
+    <span>Minha solicitação</span>
+  </nav>
+
+  <h1 style="margin-top:0">Solicitação de adesão</h1>
+  <p class="meta">Monte sua lista com um ou mais itens da ata. Informe a quantidade de adesão de cada produto — o valor total é calculado automaticamente.</p>
+
+  {% if cart_entries %}
+  <form method="post" action="{{ url_for('carrinho_atualizar') }}" class="carrinho-list">
+    {% for item, qty in cart_entries %}
+    <article class="carrinho-item card">
+      <div class="carrinho-item__main">
+        {% if item.image_paths %}
+        <a href="{{ url_for('produto', slug=item.slug) }}" class="carrinho-item__thumb">
+          <img src="{{ url_for('static', filename=item.image_paths[0]) }}" alt="" loading="lazy">
+        </a>
+        {% endif %}
+        <div class="carrinho-item__info">
+          <h2><a href="{{ url_for('produto', slug=item.slug) }}">{{ item.title }}</a></h2>
+          <p class="meta">{{ item.section }} · {{ item.sphere }}{% if item.manufacturer %} · {{ item.manufacturer }}{% endif %}</p>
+          {% if item.warranty %}
+          <p class="meta">Garantia: <strong>{{ item.warranty }}</strong></p>
+          {% endif %}
+          <p class="meta" style="margin:0.35rem 0 0">Unitário: <strong>{{ item.unit_price|brl }}</strong></p>
+          <label class="carrinho-item__qty" for="qty_{{ item.id }}">Quantidade a aderir</label>
+          <input id="qty_{{ item.id }}" class="carrinho-item__qty-input" type="number" name="qty_{{ item.id }}" min="1" step="1" value="{{ qty }}">
+          {% if item.unit_price is not none %}
+          <p class="price" style="margin:0.35rem 0 0">Subtotal: {{ (item.unit_price|float * qty)|brl }}</p>
+          {% endif %}
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('carrinho_remover', item_id=item.id) }}">
+        <button type="submit" class="btn btn--ghost btn--danger">Remover</button>
+      </form>
+    </article>
+    {% endfor %}
+    {% if cart_total_brl and cart_total_brl > 0 %}
+    <p class="carrinho-total"><strong>Valor total da venda:</strong> {{ cart_total_brl|brl }}</p>
+    {% endif %}
+    <div class="carrinho-actions">
+      <button type="submit" class="btn btn--ghost">Atualizar quantidades</button>
+    </div>
+  </form>
+
+  <div class="carrinho-actions" style="margin-top:0.75rem">
+    <a class="btn btn--primary" href="{{ url_for('contato') }}">Enviar solicitação de adesão</a>
+    <a class="btn btn--ghost" href="{{ url_for('loja') }}">Continuar consultando atas</a>
+    <form method="post" action="{{ url_for('carrinho_limpar') }}">
+      <button type="submit" class="btn btn--ghost">Esvaziar lista</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="card" style="padding:1.5rem;margin-top:1.25rem;text-align:center">
+    <p class="meta" style="margin:0 0 1rem">Nenhum produto na solicitação.</p>
+    <a class="btn btn--primary" href="{{ url_for('loja') }}">Consultar atas de registro de preço</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

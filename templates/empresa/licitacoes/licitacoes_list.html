@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Licitações — lista{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.licitacoes_hub') }}">← Licitações</a></p>
+    <h1 style="margin-top:0">Licitações</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.licitacoes_new') }}">Nova licitação</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Título</th><th>Órgão</th><th>Edital</th><th>Abertura</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for L in licitacoes %}
+          <tr>
+            <td>{{ L.titulo }}</td>
+            <td>{{ L.orgao or '—' }}</td>
+            <td>{{ L.numero_edital or '—' }}</td>
+            <td>{{ L.data_abertura.strftime('%d/%m/%Y') if L.data_abertura else '—' }}</td>
+            <td>{{ L.status }}</td>
+            <td><a href="{{ url_for('empresa.licitacoes_edit', lid=L.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="meta">Nenhum registro.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

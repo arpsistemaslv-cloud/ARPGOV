@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{% if projeto %}Editar projeto{% else %}Novo projeto{% endif %}{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.projetos_lista') }}">← Projetos</a></p>
+    <h1 style="margin-top:0">{% if projeto %}Editar projeto{% else %}Novo projeto{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div>
+        <label for="codigo">Código *</label>
+        <input id="codigo" name="codigo" required maxlength="64" value="{{ projeto.codigo if projeto else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="nome">Nome *</label>
+        <input id="nome" name="nome" required maxlength="400" value="{{ projeto.nome if projeto else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="orgao_cliente">Órgão cliente</label>
+        <input id="orgao_cliente" name="orgao_cliente" maxlength="400" value="{{ projeto.orgao_cliente if projeto else '' }}">
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = projeto.status if projeto else 'planejamento' %}
+          {% for opt in ['planejamento', 'em_execucao', 'pausado', 'concluido', 'cancelado'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="data_inicio">Data início</label>
+        <input id="data_inicio" name="data_inicio" type="date" value="{{ projeto.data_inicio.isoformat() if projeto and projeto.data_inicio else '' }}">
+      </div>
+      <div>
+        <label for="data_fim_prevista">Fim previsto</label>
+        <input id="data_fim_prevista" name="data_fim_prevista" type="date" value="{{ projeto.data_fim_prevista.isoformat() if projeto and projeto.data_fim_prevista else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="4">{{ projeto.observacoes if projeto else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      {% if projeto %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.projetos_detail', pid=projeto.id) }}">Ver marcos</a>
+      {% else %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.projetos_lista') }}">Cancelar</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}

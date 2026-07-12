@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Projeto {{ projeto.codigo }}{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:800px">
+    <p class="meta"><a href="{{ url_for('empresa.projetos_lista') }}">← Projetos</a></p>
+    <h1 style="margin-top:0"><code>{{ projeto.codigo }}</code> — {{ projeto.nome }}</h1>
+    <p class="meta">{{ projeto.orgao_cliente or '' }} · <strong>{{ projeto.status }}</strong></p>
+    {% if projeto.observacoes %}<p style="white-space:pre-wrap">{{ projeto.observacoes }}</p>{% endif %}
+    <p>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.projetos_edit', pid=projeto.id) }}">Editar projeto</a>
+    </p>
+
+    <h2 style="font-size:1.1rem;margin:1.5rem 0 0.75rem">Marcos</h2>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Marco</th><th>Previsto</th><th>Realizado</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for m in projeto.marcos %}
+          <tr>
+            <td>{{ m.nome }}</td>
+            <td>{{ m.data_prevista.strftime('%d/%m/%Y') if m.data_prevista else '—' }}</td>
+            <td>{{ m.data_realizada.strftime('%d/%m/%Y') if m.data_realizada else '—' }}</td>
+            <td>{{ m.status }}</td>
+            <td>
+              <form method="post" action="{{ url_for('empresa.projetos_marco_delete', mid=m.id) }}" style="display:inline" onsubmit="return confirm('Excluir este marco?');">
+                <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.5rem;font-size:0.85rem">Excluir</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhum marco.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:1rem;margin:1.25rem 0 0.5rem">Adicionar marco</h3>
+    <form method="post" action="{{ url_for('empresa.projetos_marco_add', pid=projeto.id) }}" class="form-grid" style="align-items:end">
+      <div>
+        <label for="nome">Nome</label>
+        <input id="nome" name="nome" required maxlength="300" placeholder="Ex.: Homologação">
+      </div>
+      <div>
+        <label for="data_prevista">Data prevista</label>
+        <input id="data_prevista" name="data_prevista" type="date">
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% for opt in ['pendente', 'em_andamento', 'concluido', 'atrasado'] %}
+          <option value="{{ opt }}">{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn--primary">Adicionar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

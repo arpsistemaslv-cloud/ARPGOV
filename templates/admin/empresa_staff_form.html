@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{% if staff %}Editar colaborador{% else %}Novo colaborador{% endif %}{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">{% if staff %}Editar colaborador{% else %}Novo colaborador{% endif %}</h1>
+<form method="post" class="form-grid" style="max-width:480px">
+  <div>
+    <label for="name">Nome</label>
+    <input id="name" name="name" required maxlength="120" value="{{ staff.name if staff else '' }}">
+  </div>
+  <div>
+    <label for="email">E-mail (login)</label>
+    <input id="email" name="email" type="email" required maxlength="120" value="{{ staff.email if staff else '' }}" autocomplete="off">
+  </div>
+  <div>
+    <label for="department_slug">Setor principal</label>
+    <select id="department_slug" name="department_slug" required>
+      {% for slug, label in setores %}
+      <option value="{{ slug }}" {% if staff and staff.department_slug == slug %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="password">{% if staff %}Nova senha (deixe em branco para manter){% else %}Senha (mín. 8 caracteres){% endif %}</label>
+    <input id="password" name="password" type="password" {% if not staff %}required{% endif %} minlength="8" autocomplete="new-password">
+  </div>
+  <div>
+    <label for="password_confirm">Confirmar senha</label>
+    <input id="password_confirm" name="password_confirm" type="password" {% if not staff %}required{% endif %} minlength="8" autocomplete="new-password">
+  </div>
+  {% if staff %}
+  <div>
+    <label><input type="checkbox" name="is_active" value="1" {% if staff.is_active %}checked{% endif %}> Ativo</label>
+  </div>
+  {% endif %}
+  <button type="submit" class="btn btn--primary">Salvar</button>
+  <a class="btn btn--ghost" href="{{ url_for('admin_empresa_staff_list') }}">Cancelar</a>
+</form>
+{% endblock %}

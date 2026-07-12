@@ -1,0 +1,57 @@
+{% macro catalog_product_picker(selected_ids=None, selected_lines=None, sphere_choices=None, required=false, hint='') %}
+{% set ns = namespace(lines=[]) %}
+{% if selected_lines %}
+  {% set ns.lines = selected_lines %}
+{% elif selected_ids %}
+  {% for sid in selected_ids %}
+    {% set _ = ns.lines.append({'id': sid, 'qty': 1}) %}
+  {% endfor %}
+{% endif %}
+{% set spheres = sphere_choices or catalog_sphere_choices or [] %}
+<div
+  class="catalog-picker"
+  data-catalog-picker
+  data-api-url="{{ url_for('api_catalog_picker') }}"
+  data-initial-lines='{{ ns.lines|tojson }}'
+  {% if required %} data-catalog-required="1"{% endif %}
+>
+  {% if hint %}
+  <p class="meta catalog-picker__hint">{{ hint }}</p>
+  {% endif %}
+
+  <div class="catalog-picker__selected-wrap" data-catalog-selected-wrap{% if not ns.lines %} hidden{% endif %}>
+    <span class="catalog-picker__selected-label">Selecionados</span>
+    <div class="catalog-picker__selected" data-catalog-selected aria-live="polite"></div>
+  </div>
+  <div class="catalog-picker__inputs-host" data-catalog-inputs>
+    <input type="hidden" name="catalog_lines_json" data-catalog-lines-json value='{{ ns.lines|tojson }}'>
+  </div>
+
+  <p class="catalog-picker__total meta" data-catalog-total hidden aria-live="polite"></p>
+
+  <div class="catalog-picker__toolbar">
+    <input
+      type="search"
+      class="catalog-picker__search"
+      placeholder="Buscar por nome, fabricante ou categoria…"
+      autocomplete="off"
+      data-catalog-search
+      aria-label="Buscar produtos"
+    >
+    <select class="catalog-picker__filter" data-catalog-sphere aria-label="Filtrar por esfera">
+      <option value="">Todas as esferas</option>
+      {% for s in spheres %}
+      <option value="{{ s }}">{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <p class="catalog-picker__summary meta" data-catalog-summary aria-live="polite">0 produtos selecionados</p>
+  <p class="catalog-picker__prompt meta" data-catalog-prompt>Digite ao menos 2 caracteres ou filtre por esfera para buscar no catálogo.</p>
+  <div class="catalog-picker__results" data-catalog-results hidden></div>
+  <p class="catalog-picker__empty meta" hidden data-catalog-empty>Nenhum produto encontrado. Tente outro termo ou limpe os filtros.</p>
+  <div class="catalog-picker__more" hidden data-catalog-more>
+    <button type="button" class="btn btn--ghost btn--compact" data-catalog-load-more>Carregar mais resultados</button>
+  </div>
+</div>
+{% endmacro %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Entrar — Painel{% endblock %}
+{% block body %}
+{% with login_area='admin' %}
+{% include "backoffice/_staff_login.html" %}
+{% endwith %}
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/staff-login.js') }}" defer></script>
+{% endblock %}

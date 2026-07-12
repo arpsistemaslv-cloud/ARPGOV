@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}CRM — {% if sale %}Editar{% else %}Nova{% endif %} venda avulsa{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <p class="meta"><a href="{{ url_for('crm.crm_commission_sales') }}">← Vendas avulsas</a></p>
+    <h1 style="margin-top:0">{% if sale %}Editar venda avulsa{% else %}Nova venda avulsa{% endif %}</h1>
+    <p class="meta">Use para registrar adesões com participantes específicos (sócios, representantes externos etc.) e acompanhar no financeiro.</p>
+
+    <form method="post" class="lead-form-card" style="margin-top:1.25rem;max-width:920px">
+      <div class="lead-form-fields lead-form-fields--2col">
+        <div class="lead-form-field lead-form-field--wide">
+          <label for="title">Título da venda / adesão *</label>
+          <input id="title" name="title" required value="{{ sale.title if sale else '' }}" placeholder="Ex.: Adesão notebooks — Secretaria X">
+        </div>
+        <div class="lead-form-field">
+          <label for="organization">Órgão / empresa cliente</label>
+          <input id="organization" name="organization" value="{{ sale.organization or '' if sale else '' }}">
+        </div>
+        <div class="lead-form-field">
+          <label for="value_brl">Valor total da venda (R$)</label>
+          <input id="value_brl" name="value_brl" placeholder="Ex.: 150.000,00" value="{% if sale and sale.value_brl is not none %}{{ sale.value_brl|brl_decimal }}{% endif %}">
+        </div>
+        <div class="lead-form-field">
+          <label for="sale_date">Data da venda</label>
+          <input type="date" id="sale_date" name="sale_date" value="{{ sale.sale_date.isoformat() if sale and sale.sale_date else '' }}">
+        </div>
+        <div class="lead-form-field">
+          <label for="process_ref">Nº processo / licitação</label>
+          <input id="process_ref" name="process_ref" value="{{ sale.process_ref or '' if sale else '' }}">
+        </div>
+        <div class="lead-form-field lead-form-field--wide">
+          <label for="notes">Observações</label>
+          <textarea id="notes" name="notes" rows="2" placeholder="Contexto, acordos, parcelas…">{{ sale.notes or '' if sale else '' }}</textarea>
+        </div>
+      </div>
+
+      <h2 class="lead-form-card__title" style="margin-top:1.25rem">Participantes do rateio</h2>
+      <p class="lead-form-card__desc">Quem participou desta venda e quanto recebe. Informe o valor em R$ ou a % sobre o total.</p>
+
+      <div id="participant-rows" class="commission-participant-rows">
+        {% if sale and sale.splits %}
+          {% for sp in sale.splits %}
+          <div class="commission-participant-row" data-participant-row>
+            <div class="lead-form-field">
+              <label>Participante *</label>
+              <input name="participant_name[]" required value="{{ sp.recipient_name }}" placeholder="Nome ou empresa" list="stakeholder-suggestions">
+            </div>
+            <div class="lead-form-field">
+              <label>Representação / vínculo</label>
+              <input name="participant_org[]" value="{{ sp.organization or '' }}" placeholder="Ex.: empresa de representação">
+            </div>
+            <div class="lead-form-field">
+              <label>%</label>
+              <input name="participant_share[]" value="{% if sp.share_percent is not none %}{{ '%.4f'|format(sp.share_percent|float) }}{% endif %}" placeholder="Opcional">
+            </div>
+            <div class="lead-form-field">
+              <label>Valor (R$)</label>
+              <input name="participant_amount[]" value="{% if sp.amount_brl is not none %}{{ sp.amount_brl|brl_decimal }}{% endif %}" placeholder="Ex.: 5000,00">
+            </div>
+            <button type="button" class="btn btn--ghost btn--compact commission-participant-remove" data-remove-participant aria-label="Remover participante">×</button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="commission-participant-row" data-participant-row>
+            <div class="lead-form-field">
+              <label>Participante *</label>
+              <input name="participant_name[]" placeholder="Nome ou empresa" list="stakeholder-suggestions">
+            </div>
+            <div class="lead-form-field">
+              <label>Representação / vínculo</label>
+              <input name="participant_org[]" placeholder="Ex.: empresa de representação">
+            </div>
+            <div class="lead-form-field">
+              <label>%</label>
+              <input name="participant_share[]" placeholder="Opcional">
+            </div>
+            <div class="lead-form-field">
+              <label>Valor (R$)</label>
+              <input name="participant_amount[]" placeholder="Ex.: 5000,00">
+            </div>
+            <button type="button" class="btn btn--ghost btn--compact commission-participant-remove" data-remove-participant aria-label="Remover participante">×</button>
+          </div>
+        {% endif %}
+      </div>
+      <datalist id="stakeholder-suggestions">
+        {% for sh in stakeholders %}
+        <option value="{{ sh.name }}">
+        {% endfor %}
+      </datalist>
+      <button type="button" class="btn btn--ghost btn--compact" id="add-participant" style="margin-top:0.5rem">+ Adicionar participante</button>
+
+      <div class="lead-form-actions" style="margin-top:1.25rem">
+        <button type="submit" class="btn btn--primary">Salvar</button>
+        {% if sale %}
+        <a class="btn btn--ghost" href="{{ url_for('crm.crm_commission_sale_delete', sale_id=sale.id) }}">Excluir…</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/commission-sale-form.js') }}" defer></script>
+{% endblock %}

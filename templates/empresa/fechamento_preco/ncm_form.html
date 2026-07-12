@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{% if perfil %}Editar NCM{% else %}Novo NCM{% endif %}{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:520px">
+    <p class="meta"><a href="{{ url_for('empresa.fechamento_preco_ncm_list') }}">← Tabela NCM</a></p>
+    <h1 style="margin-top:0">{% if perfil %}Editar perfil{% else %}Novo perfil{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div>
+        <label for="ncm">NCM (8 dígitos) *</label>
+        <input id="ncm" name="ncm" required maxlength="8" pattern="[0-9]{8}" value="{{ perfil.ncm if perfil else '' }}" inputmode="numeric">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="descricao">Descrição curta</label>
+        <input id="descricao" name="descricao" maxlength="300" value="{{ perfil.descricao if perfil else '' }}">
+      </div>
+      <div>
+        <label for="aliquota_icms">% ICMS</label>
+        <input id="aliquota_icms" name="aliquota_icms" value="{{ perfil.aliquota_icms if perfil else '0' }}">
+      </div>
+      <div>
+        <label for="aliquota_ipi">% IPI</label>
+        <input id="aliquota_ipi" name="aliquota_ipi" value="{{ perfil.aliquota_ipi if perfil else '0' }}">
+      </div>
+      <div>
+        <label for="aliquota_pis">% PIS</label>
+        <input id="aliquota_pis" name="aliquota_pis" value="{{ perfil.aliquota_pis if perfil else '0' }}">
+      </div>
+      <div>
+        <label for="aliquota_cofins">% COFINS</label>
+        <input id="aliquota_cofins" name="aliquota_cofins" value="{{ perfil.aliquota_cofins if perfil else '0' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacao">Observação</label>
+        <textarea id="observacao" name="observacao" rows="2">{{ perfil.observacao if perfil else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.fechamento_preco_ncm_list') }}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

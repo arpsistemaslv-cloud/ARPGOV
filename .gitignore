@@ -1,0 +1,15 @@
+.env
+instance/
+__pycache__/
+*.pyc
+.venv/
+
+# Dados de produção — permanecem apenas no VPS (não versionar)
+static/uploads/
+
+# SO / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

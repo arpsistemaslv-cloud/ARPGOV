@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Marca e Brand Kit{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<p class="meta"><a href="{{ url_for('admin_dashboard') }}">← Painel do site</a> · <a href="{{ url_for('admin_site_edit') }}">Aparência e textos</a></p>
+<h1 style="margin-top:0">Marca — {{ brand_name }}</h1>
+<p class="meta">Identidade visual do portal para materiais comerciais, apresentações e assinaturas de e-mail. O nome exibido no site é editado em <a href="{{ url_for('admin_site_edit') }}">Aparência e textos</a>.</p>
+
+<div class="brand-kit-grid">
+  <section class="brand-kit-card">
+    <h2>Cores institucionais</h2>
+    {% set colors = [
+      ('Azul gov — primária', '#1351B4', '--gov-blue-70'),
+      ('Azul escuro — header', '#071D41', '--gov-blue-90'),
+      ('Azul claro — hover', '#2670E8', '--gov-blue-60'),
+      ('Amarelo gov — destaque', '#FFCD07', '--gov-yellow'),
+      ('Verde gov — sucesso', '#168821', '--gov-green'),
+      ('Fundo neutro', '#F8F9FA', '--gov-gray-20'),
+    ] %}
+    {% for label, hex, var in colors %}
+    <div class="brand-swatch">
+      <div class="brand-swatch__chip" style="background:{{ hex }}"></div>
+      <div class="brand-swatch__meta">
+        <strong>{{ label }}</strong>
+        <code>{{ hex }} · {{ var }}</code>
+      </div>
+      <button type="button" class="btn btn--ghost btn-copy-hex" data-hex="{{ hex }}" style="padding:0.35rem 0.65rem;font-size:0.78rem">Copiar</button>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="brand-kit-card">
+    <h2>Tipografia</h2>
+    <p style="margin:0 0 0.75rem;font-size:1.35rem;font-weight:800;color:var(--gov-blue-90)">Source Sans 3</p>
+    <p class="meta" style="margin:0 0 1rem">Fonte principal do site — alinhada ao padrão visual de portais governamentais.</p>
+    <p style="font-weight:400;margin:0.35rem 0">Regular 400 — textos corridos</p>
+    <p style="font-weight:600;margin:0.35rem 0">Semibold 600 — navegação e rótulos</p>
+    <p style="font-weight:700;margin:0.35rem 0">Bold 700 — botões e destaques</p>
+    <p style="font-weight:800;margin:0.35rem 0">ExtraBold 800 — títulos hero</p>
+    <p class="meta" style="margin-top:1rem">Google Fonts: <code>Source Sans 3</code></p>
+  </section>
+
+  <section class="brand-kit-card" style="grid-column:1/-1">
+    <h2>Logotipos para download</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem">
+      <div>
+        <div class="brand-logo-preview">
+          <img src="{{ url_for('static', filename='images/arpgov-mark.svg') }}" width="72" height="72" alt="{{ brand_name }}">
+        </div>
+        <p class="meta" style="margin:0 0 0.5rem">Ícone / favicon</p>
+        <div class="brand-kit-actions">
+          <a class="btn btn--primary" href="{{ url_for('static', filename='images/arpgov-mark.svg') }}" download="arpgov-icone.svg">SVG</a>
+        </div>
+      </div>
+      <div>
+        <div class="brand-logo-preview">
+          <img src="{{ url_for('static', filename='images/arpgov-logo-horizontal.svg') }}" width="260" alt="{{ brand_name }}">
+        </div>
+        <p class="meta" style="margin:0 0 0.5rem">Logo horizontal</p>
+        <div class="brand-kit-actions">
+          <a class="btn btn--primary" href="{{ url_for('static', filename='images/arpgov-logo-horizontal.svg') }}" download="arpgov-logo-horizontal.svg">SVG</a>
+        </div>
+      </div>
+      <div>
+        <div class="brand-logo-preview brand-logo-preview--dark">
+          <img src="{{ url_for('static', filename='images/arpgov-mark.svg') }}" width="72" height="72" alt="">
+          <span style="color:#fff;font-weight:800;font-size:1.5rem;margin-left:0.75rem">{{ brand_primary }}<span style="color:#FFCD07">{{ brand_accent }}</span></span>
+        </div>
+        <p class="meta" style="margin:0 0 0.5rem">Uso em fundo escuro</p>
+        <p class="meta" style="margin:0">Fundo <code>#071D41</code> + faixa amarela <code>#FFCD07</code></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="brand-kit-card" style="grid-column:1/-1">
+    <h2>Assinatura de e-mail</h2>
+    <p class="meta">Preencha os campos e copie o HTML para colar no Outlook, Gmail ou ferramenta de e-mail.</p>
+    <div class="form-grid form-grid--wide" style="margin-top:1rem;max-width:640px">
+      <div>
+        <label for="sig-name">Nome</label>
+        <input id="sig-name" type="text" value="{% if current_rep %}{{ current_rep.name }}{% else %}Seu Nome{% endif %}">
+      </div>
+      <div>
+        <label for="sig-role">Cargo / função</label>
+        <input id="sig-role" type="text" value="Representação comercial">
+      </div>
+      <div>
+        <label for="sig-phone">Telefone</label>
+        <input id="sig-phone" type="text" value="{% if settings and settings.contact_phone %}{{ settings.contact_phone }}{% endif %}">
+      </div>
+      <div>
+        <label for="sig-email">E-mail</label>
+        <input id="sig-email" type="email" value="{% if current_rep %}{{ current_rep.email }}{% elif settings and settings.contact_email %}{{ settings.contact_email }}{% endif %}">
+      </div>
+    </div>
+    <div class="brand-signature-preview" id="sig-preview"></div>
+    <textarea class="brand-signature-html" id="sig-html" readonly rows="10" aria-label="HTML da assinatura"></textarea>
+    <div class="brand-kit-actions">
+      <button type="button" class="btn btn--primary" id="sig-copy">Copiar HTML</button>
+      <button type="button" class="btn btn--ghost" id="sig-refresh">Atualizar prévia</button>
+    </div>
+  </section>
+
+  <section class="brand-kit-card" style="grid-column:1/-1">
+    <h2>Diretrizes rápidas</h2>
+    <ul style="margin:0;padding-left:1.2rem;line-height:1.7;color:var(--muted)">
+      <li>Use o azul <strong>#1351B4</strong> para links, botões e destaques de marca.</li>
+      <li>A faixa amarela <strong>#FFCD07</strong> é elemento de apoio — não substitua o azul como cor principal.</li>
+      <li>Em materiais impressos, prefira fundo branco com logo horizontal; em digital escuro, use ícone + wordmark.</li>
+      <li>Textos institucionais em sentence case; reserve caixa alta apenas para siglas (ARP, B2G, CNPJ).</li>
+      <li>Site público: <a href="{{ public_base }}" target="_blank" rel="noopener">{{ public_base }}</a></li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  var brandName = {{ brand_name|tojson }};
+  var logoUrl = {{ url_for('static', filename='images/arpgov-mark.svg')|tojson }};
+  var siteUrl = {{ public_base|tojson }};
+
+  function buildSignature() {
+    var name = document.getElementById('sig-name').value.trim() || 'Seu Nome';
+    var role = document.getElementById('sig-role').value.trim() || 'Representação comercial';
+    var phone = document.getElementById('sig-phone').value.trim();
+    var email = document.getElementById('sig-email').value.trim();
+    var contact = [phone, email].filter(Boolean).join(' · ');
+    var html = '<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#333;line-height:1.45;max-width:480px">' +
+      '<tr><td style="padding-right:12px;vertical-align:top">' +
+      '<img src="' + logoUrl + '" width="52" height="52" alt="' + brandName + '" style="display:block;border-radius:8px">' +
+      '</td><td style="vertical-align:top;border-left:3px solid #1351B4;padding-left:12px">' +
+      '<strong style="font-size:15px;color:#071D41">' + name + '</strong><br>' +
+      '<span style="color:#555">' + role + '</span><br>' +
+      '<strong style="color:#1351B4;font-size:15px">' + brandName + '</strong> · Atas de registro de preço<br>' +
+      (contact ? '<span style="color:#555;font-size:13px">' + contact + '</span><br>' : '') +
+      '<a href="' + siteUrl + '" style="color:#1351B4;font-size:13px;text-decoration:none">' + siteUrl.replace(/^https?:\/\//, '') + '</a>' +
+      '</td></tr></table>';
+    document.getElementById('sig-preview').innerHTML = html;
+    document.getElementById('sig-html').value = html;
+  }
+
+  document.getElementById('sig-refresh').addEventListener('click', buildSignature);
+  ['sig-name', 'sig-role', 'sig-phone', 'sig-email'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', buildSignature);
+  });
+
+  document.getElementById('sig-copy').addEventListener('click', function () {
+    var ta = document.getElementById('sig-html');
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(ta.value).then(function () {
+      alert('HTML da assinatura copiado.');
+    });
+  });
+
+  document.querySelectorAll('.btn-copy-hex').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(btn.getAttribute('data-hex')).then(function () {
+        btn.textContent = 'Copiado!';
+        setTimeout(function () { btn.textContent = 'Copiar'; }, 1200);
+      });
+    });
+  });
+
+  buildSignature();
+})();
+</script>
+{% endblock %}

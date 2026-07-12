@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Início — área do cliente{% endblock %}
+{% block body %}
+{% include "cliente/_subnav.html" %}
+<div class="client-profile-header" style="margin-bottom:1.5rem">
+  <div class="client-profile-header__avatar">
+    {% if client.photo_path %}
+    <img src="{{ url_for('static', filename=client.photo_path) }}" alt="" class="client-profile-avatar">
+    {% else %}
+    <div class="client-profile-avatar client-profile-avatar--placeholder" aria-hidden="true">{{ client.name[:1]|upper }}</div>
+    {% endif %}
+  </div>
+  <div>
+    <h1 style="margin:0">Olá, {{ client.name }}</h1>
+    <p class="meta" style="margin:0.35rem 0 0">Esta é a sua página inicial: atalhos para o que você mais usa e notícias do dia.</p>
+    <p style="margin:0.65rem 0 0"><a href="{{ url_for('cliente_perfil') }}">Editar meu perfil</a></p>
+  </div>
+</div>
+
+<div class="card-grid" style="margin-bottom:2rem;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
+  <a class="card" href="{{ url_for('cliente_perfil') }}" style="text-decoration:none;color:inherit">
+    <h3 style="margin:0;font-size:1rem">Meu perfil</h3>
+    <span class="meta">Dados, endereço e foto</span>
+  </a>
+  <a class="card" href="{{ url_for('cliente_meus_leads') }}" style="text-decoration:none;color:inherit;border-color:rgba(var(--accent-rgb,200,16,46),0.25)">
+    <h3 style="margin:0;font-size:1rem">Meus leads</h3>
+    <span class="meta">Acompanhe solicitações e mensagens</span>
+  </a>
+  <a class="card" href="{{ url_for('cliente_mercado_publico') }}" style="text-decoration:none;color:inherit">
+    <h3 style="margin:0;font-size:1rem">Mercado público</h3>
+    <span class="meta">Gráficos e dados PNCP</span>
+  </a>
+  <a class="card" href="{{ url_for('contato') }}" style="text-decoration:none;color:inherit">
+    <h3 style="margin:0;font-size:1rem">Nova solicitação</h3>
+    <span class="meta">Envie um novo pedido à equipe</span>
+  </a>
+</div>
+
+<h2 class="section-title">Notícias do mundo</h2>
+<p class="meta" style="margin-top:-0.5rem;margin-bottom:1rem">
+  Conteúdo de sites de notícias (BBC, The Guardian, G1). O portal apenas reúne os títulos; ao abrir o link você sai para o site da fonte.
+  <a href="{{ url_for('cliente_inicio', atualizar=1) }}">Atualizar agora</a>
+  · atualização automática em cache (~15 min).
+</p>
+
+{% if feed_errors %}
+<div class="flash flash--warning" style="margin-bottom:1rem">
+  {% for err in feed_errors %}
+  <div>{{ err }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div style="margin-bottom:0.75rem;max-width:420px">
+  <label for="cliente-news-filter" class="meta" style="display:block;margin-bottom:0.35rem;font-weight:600">Filtrar por palavra</label>
+  <input id="cliente-news-filter" type="search" placeholder="Digite para filtrar os títulos…" autocomplete="off" style="width:100%">
+</div>
+
+<div id="cliente-news-grid" class="card-grid">
+  {% for it in news_items %}
+  <article class="card cliente-news-card" data-title="{{ it.title|lower|e }}">
+    <span class="pill" style="font-size:0.68rem;margin-bottom:0.35rem">{{ it.source }}</span>
+    <h3 style="margin:0;font-size:0.95rem;line-height:1.35">
+      <a href="{{ it.link }}" target="_blank" rel="noopener noreferrer">{{ it.title }}</a>
+    </h3>
+    <p class="meta" style="margin:0.5rem 0 0">
+      {% if it.published %}{{ it.published.strftime('%d/%m/%Y, %H:%M') }} UTC{% else %}Data não informada pelo feed{% endif %}
+    </p>
+  </article>
+  {% else %}
+  <p class="meta">Nenhuma notícia disponível no momento. Tente <a href="{{ url_for('cliente_inicio', atualizar=1) }}">atualizar</a> ou verifique a conexão do servidor com a internet.</p>
+  {% endfor %}
+</div>
+
+<script>
+(function () {
+  var inp = document.getElementById('cliente-news-filter');
+  var grid = document.getElementById('cliente-news-grid');
+  if (!inp || !grid) return;
+  function norm(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+  inp.addEventListener('input', function () {
+    var q = norm(inp.value.trim());
+    grid.querySelectorAll('.cliente-news-card').forEach(function (el) {
+      var t = norm(el.getAttribute('data-title') || '');
+      el.style.display = (!q || t.indexOf(q) !== -1) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% endblock %}

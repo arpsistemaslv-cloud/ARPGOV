@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Logística — cadastros{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='logistica') }}">← Setor Logística</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Logística — cadastros</h1>
+    <p class="meta">Registre <strong>remessas</strong> com destino, NF de referência, rastreio e vínculo opcional a empenho já cadastrado em Compras.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.logistica_remessas_list') }}"><strong>Remessas</strong><span>{{ n_remessas }} registro(s)</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.logistica_braspress_rastreamento') }}"><strong>Rastreamento Braspress</strong><span>Consulta NF ou pedido na API</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

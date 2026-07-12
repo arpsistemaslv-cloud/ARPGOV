@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}CRM — Metas{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <h1 style="margin-top:0">Metas da empresa</h1>
+    <p class="meta">Defina metas anuais e mensais, simule operações e acompanhe o retorno projetado. <a href="{{ url_for('crm.crm_financeiro_home') }}">Financeiro</a> · <a href="{{ url_for('crm.crm_commission_projects') }}">Comissionamento</a></p>
+
+    <section class="crm-table-card" style="margin-top:1.25rem">
+      <header style="padding:1rem 1.1rem;border-bottom:1px solid var(--border, #e2e8f0)">
+        <h2 style="font-size:1.05rem;margin:0">Meta da empresa</h2>
+        <p class="meta" style="margin:0.35rem 0 0">Meta = volume de vendas negociado. Comissão = faixa % × meta. Atingimento compara vendas do pipeline com a meta.</p>
+      </header>
+      <form method="post" action="{{ url_for('crm.crm_metas_save') }}" class="form-grid form-grid--wide" style="padding:1rem 1.1rem;border-bottom:1px solid var(--border, #e2e8f0)">
+        <div>
+          <label for="company_label">Nome / identificação</label>
+          <input id="company_label" name="company_label" maxlength="200" value="{{ finance_goal.company_label or '' }}" placeholder="Ex.: ARPGOV">
+        </div>
+        <div>
+          <label for="goal_year">Ano da meta</label>
+          <input id="goal_year" name="goal_year" type="number" min="2020" max="2100" value="{{ finance_goal.goal_year or goals_ctx.year }}">
+        </div>
+        <div>
+          <label for="goal_annual_brl">Meta anual de vendas (R$)</label>
+          <input id="goal_annual_brl" name="goal_annual_brl" placeholder="Ex.: 10.773,00" value="{% if finance_goal.goal_annual_brl is not none %}{{ finance_goal.goal_annual_brl|brl_decimal }}{% endif %}">
+        </div>
+        <div>
+          <label for="goal_monthly_brl">Meta mensal de vendas (R$)</label>
+          <input id="goal_monthly_brl" readonly tabindex="-1" aria-readonly="true" placeholder="Calculado automaticamente" value="{% if finance_goal.goal_annual_brl is not none %}{{ goals_ctx.monthly_goal_brl|brl_decimal }}{% endif %}">
+          <p class="meta form-field-hint" style="margin:0.25rem 0 0">Calculado automaticamente: meta anual ÷ 12.</p>
+        </div>
+        <div>
+          <label for="goal_commission_tier">Faixa de comissão (simulação)</label>
+          <select id="goal_commission_tier" name="commission_tier_id" style="min-width:240px">
+            <option value="">Selecione para projetar comissões…</option>
+            {% for p in commission_projects %}
+              {% for t in p.tiers|sort(attribute='percent_total') %}
+              <option value="{{ t.id }}" {% if finance_goal.commission_tier_id == t.id %}selected{% endif %}>{{ p.title }} — {{ tier_label_fn(t) }}</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+          <p class="meta form-field-hint" style="margin:0.25rem 0 0">Aplica a faixa sobre o volume de vendas da meta (ex.: 1% de R$ 16 mi = R$ 160 mil de comissão).</p>
+        </div>
+        <div class="form-grid__full">
+          <button type="submit" class="btn btn--primary btn--compact">Salvar metas</button>
+        </div>
+      </form>
+      <div style="padding:1rem 1.1rem">
+        <div class="crm-kpi-grid crm-kpi-grid--goals">
+          <div class="crm-kpi">
+            <strong>{% if goals_ctx.annual_progress.goal_brl %}{{ goals_ctx.annual_progress.goal_brl|brl }}{% else %}—{% endif %}</strong>
+            <span>Meta anual de vendas {{ goals_ctx.year }}</span>
+          </div>
+          <div class="crm-kpi crm-kpi--ok">
+            <strong>{{ goals_ctx.projected_year_operations_brl|brl }}</strong>
+            <span>Vendas no ano (pipeline + simulação)</span>
+          </div>
+          <div class="crm-kpi">
+            <strong>{% if goals_ctx.annual_progress.percent is not none %}{{ '%.1f'|format(goals_ctx.annual_progress.percent) }}%{% else %}—{% endif %}</strong>
+            <span>Atingimento anual</span>
+          </div>
+          <div class="crm-kpi">
+            <strong>{% if goals_ctx.monthly_progress.goal_brl %}{{ goals_ctx.monthly_progress.goal_brl|brl }}{% else %}—{% endif %}</strong>
+            <span>Meta mensal de vendas</span>
+          </div>
+          <div class="crm-kpi">
+            <strong>{{ goals_ctx.projected_month_operations_brl|brl }}</strong>
+            <span>Vendas no mês (pipeline)</span>
+          </div>
+          <div class="crm-kpi">
+            <strong>{% if goals_ctx.monthly_progress.percent is not none %}{{ '%.1f'|format(goals_ctx.monthly_progress.percent) }}%{% else %}—{% endif %}</strong>
+            <span>Atingimento mensal</span>
+          </div>
+        </div>
+        {% if goals_ctx.annual_progress.goal_brl and goals_ctx.annual_progress.percent is not none %}
+        <div style="margin-top:1rem">
+          <div class="meta" style="margin-bottom:0.35rem">Progresso anual — volume de vendas</div>
+          <div style="height:10px;background:var(--surface-muted,#e2e8f0);border-radius:999px;overflow:hidden">
+            <div style="height:100%;width:{{ [goals_ctx.annual_progress.percent, 100]|min }}%;background:var(--gov-blue-70,#1351B4);border-radius:999px"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% if goal_commission %}
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border, #e2e8f0)">
+          <h3 style="font-size:0.98rem;margin:0 0 0.35rem">Comissões projetadas na meta</h3>
+          <p class="meta" style="margin:0 0 0.75rem">
+            {% if goal_commission.project %}{{ goal_commission.project.title }} · {{ tier_label_fn(goal_commission.tier) }}{% endif %}
+            — meta de vendas: {{ goal_commission.monthly_value_brl|brl }} (mês) · {{ goal_commission.annual_value_brl|brl }} (ano)
+            · comissão bruta {{ goal_commission.tier_total_percent|float }}% = {{ goal_commission.totals.monthly_commission_gross_brl|brl }}/mês
+            · líquido após {{ goal_commission.tax_percent|int }}% imposto = {{ goal_commission.totals.monthly_commission_brl|brl }}/mês
+          </p>
+          <div class="table-wrap">
+            <table class="data data--compact">
+              <thead>
+                <tr>
+                  <th>Participante</th>
+                  <th>Papel</th>
+                  <th>% sobre operação</th>
+                  <th>Líquido anual</th>
+                  <th>Líquido mensal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in goal_commission.recipients %}
+                <tr>
+                  <td><strong>{{ row.label }}</strong></td>
+                  <td class="meta">{{ row.role }}</td>
+                  <td>{{ '%.2f'|format(row.share_percent|float) }}%</td>
+                  <td>{{ row.annual_brl|brl }}</td>
+                  <td>{{ row.monthly_brl|brl }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                  <td colspan="3" class="meta">Total bruto</td>
+                  <td class="meta">{{ goal_commission.totals.annual_commission_gross_brl|brl }}</td>
+                  <td class="meta">{{ goal_commission.totals.monthly_commission_gross_brl|brl }}</td>
+                </tr>
+                <tr>
+                  <td colspan="3" class="meta">Imposto ({{ goal_commission.tax_percent|int }}% sobre comissão)</td>
+                  <td class="meta">− {{ goal_commission.totals.annual_tax_brl|brl }}</td>
+                  <td class="meta">− {{ goal_commission.totals.monthly_tax_brl|brl }}</td>
+                </tr>
+                <tr>
+                  <td colspan="3"><strong>Total líquido</strong></td>
+                  <td><strong>{{ goal_commission.totals.annual_commission_brl|brl }}</strong></td>
+                  <td><strong>{{ goal_commission.totals.monthly_commission_brl|brl }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% elif finance_goal.commission_tier_id and (finance_goal.goal_annual_brl or finance_goal.goal_monthly_brl) %}
+        <p class="meta" style="margin:1rem 0 0">Salve a meta com uma faixa de comissão válida para ver a projeção por sócio e vendedor.</p>
+        {% elif finance_goal.commission_tier_id %}
+        <p class="meta" style="margin:1rem 0 0">Informe a meta anual ou mensal e salve para projetar comissões.</p>
+        {% endif %}
+        <p class="meta" style="margin:0.75rem 0 0">
+          Pipeline {{ goals_ctx.year }}: {{ goals_ctx.pipeline_year.lead_count }} lead(s) · {{ goals_ctx.pipeline_year.operations_value_brl|brl }} em vendas
+          · {{ goals_ctx.pipeline_year.company_share_brl|brl }} retorno sócios
+          {% if goals_ctx.simulation.line_count %} · Simulação: {{ goals_ctx.simulation.line_count }} operação(ões) · {{ goals_ctx.simulation.operations_value_brl|brl }} vendas{% endif %}
+        </p>
+      </div>
+    </section>
+
+    <section class="crm-table-card" style="margin-top:1.25rem">
+      <header style="padding:1rem 1.1rem;border-bottom:1px solid var(--border, #e2e8f0)">
+        <h2 style="font-size:1.05rem;margin:0">Simular operações e comissões</h2>
+        <p class="meta" style="margin:0.35rem 0 0">Adicione adesões hipotéticas com valor e faixa de comissão para projetar ganhos da empresa.</p>
+      </header>
+      <form method="post" action="{{ url_for('crm.crm_metas_simulation_add') }}" style="padding:1rem 1.1rem;display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;border-bottom:1px solid var(--border, #e2e8f0)">
+        <div>
+          <label for="sim_title">Operação</label>
+          <input id="sim_title" name="title" required maxlength="200" placeholder="Ex.: Adesão prefeitura X" style="min-width:200px">
+        </div>
+        <div>
+          <label for="sim_value">Valor (R$)</label>
+          <input id="sim_value" name="value_brl" required placeholder="Ex.: 250.000,00" style="min-width:130px">
+        </div>
+        <div>
+          <label for="sim_tier">Tipo e faixa de comissão</label>
+          <select id="sim_tier" name="commission_tier_id" required style="min-width:240px">
+            <option value="">Selecione…</option>
+            {% for p in commission_projects %}
+              {% for t in p.tiers|sort(attribute='percent_total') %}
+              <option value="{{ t.id }}">{{ p.title }} — {{ tier_label_fn(t) }}</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn--primary btn--compact">Adicionar à simulação</button>
+      </form>
+      <div class="table-wrap" style="padding:0.75rem 1.1rem 1rem">
+        <table class="data data--compact">
+          <thead>
+            <tr>
+              <th>Operação</th>
+              <th>Valor</th>
+              <th>Comissão</th>
+              <th>Retorno empresa</th>
+              <th>Vendedor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in simulation_lines %}
+            {% set line = item.line %}
+            {% if edit_simulation and edit_simulation.line.id == line.id %}
+            <tr>
+              <td colspan="6" style="background:var(--surface-muted, #f8fafc)">
+                <form method="post" action="{{ url_for('crm.crm_metas_simulation_edit', line_id=line.id) }}" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;padding:0.35rem 0">
+                  <div>
+                    <label>Operação</label>
+                    <input name="title" maxlength="200" required value="{{ line.title }}" style="min-width:180px">
+                  </div>
+                  <div>
+                    <label>Valor (R$)</label>
+                    <input name="value_brl" required value="{{ line.value_brl|brl_decimal }}" style="min-width:110px">
+                  </div>
+                  <div>
+                    <label>Tipo e faixa</label>
+                    <select name="commission_tier_id" required style="min-width:220px">
+                      {% for p in commission_projects %}
+                        {% for t in p.tiers|sort(attribute='percent_total') %}
+                        <option value="{{ t.id }}" {% if t.id == line.commission_tier_id %}selected{% endif %}>{{ p.title }} — {{ tier_label_fn(t) }}</option>
+                        {% endfor %}
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+                    <button type="submit" class="btn btn--primary btn--compact">Salvar</button>
+                    <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_metas_home') }}">Cancelar</a>
+                  </div>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td>
+                <strong>{{ line.title }}</strong>
+                {% if item.project %}<br><span class="meta">{{ item.project.title }} · {{ tier_label_fn(item.tier) }}</span>{% endif %}
+              </td>
+              <td>{{ item.totals.value_brl|float|brl }}</td>
+              <td>{{ item.totals.total_commission_brl|float|brl }}</td>
+              <td><strong>{{ item.totals.company_share_brl|float|brl }}</strong></td>
+              <td class="meta">{{ item.totals.seller_share_brl|float|brl }}</td>
+              <td>
+                <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+                  <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_metas_home', edit_sim=line.id) }}">Editar</a>
+                  <form method="post" action="{{ url_for('crm.crm_metas_simulation_delete', line_id=line.id) }}" style="margin:0" onsubmit="return confirm('Remover esta simulação?');">
+                    <button type="submit" class="btn btn--ghost btn--compact">Remover</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr><td colspan="6" class="meta">Nenhuma operação simulada. Adicione acima para projetar ganhos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% if simulation_lines %}
+        <p class="meta" style="margin:0.75rem 0 0">
+          Total simulado: {{ goals_ctx.simulation.operations_value_brl|float|brl }} em operações ·
+          {{ goals_ctx.simulation.company_share_brl|float|brl }} retorno empresa ·
+          {{ goals_ctx.simulation.total_commission_brl|float|brl }} comissão total
+        </p>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/metas-goal-form.js') }}" defer></script>
+{% endblock %}

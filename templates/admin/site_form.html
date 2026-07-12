@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Aparência e textos{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Aparência e conteúdo do site</h1>
+<p class="meta">Catálogo em <a href="{{ url_for('admin_catalog_list') }}">Catálogo</a>. Páginas extras em <a href="{{ url_for('admin_page_list') }}">Páginas</a>. Identidade visual em <a href="{{ url_for('admin_brand_kit') }}">Marca e Brand Kit</a>.</p>
+
+<form method="post" class="form-grid form-grid--wide" style="margin-top:1rem">
+  <h2 class="section-title" style="margin-top:0">Marca e layout</h2>
+  <div>
+    <label for="site_brand_primary">Texto da marca (antes do destaque)</label>
+    <input id="site_brand_primary" name="site_brand_primary" value="{{ settings.site_brand_primary or '' }}" placeholder="ARP">
+  </div>
+  <div>
+    <label for="site_brand_accent">Texto em destaque (cor de ênfase)</label>
+    <input id="site_brand_accent" name="site_brand_accent" value="{{ settings.site_brand_accent or '' }}" placeholder="GOV">
+  </div>
+  <div>
+    <label for="custom_css">CSS personalizado (cores, fontes, espaçamentos)</label>
+    <textarea id="custom_css" name="custom_css" rows="10" placeholder=":root { --accent: #0d9488; --arp-gold: #d4a84b; }">{{ settings.custom_css or '' }}</textarea>
+  </div>
+
+  <h2 class="section-title">Página inicial (hero)</h2>
+  <div>
+    <label for="hero_headline">Título principal</label>
+    <input id="hero_headline" name="hero_headline" value="{{ settings.hero_headline or '' }}" placeholder="Ata de registro de preços e adesão simplificada">
+  </div>
+  <div>
+    <label for="hero_text">Texto abaixo do título</label>
+    <textarea id="hero_text" name="hero_text" placeholder="Descrição para seus clientes…">{{ settings.hero_text or '' }}</textarea>
+  </div>
+
+  <h2 class="section-title">Contato</h2>
+  <div>
+    <label for="contact_intro">Texto introdutório (HTML permitido)</label>
+    <textarea id="contact_intro" name="contact_intro" rows="4" placeholder="&lt;p&gt;…&lt;/p&gt;">{{ settings.contact_intro or '' }}</textarea>
+  </div>
+  <div>
+    <label for="contact_address">Endereço ou observação (uma linha ou curto)</label>
+    <input id="contact_address" name="contact_address" value="{{ settings.contact_address or '' }}">
+  </div>
+  <div>
+    <label for="contact_email">E-mail exibido</label>
+    <input id="contact_email" name="contact_email" type="email" value="{{ settings.contact_email or '' }}">
+  </div>
+  <div>
+    <label for="contact_phone">Telefone exibido</label>
+    <input id="contact_phone" name="contact_phone" value="{{ settings.contact_phone or '' }}">
+  </div>
+
+  <h3 class="section-title" style="font-size:0.95rem;margin-top:0.5rem">Redes sociais (página de contato)</h3>
+  <div>
+    <label for="social_whatsapp">WhatsApp</label>
+    <input id="social_whatsapp" name="social_whatsapp" value="{{ settings.social_whatsapp or '' }}" placeholder="5511999999999 ou link wa.me">
+    <p class="meta" style="margin:0.25rem 0 0">Se vazio, usa o telefone acima para montar o link.</p>
+  </div>
+  <div>
+    <label for="social_instagram">Instagram</label>
+    <input id="social_instagram" name="social_instagram" value="{{ settings.social_instagram or '' }}" placeholder="@seuperfil ou URL completa">
+  </div>
+  <div>
+    <label for="social_tiktok">TikTok</label>
+    <input id="social_tiktok" name="social_tiktok" value="{{ settings.social_tiktok or '' }}" placeholder="@seuperfil ou URL completa">
+  </div>
+
+  <h2 class="section-title">Rodapé e SEO</h2>
+  <div>
+    <label for="footer_note">Rodapé (HTML permitido)</label>
+    <textarea id="footer_note" name="footer_note" rows="3">{{ settings.footer_note or '' }}</textarea>
+  </div>
+  <div>
+    <label for="meta_description">Descrição para buscadores (meta)</label>
+    <input id="meta_description" name="meta_description" value="{{ settings.meta_description or '' }}" maxlength="320">
+  </div>
+  <button type="submit" class="btn btn--primary">Salvar tudo</button>
+</form>
+{% endblock %}

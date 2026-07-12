@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{% if nota %}Editar NF{% else %}Nova NF{% endif %} — Faturamento{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.faturamento_notas_list') }}">← Notas</a></p>
+    <h1 style="margin-top:0">{% if nota %}Editar nota{% else %}Nova nota{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div>
+        <label for="numero">Número NF *</label>
+        <input id="numero" name="numero" required maxlength="32" value="{{ nota.numero if nota else '' }}">
+      </div>
+      <div>
+        <label for="serie">Série</label>
+        <input id="serie" name="serie" maxlength="8" value="{{ nota.serie if nota else '' }}">
+      </div>
+      <div>
+        <label for="data_emissao">Data emissão</label>
+        <input id="data_emissao" name="data_emissao" type="date" value="{{ nota.data_emissao.isoformat() if nota and nota.data_emissao else '' }}">
+      </div>
+      <div>
+        <label for="valor_total">Valor total (R$)</label>
+        <input id="valor_total" name="valor_total" value="{{ nota.valor_total if nota and nota.valor_total is not none else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="orgao_cliente">Órgão / cliente</label>
+        <input id="orgao_cliente" name="orgao_cliente" maxlength="400" value="{{ nota.orgao_cliente if nota else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="empenho_numero_ref">Nº empenho (referência texto)</label>
+        <input id="empenho_numero_ref" name="empenho_numero_ref" maxlength="160" value="{{ nota.empenho_numero_ref if nota else '' }}" placeholder="Igual ao cadastro em Compras">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = nota.status if nota else 'autorizada' %}
+          {% for opt in ['autorizada', 'cancelada', 'denegada', 'correcao'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="3">{{ nota.observacoes if nota else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.faturamento_notas_list') }}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

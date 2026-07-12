@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Licitações — cadastros{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='licitacoes') }}">← Licitações</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Licitações — pipeline</h1>
+    <p class="meta">Registro de <strong>editais</strong> com <strong>análise</strong> (prazos, multas, local de entrega, documentação), <strong>esclarecimentos</strong>, <strong>impugnação</strong> e <strong>checklist</strong> de documentos. Arquivos genéricos da empresa ficam no <a href="{{ url_for('empresa.documentos_repositorio_hub') }}">repositório</a>.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.licitacoes_lista') }}"><strong>Lista de licitações</strong><span>{{ n_licitacoes }} registro(s)</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.documentos_repositorio_hub') }}"><strong>Repositório de documentos</strong><span>Certidões, modelos, atas</span></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

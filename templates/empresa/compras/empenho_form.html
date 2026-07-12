@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{% if empenho %}Editar empenho{% else %}Novo empenho{% endif %} — Compras{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.compras_empenhos_list') }}">← Empenhos</a></p>
+    <h1 style="margin-top:0">{% if empenho %}Editar empenho{% else %}Novo empenho{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div style="grid-column:1/-1">
+        <label for="numero">Número do empenho *</label>
+        <input id="numero" name="numero" required maxlength="160" value="{{ empenho.numero if empenho else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="orgao_nome">Órgão / unidade gestora *</label>
+        <input id="orgao_nome" name="orgao_nome" required maxlength="400" value="{{ empenho.orgao_nome if empenho else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="contrato_id">Contrato (cadastro Contratos e Empenhos)</label>
+        <select id="contrato_id" name="contrato_id">
+          <option value="">— nenhum —</option>
+          {% for c in contratos %}
+          <option value="{{ c.id }}" {% if empenho and empenho.contrato_id == c.id %}selected{% endif %}>{{ c.numero_contrato }} — {{ c.orgao_nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="cnpj_orgao">CNPJ do órgão (opcional)</label>
+        <input id="cnpj_orgao" name="cnpj_orgao" maxlength="18" value="{{ empenho.cnpj_orgao if empenho else '' }}" placeholder="Somente números">
+      </div>
+      <div>
+        <label for="valor_total">Valor total (R$)</label>
+        <input id="valor_total" name="valor_total" value="{{ empenho.valor_total if empenho and empenho.valor_total is not none else '' }}" placeholder="0,00">
+      </div>
+      <div>
+        <label for="data_emissao">Data emissão</label>
+        <input id="data_emissao" name="data_emissao" type="date" value="{{ empenho.data_emissao.isoformat() if empenho and empenho.data_emissao else '' }}">
+      </div>
+      <div>
+        <label for="data_processamento">Data processamento interno</label>
+        <input id="data_processamento" name="data_processamento" type="date" value="{{ empenho.data_processamento.isoformat() if empenho and empenho.data_processamento else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          {% set st = empenho.status if empenho else 'processado' %}
+          {% for opt in ['rascunho', 'processado', 'parcial', 'cancelado'] %}
+          <option value="{{ opt }}" {% if st == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="3">{{ empenho.observacoes if empenho else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      {% if empenho %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.compras_empenho_detail', eid=empenho.id) }}">Ver itens</a>
+      {% else %}
+      <a class="btn btn--ghost" href="{{ url_for('empresa.compras_empenhos_list') }}">Cancelar</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}

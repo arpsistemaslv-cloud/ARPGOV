@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Intranet — início{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <h1 style="margin-top:0">Área da empresa</h1>
+    <p class="meta">Olá, <strong>{{ staff.name }}</strong>. Seu setor principal: <strong>{% for s, lab in setores %}{% if s == staff.department_slug %}{{ lab }}{% endif %}{% endfor %}</strong>.</p>
+    <p class="meta" style="max-width:52rem;line-height:1.6">Cada setor abaixo tem uma <strong>página própria</strong> com missão, responsabilidades, rotinas, documentos, indicadores e integração com outras áreas — é um guia vivo para a operação; ajuste textos e processos conforme a realidade da empresa. <a href="{{ url_for('empresa.modulos_hub') }}">Cadastros operacionais por setor</a> (remessas, chamados, contratos, NF, pendências, projetos, licitações, etc.). Comunicação entre equipes: <a href="{{ url_for('empresa.chat', canal='geral') }}">chat interno</a> e <a href="{{ url_for('empresa.kanban') }}">Kanban</a> compartilhado.</p>
+
+    <h2 style="font-size:1.1rem;margin:1.5rem 0 0.75rem">Setores</h2>
+    <div class="admin-dash-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+      {% for slug, label in setores %}
+      <a class="admin-dash-card" href="{{ url_for('empresa.setor', slug=slug) }}">
+        <strong>{{ label }}</strong>
+        <span>Abrir página do setor</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

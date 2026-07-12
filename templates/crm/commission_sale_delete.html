@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}CRM — Excluir venda avulsa{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <h1 style="margin-top:0">Excluir venda avulsa</h1>
+    <p>Remover <strong>{{ sale.title }}</strong> e todo o rateio vinculado?</p>
+    <form method="post" style="display:flex;gap:0.5rem;margin-top:1rem">
+      <button type="submit" class="btn btn--danger">Excluir</button>
+      <a class="btn btn--ghost" href="{{ url_for('crm.crm_commission_sale_edit', sale_id=sale.id) }}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

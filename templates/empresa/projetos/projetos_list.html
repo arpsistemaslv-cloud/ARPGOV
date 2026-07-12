@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Projetos — lista{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.projetos_hub') }}">← Projetos</a></p>
+    <h1 style="margin-top:0">Projetos</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.projetos_new') }}">Novo projeto</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Código</th><th>Nome</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for p in projetos %}
+          <tr>
+            <td><code>{{ p.codigo }}</code></td>
+            <td>{{ p.nome }}</td>
+            <td>{{ p.status }}</td>
+            <td><a href="{{ url_for('empresa.projetos_detail', pid=p.id) }}">Abrir</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="meta">Nenhum projeto.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% from "macros/portal_client_fields.html" import portal_client_profile_fields %}
+
+{% block title %}CRM — {% if client %}Editar cliente{% else %}Novo cliente{% endif %}{% endblock %}
+
+{% block body %}
+
+<div class="crm-shell">
+
+  <div class="crm-shell__inner">
+
+    {% include "crm/_subnav.html" %}
+
+    <h1 style="margin-top:0">{% if client %}Editar cliente{% else %}Novo cliente{% endif %}</h1>
+
+    <form method="post" class="client-profile-form br-lookup-form">
+
+      {{ portal_client_profile_fields(
+
+        client=client,
+
+        show_login=True,
+
+        show_password=True,
+
+        password_required=not client
+
+      ) }}
+
+      <div class="form-actions">
+
+        <button type="submit" class="btn btn--primary">Salvar</button>
+
+        <a class="btn btn--ghost" href="{{ url_for('crm.crm_clients_list') }}">Voltar</a>
+
+      </div>
+
+    </form>
+
+    {% if client and leads %}
+
+    <section style="margin-top:2rem">
+
+      <h2 style="font-size:1.05rem">Leads deste cliente</h2>
+
+      <div class="table-wrap" style="margin-top:0.75rem">
+
+        <table class="data">
+
+          <thead>
+
+            <tr><th>Título</th><th>Estágio</th><th>Processo</th><th></th></tr>
+
+          </thead>
+
+          <tbody>
+
+            {% for l in leads %}
+
+            <tr>
+
+              <td>{{ l.title }}</td>
+
+              <td class="meta">{{ l.stage }}</td>
+
+              <td class="meta">{{ l.process_ref or '—' }}</td>
+
+              <td><a href="{{ url_for('crm.crm_op_edit', opp_id=l.id) }}">Abrir</a></td>
+
+            </tr>
+
+            {% endfor %}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    {% endif %}
+
+  </div>
+
+</div>
+
+{% endblock %}
+

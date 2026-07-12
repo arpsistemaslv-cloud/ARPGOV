@@ -1,0 +1,38 @@
+{# Parâmetros: contexto, ref_id, next_url, anexos, read_only (opcional) #}
+{% if ref_id %}
+<section class="anexos-block" style="margin:1.25rem 0;padding:1rem 1.1rem;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--surface)">
+  <h3 style="font-size:1.05rem;margin:0 0 0.65rem">Anexos</h3>
+  {% if anexos %}
+  <ul style="margin:0;padding-left:1.2rem;list-style:disc">
+    {% for a in anexos %}
+    <li style="margin:0.35rem 0">
+      <a href="{{ url_for('empresa.anexos_download', aid=a.id) }}">{{ a.nome_original }}</a>
+      {% if not read_only %}
+      <form method="post" action="{{ url_for('empresa.anexos_delete', aid=a.id) }}" style="display:inline;margin-left:0.35rem" onsubmit="return confirm('Remover este anexo?');">
+        <input type="hidden" name="next" value="{{ next_url }}">
+        <button type="submit" class="btn btn--ghost" style="padding:0.15rem 0.45rem;font-size:0.8rem">Remover</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="meta" style="margin:0">Nenhum arquivo anexado ainda.</p>
+  {% endif %}
+  {% if not read_only %}
+  <form method="post" action="{{ url_for('empresa.anexos_upload') }}" enctype="multipart/form-data" style="margin-top:0.85rem;display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center">
+    <input type="hidden" name="contexto" value="{{ contexto }}">
+    <input type="hidden" name="ref_id" value="{{ ref_id }}">
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.92rem;cursor:pointer">
+      <span>Arquivo</span>
+      <input type="file" name="arquivo" required>
+    </label>
+    <button type="submit" class="btn btn--primary" style="font-size:0.9rem">Enviar</button>
+  </form>
+  <p class="meta" style="margin:0.5rem 0 0;font-size:0.82rem">Máx. 15 MB. PDF, Office, imagens, XML, CSV, ZIP, etc.</p>
+  {% endif %}
+</section>
+{% else %}
+<p class="meta" style="margin:1rem 0">Salve o cadastro para poder anexar arquivos.</p>
+{% endif %}

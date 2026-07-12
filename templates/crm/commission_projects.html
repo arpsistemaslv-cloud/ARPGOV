@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}CRM — Comissionamento{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <header style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div>
+        <h1 style="margin-top:0">Comissionamento</h1>
+        <p class="meta" style="margin:0.35rem 0 0">Crie tipos de comissão com faixas e percentuais personalizados. No lead, escolha o tipo e a faixa correta.</p>
+      </div>
+      <a class="btn btn--primary" href="{{ url_for('crm.crm_commission_project_new') }}">+ Novo tipo de comissão</a>
+    </header>
+
+    <section class="crm-table-card">
+      <header style="padding:1rem 1.1rem;border-bottom:1px solid var(--border, #e2e8f0)">
+        <h2 style="font-size:1.05rem;margin:0">Sócios e fluxo de caixa</h2>
+        <p class="meta" style="margin:0.35rem 0 0">Edite nome e percentual de cada sócio livremente. Quando a soma chegar a 100%, as faixas de comissão são recalculadas automaticamente.</p>
+      </header>
+      <form method="post" action="{{ url_for('crm.crm_commission_stakeholder_add') }}" style="padding:1rem 1.1rem;display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;border-bottom:1px solid var(--border, #e2e8f0)">
+        <div>
+          <label for="stakeholder_name">Nome</label>
+          <input id="stakeholder_name" name="name" required maxlength="160" placeholder="Nome do sócio" style="min-width:220px">
+        </div>
+        <div>
+          <label for="stakeholder_share">Participação (%)</label>
+          <input id="stakeholder_share" name="share_percent" required placeholder="Ex.: 25" style="min-width:100px">
+        </div>
+        <div>
+          <label for="stakeholder_role">Tipo</label>
+          <select id="stakeholder_role" name="role_key" style="min-width:160px">
+            <option value="socio">Sócio</option>
+            <option value="fluxo_caixa">Fluxo de caixa</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--primary btn--compact">Adicionar sócio</button>
+      </form>
+      <div class="table-wrap" style="padding:0.75rem 1.1rem 1.1rem">
+        <table class="data">
+          <thead>
+            <tr><th>Nome</th><th>Participação</th><th>Tipo</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for s in stakeholders %}
+            {% if edit_stakeholder and edit_stakeholder.id == s.id %}
+            <tr>
+              <td colspan="4" style="background:var(--surface-muted, #f8fafc)">
+                <form method="post" action="{{ url_for('crm.crm_commission_stakeholder_edit', stakeholder_id=s.id) }}" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;padding:0.35rem 0">
+                  <div>
+                    <label>Nome</label>
+                    <input name="name" maxlength="160" required value="{{ s.name }}" style="min-width:200px">
+                  </div>
+                  <div>
+                    <label>Participação (%)</label>
+                    <input name="share_percent" required value="{{ '%.2f'|format(s.share_percent|float) }}" style="min-width:90px">
+                  </div>
+                  <div>
+                    <label>Tipo</label>
+                    <select name="role_key" style="min-width:150px">
+                      <option value="socio" {% if s.role_key != 'fluxo_caixa' %}selected{% endif %}>Sócio</option>
+                      <option value="fluxo_caixa" {% if s.role_key == 'fluxo_caixa' %}selected{% endif %}>Fluxo de caixa</option>
+                    </select>
+                  </div>
+                  <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+                    <button type="submit" class="btn btn--primary btn--compact">Salvar</button>
+                    <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_commission_projects') }}">Cancelar</a>
+                  </div>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td><strong>{{ s.name }}</strong></td>
+              <td>{{ '%.2f'|format(s.share_percent|float) }}%</td>
+              <td class="meta">{{ stakeholder_role_label_fn(s.role_key) }}</td>
+              <td>
+                <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+                  <a class="btn btn--ghost btn--compact" href="{{ url_for('crm.crm_commission_projects', edit_socio=s.id) }}">Editar</a>
+                  <form method="post" action="{{ url_for('crm.crm_commission_stakeholder_delete', stakeholder_id=s.id) }}" style="margin:0" onsubmit="return confirm('Remover este sócio?');">
+                    <button type="submit" class="btn btn--ghost btn--compact">Remover</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr><td colspan="4" class="meta">Nenhum sócio cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% if stakeholders %}
+        <p class="meta" style="margin:0.75rem 0 0">
+          Total (ativos): {{ '%.2f'|format(stakeholders_total|float) }}%
+          {% if (stakeholders_total|float - 100)|abs > 0.01 %}
+          <span style="color:var(--danger, #b91c1c)"> — ajuste para 100% para recalcular as faixas</span>
+          {% endif %}
+        </p>
+        {% endif %}
+        <p class="meta" style="margin:0.75rem 0 0">Sem vendedor: 100% dividido pelas participações acima. Com vendedor: 30% para o vendedor e 70% rateado entre os sócios. Em tipos <strong>personalizados</strong>, você define os participantes e percentuais.</p>
+      </div>
+    </section>
+
+    <h2 style="font-size:1.05rem;margin-top:2rem">Tipos de comissão</h2>
+    <div class="crm-table-card" style="margin-top:0.75rem">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Modelo</th>
+              <th>Faixas</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in projects %}
+            <tr>
+              <td>
+                <strong>{{ p.title }}</strong>
+                {% if p.notes %}<br><span class="meta">{{ p.notes }}</span>{% endif %}
+                {% if p.is_system %}<br><span class="meta">Padrão do sistema</span>{% endif %}
+              </td>
+              <td class="meta">{{ rateio_mode_label_fn(p) if rateio_mode_label_fn is defined else (p.with_seller and 'Com vendedor' or 'Sem vendedor') }}</td>
+              <td class="meta">
+                {% if p.tiers %}
+                  {{ p.tiers|length }} faixa{% if p.tiers|length != 1 %}s{% endif %}
+                  ({% for t in p.tiers|sort(attribute='percent_total') %}{{ '%.2f'|format(t.percent_total|float) }}%{% if not loop.last %}, {% endif %}{% endfor %})
+                {% else %}
+                  Nenhuma — adicione faixas
+                {% endif %}
+              </td>
+              <td class="meta">{% if p.is_active %}Ativo{% else %}Inativo{% endif %}</td>
+              <td><a href="{{ url_for('crm.crm_commission_project_detail', project_id=p.id) }}">Gerenciar</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="meta">Nenhum tipo cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

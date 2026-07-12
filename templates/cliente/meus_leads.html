@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Meus leads{% endblock %}
+{% block body %}
+{% include "cliente/_subnav.html" %}
+<h1 style="margin-top:0">Meus leads</h1>
+<p class="meta">Olá, <strong>{{ client.name }}</strong>. Abaixo estão as solicitações vinculadas à sua conta (incluindo envios feitos logado ou com o mesmo e-mail do cadastro). O estágio é atualizado pela equipe.</p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Solicitação</th>
+        <th>Atualizado</th>
+        <th>Estágio</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in opportunities %}
+      <tr>
+        <td><strong>{{ o.title }}</strong>{% if o.catalog_lines %}<br><span class="meta">{{ o.catalog_lines|length }} produto(s) vinculado(s)</span>{% endif %}</td>
+        <td class="meta">{{ o.updated_at.strftime('%d/%m/%Y %H:%M') if o.updated_at else '—' }}</td>
+        <td>{% for key, label in stages %}{% if o.stage == key %}{{ label }}{% endif %}{% endfor %}</td>
+        <td><a href="{{ url_for('cliente_lead_detail', oid=o.id) }}">Detalhes</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="meta">Nenhum lead ainda. Envie uma solicitação em <a href="{{ url_for('contato') }}">Contato</a> (de preferência logado) para aparecer aqui.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

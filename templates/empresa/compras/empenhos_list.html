@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Empenhos — Compras{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.compras_hub') }}">← Compras</a></p>
+    <h1 style="margin-top:0">Empenhos processados</h1>
+    <p class="meta">Após cadastrar, abra o empenho para <strong>vincular produtos</strong> do catálogo (quantidade e valor unitário por linha).</p>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.compras_empenhos_new') }}">Novo empenho</a></p>
+    <div class="table-wrap" style="margin-top:1rem">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Órgão</th>
+            <th>Emissão</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in empenhos %}
+          <tr>
+            <td><strong>{{ e.numero }}</strong></td>
+            <td>{{ e.orgao_nome }}</td>
+            <td class="meta">{{ e.data_emissao.strftime('%d/%m/%Y') if e.data_emissao else '—' }}</td>
+            <td>{{ e.status }}</td>
+            <td><a href="{{ url_for('empresa.compras_empenho_detail', eid=e.id) }}">Abrir / itens</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhum empenho cadastrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

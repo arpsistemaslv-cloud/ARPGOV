@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Excluir todo o catálogo{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Excluir todos os produtos</h1>
+{% if count == 0 %}
+<p class="meta">Não há produtos no catálogo.</p>
+<p><a class="btn btn--ghost" href="{{ url_for('admin_catalog_list') }}">Voltar</a></p>
+{% else %}
+<p class="flash flash--error" style="display:block">Esta ação remove <strong>{{ count }}</strong> produto(s), apaga os arquivos de imagem no servidor e desvincula esses itens das oportunidades no CRM. Não dá para desfazer.</p>
+<form method="post" class="form-grid" style="max-width:400px;margin-top:1rem">
+  <div>
+    <label for="confirm">Digite <code>EXCLUIR TODOS</code> para confirmar</label>
+    <input id="confirm" name="confirm" autocomplete="off" placeholder="EXCLUIR TODOS">
+  </div>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <button type="submit" class="btn btn--danger">Apagar todo o catálogo</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin_catalog_list') }}">Cancelar</a>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ setor_label }} — intranet{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout setor-page">
+  <div class="setor-page__inner">
+    <p class="meta"><a href="{{ url_for('empresa.dashboard') }}">← Intranet</a></p>
+
+    <header class="setor-hero">
+      <p class="setor-hero__badge">Setor</p>
+      <h1 class="setor-hero__title">{{ setor_label }}</h1>
+      {% if conteudo and conteudo.tagline %}
+      <p class="setor-hero__tagline">{{ conteudo.tagline }}</p>
+      {% endif %}
+    </header>
+
+    {% if conteudo %}
+    <section class="setor-section">
+      <h2 class="setor-section__h">Missão e papel</h2>
+      <p class="setor-section__text">{{ conteudo.missao }}</p>
+    </section>
+
+    <div class="setor-grid">
+      <section class="setor-card">
+        <h3 class="setor-card__h">Responsabilidades</h3>
+        <ul class="setor-list">
+          {% for item in conteudo.responsabilidades %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="setor-card">
+        <h3 class="setor-card__h">Rotinas sugeridas</h3>
+        <ul class="setor-list">
+          {% for item in conteudo.rotinas %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="setor-card">
+        <h3 class="setor-card__h">Documentos e controles</h3>
+        <ul class="setor-list">
+          {% for item in conteudo.documentos %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="setor-card">
+        <h3 class="setor-card__h">Indicadores (ajuste conforme a gestão)</h3>
+        <ul class="setor-list setor-list--compact">
+          {% for item in conteudo.indicadores %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    </div>
+
+    <section class="setor-integra">
+      <h2 class="setor-section__h">Integra com</h2>
+      <p class="setor-integra__tags">
+        {% for nome in conteudo.integra_com %}
+        <span class="setor-tag">{{ nome }}</span>
+        {% endfor %}
+      </p>
+      <p class="meta" style="margin-top:0.75rem">Use o <a href="{{ url_for('empresa.chat', canal='geral') }}">chat geral</a> ou o <a href="{{ url_for('empresa.chat', canal=slug) }}">canal deste setor</a> para alinhar com outras áreas. No <a href="{{ url_for('empresa.kanban') }}">Kanban</a>, crie cartões etiquetados com este setor quando a demanda for transversal.</p>
+    </section>
+    {% else %}
+    <p class="meta">Conteúdo do setor em elaboração. Use o chat e o Kanban para registrar o dia a dia.</p>
+    {% endif %}
+
+    {% set modulos_setor = {
+      'compras': ('empresa.compras_hub', 'Cadastros — Compras', 'Produtos (part number, acessórios), empenhos processados e itens vinculados.'),
+      'logistica': ('empresa.logistica_hub', 'Cadastros — Logística', 'Remessas; rastreamento Braspress (API); NF, rastreio e vínculo opcional a empenho.'),
+      'tecnico': ('empresa.tecnico_hub', 'Cadastros — Técnico', 'Chamados de implantação e suporte com prioridade e status.'),
+      'juridico': ('empresa.juridico_hub', 'Cadastros — Jurídico', 'Processos com tribunal, tipo e próximo prazo.'),
+      'garantia': ('empresa.garantia_hub', 'Cadastros — Garantia', 'Protocolos de troca; vínculo opcional ao catálogo de produtos de Compras.'),
+      'contratos_empenhos': ('empresa.contratos_hub', 'Cadastros — Contratos', 'Contratos com órgãos; em Compras, vincule empenhos ao contrato.'),
+      'faturamento': ('empresa.faturamento_hub', 'Cadastros — Faturamento', 'Controle de NF emitidas e referência de empenho.'),
+      'pendencias': ('empresa.pendencias_hub', 'Cadastros — Pendências', 'Itens multi-setor com origem, responsável e data alvo.'),
+      'projetos': ('empresa.projetos_hub', 'Cadastros — Projetos', 'Projetos por código e marcos na página de detalhe.'),
+      'licitacoes': ('empresa.licitacoes_hub', 'Cadastros — Licitações', 'Pipeline de editais, datas e status.'),
+      'fechamento_preco': ('empresa.fechamento_preco_hub', 'Cadastros — Fechamento de preço', 'Planilha com UF de entrega, matriz imposto ou NCM, frete, financeiro e markup; fechamento com snapshot; vínculo a licitação.'),
+      'imposto': ('empresa.imposto_hub', 'Cadastros — Impostos por produto e UF', 'Alíquotas e benefício fiscal por produto (Compras) e UF; alimenta o fechamento de preço com prioridade sobre NCM.'),
+    } %}
+    {% if slug in modulos_setor %}
+    {% set m = modulos_setor[slug] %}
+    <section class="setor-modulo" style="margin:1.5rem 0;padding:1.15rem 1.25rem;border-radius:8px;border:2px solid var(--accent);background:var(--surface)">
+      <h2 class="setor-section__h" style="border-color:var(--accent)">{{ m[1] }}</h2>
+      <p class="meta" style="margin-top:0">{{ m[2] }}</p>
+      <a class="btn btn--primary" href="{{ url_for(m[0]) }}">Abrir módulo deste setor</a>
+      <p class="meta" style="margin-top:0.75rem"><a href="{{ url_for('empresa.modulos_hub') }}">Índice de todos os módulos</a></p>
+    </section>
+    {% endif %}
+
+    <section class="setor-actions">
+      <h2 class="setor-section__h">Ações rápidas</h2>
+      <div class="setor-actions__btns">
+        <a class="btn btn--primary" href="{{ url_for('empresa.chat', canal=slug) }}">Chat deste setor</a>
+        <a class="btn btn--ghost" href="{{ url_for('empresa.chat', canal='geral') }}">Chat geral</a>
+        <a class="btn btn--ghost" href="{{ url_for('empresa.kanban') }}">Kanban</a>
+      </div>
+      <p class="meta" style="margin-top:1rem">Canal técnico do chat: <code>{{ slug }}</code></p>
+    </section>
+  </div>
+</div>
+{% endblock %}

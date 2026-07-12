@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{% if processo %}Editar processo{% else %}Novo processo{% endif %} — Jurídico{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div style="max-width:560px">
+    <p class="meta"><a href="{{ url_for('empresa.juridico_processos_list') }}">← Processos</a></p>
+    <h1 style="margin-top:0">{% if processo %}Editar processo{% else %}Novo processo{% endif %}</h1>
+    <form method="post" class="form-grid">
+      <div style="grid-column:1/-1">
+        <label for="numero_processo">Número do processo *</label>
+        <input id="numero_processo" name="numero_processo" required maxlength="120" value="{{ processo.numero_processo if processo else '' }}">
+      </div>
+      <div>
+        <label for="tipo">Tipo</label>
+        <input id="tipo" name="tipo" maxlength="80" value="{{ processo.tipo if processo else '' }}" placeholder="cível, trabalhista…">
+      </div>
+      <div>
+        <label for="tribunal">Tribunal / vara</label>
+        <input id="tribunal" name="tribunal" maxlength="300" value="{{ processo.tribunal if processo else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="polo">Polo</label>
+        <input id="polo" name="polo" maxlength="120" value="{{ processo.polo if processo else '' }}">
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <input id="status" name="status" maxlength="60" value="{{ processo.status if processo else 'ativo' }}">
+      </div>
+      <div>
+        <label for="proximo_prazo">Próximo prazo</label>
+        <input id="proximo_prazo" name="proximo_prazo" type="date" value="{{ processo.proximo_prazo.isoformat() if processo and processo.proximo_prazo else '' }}">
+      </div>
+      <div style="grid-column:1/-1">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes" rows="4">{{ processo.observacoes if processo else '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('empresa.juridico_processos_list') }}">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

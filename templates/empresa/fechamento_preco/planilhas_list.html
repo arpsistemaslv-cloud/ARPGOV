@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Planilhas — Fechamento de preço{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.fechamento_preco_hub') }}">← Fechamento de preço</a></p>
+    <h1 style="margin-top:0">Planilhas</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.fechamento_preco_planilha_new') }}">Nova planilha</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Título</th><th>Account</th><th>Licitação</th><th>Status</th><th>Prejuízo / Compras</th><th></th></tr></thead>
+        <tbody>
+          {% for p in planilhas %}
+          <tr>
+            <td>{{ p.titulo }}</td>
+            <td>{% if p.account %}{{ p.account.name }}{% else %}—{% endif %}</td>
+            <td>{% if p.licitacao %}<a href="{{ url_for('empresa.licitacoes_edit', lid=p.licitacao.id) }}">{{ p.licitacao.titulo[:48] }}{% if p.licitacao.titulo|length > 48 %}…{% endif %}</a>{% else %}—{% endif %}</td>
+            <td>{{ p.status }}</td>
+            <td>{% if p.aprovacao_prejuizo %}P{% else %}—{% endif %} / {% if p.compras_aprovado %}C{% else %}—{% endif %}</td>
+            <td><a href="{{ url_for('empresa.fechamento_preco_planilha_detail', fid=p.id) }}">Abrir</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="meta">Nenhuma planilha.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

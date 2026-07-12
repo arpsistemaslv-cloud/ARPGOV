@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Páginas{% endblock %}
+{% block body %}
+{% include "admin/_subnav.html" %}
+<h1 style="margin-top:0">Páginas do site</h1>
+<p class="meta">URLs públicas: <code>/p/slug-da-pagina</code>. Marque “No menu” para aparecer no topo do site.</p>
+<p><a class="btn btn--primary" href="{{ url_for('admin_page_new') }}">Nova página</a></p>
+{% if pages %}
+<table class="admin-table" style="margin-top:1rem;width:100%;max-width:900px;border-collapse:collapse">
+  <thead>
+    <tr style="text-align:left;border-bottom:1px solid var(--border)">
+      <th style="padding:0.5rem">Título</th>
+      <th style="padding:0.5rem">Slug / link</th>
+      <th style="padding:0.5rem">Menu</th>
+      <th style="padding:0.5rem">Publicada</th>
+      <th style="padding:0.5rem"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in pages %}
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:0.5rem">{{ p.title }}</td>
+      <td style="padding:0.5rem"><a href="{{ url_for('site_page_public', slug=p.slug) }}" target="_blank" rel="noopener">/p/{{ p.slug }}</a></td>
+      <td style="padding:0.5rem">{% if p.show_in_nav %}Sim{% else %}Não{% endif %}</td>
+      <td style="padding:0.5rem">{% if p.is_published %}Sim{% else %}Não{% endif %}</td>
+      <td style="padding:0.5rem;white-space:nowrap">
+        <a href="{{ url_for('admin_page_edit', page_id=p.id) }}">Editar</a>
+        <form method="post" action="{{ url_for('admin_page_delete', page_id=p.id) }}" style="display:inline;margin-left:0.5rem" onsubmit="return confirm('Excluir esta página?');">
+          <button type="submit" class="btn btn--danger" style="padding:0.2rem 0.5rem;font-size:0.85rem">Excluir</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="meta" style="margin-top:1rem">Nenhuma página extra. Crie a primeira com o botão acima.</p>
+{% endif %}
+{% endblock %}

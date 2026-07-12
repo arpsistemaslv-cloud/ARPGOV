@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Setor de Impostos — intranet{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.setor', slug='imposto') }}">← Setor Impostos</a> · <a href="{{ url_for('empresa.modulos_hub') }}">Módulos</a></p>
+    <h1 style="margin-top:0">Impostos por produto e UF</h1>
+    <p class="meta">Cadastre <strong>alíquotas</strong> e <strong>benefício fiscal</strong> por combinação <strong>produto (catálogo Compras) × UF</strong>. No <a href="{{ url_for('empresa.fechamento_preco_hub') }}">fechamento de preço</a>, quando a planilha tiver <strong>UF de entrega</strong>, o cálculo usa esta matriz com <strong>prioridade sobre o perfil NCM</strong>.</p>
+    <div class="admin-dash-grid" style="margin-top:1.25rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <a class="admin-dash-card" href="{{ url_for('empresa.imposto_matriz') }}"><strong>Matriz produto × UF</strong><span>{{ n_registros_matriz }} registro(s)</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.compras_produtos_list') }}"><strong>Catálogo de produtos</strong><span>{{ n_produtos }} ativo(s)</span></a>
+      <a class="admin-dash-card" href="{{ url_for('empresa.fechamento_preco_hub') }}"><strong>Fechamento de preço</strong><span>Planilhas e snapshot</span></a>
+    </div>
+    <p style="margin-top:1.25rem"><a class="btn btn--primary" href="{{ url_for('empresa.imposto_matriz_new') }}">Novo registro na matriz</a></p>
+  </div>
+</div>
+{% endblock %}

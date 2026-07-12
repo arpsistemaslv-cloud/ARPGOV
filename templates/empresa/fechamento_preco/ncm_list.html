@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Tabela NCM — Fechamento{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.fechamento_preco_hub') }}">← Fechamento de preço</a></p>
+    <h1 style="margin-top:0">Perfis por NCM (8 dígitos)</h1>
+    <p class="meta">Percentuais para <strong>estimativa</strong> na planilha (somados na coluna Σ). Ajuste conforme regime tributário da empresa e UF.</p>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.fechamento_preco_ncm_new') }}">Novo perfil</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>NCM</th><th>Descrição</th><th>ICMS</th><th>IPI</th><th>PIS</th><th>COFINS</th><th></th></tr></thead>
+        <tbody>
+          {% for p in perfis %}
+          <tr>
+            <td><code>{{ p.ncm }}</code></td>
+            <td>{{ p.descricao or '—' }}</td>
+            <td>{{ p.aliquota_icms }}</td>
+            <td>{{ p.aliquota_ipi }}</td>
+            <td>{{ p.aliquota_pis }}</td>
+            <td>{{ p.aliquota_cofins }}</td>
+            <td><a href="{{ url_for('empresa.fechamento_preco_ncm_edit', nid=p.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="meta">Nenhum perfil. Cadastre alíquotas por NCM.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

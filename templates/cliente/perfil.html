@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "macros/portal_client_fields.html" import portal_client_profile_fields %}
+{% block title %}Meu perfil{% endblock %}
+{% block body %}
+<div class="page-shell page-shell--narrow">
+  {% include "cliente/_subnav.html" %}
+
+  <div class="client-profile-header">
+    <div class="client-profile-header__avatar">
+      {% if client.photo_path %}
+      <img src="{{ url_for('static', filename=client.photo_path) }}" alt="Foto de {{ client.name }}" class="client-profile-avatar">
+      {% else %}
+      <div class="client-profile-avatar client-profile-avatar--placeholder" aria-hidden="true">{{ client.name[:1]|upper }}</div>
+      {% endif %}
+    </div>
+    <div>
+      <h1 style="margin:0">{{ client.name }}</h1>
+      <p class="meta" style="margin:0.35rem 0 0">{{ client.email }}</p>
+      {% if client.organization %}<p class="meta" style="margin:0.25rem 0 0">{{ client.organization }}{% if client.sector %} · {{ client.sector }}{% endif %}</p>{% endif %}
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="client-profile-form br-lookup-form">
+    <h2 class="form-section-title">Foto do perfil</h2>
+    <div class="client-profile-photo-field">
+      <label for="photo" class="meta" style="display:block;margin-bottom:0.35rem;font-weight:600">Enviar foto</label>
+      <input id="photo" name="photo" type="file" accept="image/png,image/jpeg,image/webp">
+      <p class="meta form-field-hint">JPG, PNG ou WebP · até 3 MB. Aparece na sua área do cliente.</p>
+      {% if client.photo_path %}
+      <button type="submit" name="remove_photo" value="1" class="btn btn--ghost btn--compact" style="margin-top:0.5rem" onclick="return confirm('Remover sua foto de perfil?');">Remover foto</button>
+      {% endif %}
+    </div>
+
+    <h2 class="form-section-title">Acesso</h2>
+    <div class="form-grid form-grid--2col">
+      <div class="form-grid__full">
+        <label for="email">E-mail (login) *</label>
+        <input id="email" name="email" type="email" required autocomplete="email" maxlength="120" value="{{ client.email }}">
+      </div>
+    </div>
+
+    {{ portal_client_profile_fields(client=client, show_password=True) }}
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Salvar perfil</button>
+      <a class="btn btn--ghost" href="{{ url_for('cliente_inicio') }}">Voltar ao início</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

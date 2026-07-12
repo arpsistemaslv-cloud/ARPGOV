@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Processos — Jurídico{% endblock %}
+{% block body %}
+{% include "empresa/_subnav.html" %}
+<div class="crm-layout">
+  <div>
+    <p class="meta"><a href="{{ url_for('empresa.juridico_hub') }}">← Jurídico</a></p>
+    <h1 style="margin-top:0">Processos</h1>
+    <p><a class="btn btn--primary" href="{{ url_for('empresa.juridico_processos_new') }}">Novo processo</a></p>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Número</th><th>Tipo</th><th>Próximo prazo</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for p in processos %}
+          <tr>
+            <td><code>{{ p.numero_processo }}</code></td>
+            <td>{{ p.tipo or '—' }}</td>
+            <td>{{ p.proximo_prazo.strftime('%d/%m/%Y') if p.proximo_prazo else '—' }}</td>
+            <td>{{ p.status }}</td>
+            <td><a href="{{ url_for('empresa.juridico_processos_edit', pid=p.id) }}">Editar</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="meta">Nenhum processo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

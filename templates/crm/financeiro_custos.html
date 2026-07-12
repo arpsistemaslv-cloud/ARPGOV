@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Custos da empresa{% endblock %}
+{% block body %}
+{% include "crm/_subnav.html" %}
+<p class="meta"><a href="{{ url_for('crm_financeiro_home') }}">← Financeiro</a></p>
+<h1 style="margin-top:0">Custos da empresa</h1>
+<p class="meta">Registre despesas e anexe notas fiscais (PDF, XML, imagens, etc.).</p>
+<p><a class="btn btn--primary" href="{{ url_for('crm_financeiro_custo_nova') }}">Novo custo</a></p>
+<div class="table-wrap" style="margin-top:1rem">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Título</th>
+        <th>Categoria</th>
+        <th>Valor (R$)</th>
+        <th>Anexos</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td class="meta">{% if e.expense_date %}{{ e.expense_date.strftime('%d/%m/%Y') }}{% else %}—{% endif %}<br><span class="meta">cad. {{ e.created_at.strftime('%d/%m/%Y') if e.created_at else '' }}</span></td>
+        <td><strong>{{ e.title }}</strong>{% if e.notes %}<br><span class="meta">{{ e.notes[:120] }}{% if e.notes|length > 120 %}…{% endif %}</span>{% endif %}</td>
+        <td class="meta">{{ e.category or '—' }}</td>
+        <td>{% if e.amount_brl is not none %}{{ e.amount_brl|float|brl }}{% else %}—{% endif %}</td>
+        <td class="meta">
+          {% if e.attachment_list %}
+          {% for a in e.attachment_list %}
+          <div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap;margin:0.2rem 0">
+            <a href="{{ url_for('crm_financeiro_anexo_empresa', expense_id=e.id, idx=loop.index0) }}">{{ a.name or 'Arquivo' }}</a>
+            <form method="post" action="{{ url_for('crm_financeiro_anexo_empresa_excluir', expense_id=e.id, idx=loop.index0) }}" style="margin:0" onsubmit="return confirm('Excluir este anexo?')">
+              <button type="submit" class="btn btn--ghost" style="padding:0.2rem 0.45rem">Excluir</button>
+            </form>
+          </div>
+          {% endfor %}
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <form method="post" action="{{ url_for('crm_financeiro_custo_excluir', expense_id=e.id) }}" style="margin:0" onsubmit="return confirm('Excluir este registro e apagar anexos?');">
+            <button type="submit" class="btn btn--ghost" style="font-size:0.8rem;padding:0.25rem 0.5rem">Excluir</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="meta">Nenhum custo cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
