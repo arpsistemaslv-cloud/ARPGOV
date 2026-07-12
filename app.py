@@ -1863,6 +1863,22 @@ def ensure_finance_goals_tables():
                 )
         except Exception:
             pass
+    for col, ddl in (
+        ("goal_start_month", "INTEGER NOT NULL DEFAULT 1"),
+        ("goal_end_month", "INTEGER NOT NULL DEFAULT 12"),
+    ):
+        try:
+            db.session.execute(text(f"SELECT {col} FROM company_finance_goals LIMIT 1"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            try:
+                with db.engine.begin() as conn:
+                    conn.exec_driver_sql(
+                        f"ALTER TABLE company_finance_goals ADD COLUMN {col} {ddl}"
+                    )
+            except Exception:
+                pass
 
 
 def ensure_opportunity_rep_commission_columns():

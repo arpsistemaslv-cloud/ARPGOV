@@ -12,6 +12,37 @@ from commission_service import amounts_from_splits
 COMMISSION_TAX_PERCENT = Decimal("5")
 COMMISSION_NET_FACTOR = (Decimal("100") - COMMISSION_TAX_PERCENT) / Decimal("100")
 
+MONTH_NAMES_PT = (
+    "",
+    "janeiro",
+    "fevereiro",
+    "março",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro",
+)
+MONTH_NAMES_PT_SHORT = (
+    "",
+    "jan",
+    "fev",
+    "mar",
+    "abr",
+    "mai",
+    "jun",
+    "jul",
+    "ago",
+    "set",
+    "out",
+    "nov",
+    "dez",
+)
+
 
 def _d(value) -> Decimal:
     if value is None:
@@ -31,10 +62,50 @@ def get_or_create_finance_goal():
         row = CompanyFinanceGoal(
             id=1,
             goal_year=datetime.utcnow().year,
+            goal_start_month=1,
+            goal_end_month=12,
         )
         db.session.add(row)
         db.session.commit()
     return row
+
+
+def _clamp_month(value, default: int) -> int:
+    try:
+        month = int(value)
+    except (TypeError, ValueError):
+        return default
+    return min(max(month, 1), 12)
+
+
+def goal_period_months(goal) -> int:
+    start = _clamp_month(getattr(goal, "goal_start_month", None), 1)
+    end = _clamp_month(getattr(goal, "goal_end_month", None), 12)
+    if start > end:
+        return 12
+    return end - start + 1
+
+
+def goal_period_label(goal, *, short: bool = False) -> str:
+    start = _clamp_month(getattr(goal, "goal_start_month", None), 1)
+    end = _clamp_month(getattr(goal, "goal_end_month", None), 12)
+    year = goal.goal_year or datetime.utcnow().year
+    names = MONTH_NAMES_PT_SHORT if short else MONTH_NAMES_PT
+    if start == 1 and end == 12:
+        return f"ano {year}"
+    return f"{names[start]}–{names[end]} {year}"
+
+
+def monthly_goal_from_period_total(goal) -> Decimal | None:
+    total = goal.goal_annual_brl
+    if total is None:
+        if goal.goal_monthly_brl is not None:
+            return _q2(_d(goal.goal_monthly_brl))
+        return None
+    months = goal_period_months(goal)
+    if months <= 0:
+        return None
+    return _q2(_d(total) / Decimal(str(months)))
 
 
 def tier_simulation_totals(tier, value_brl: Decimal | None) -> dict:
@@ -72,7 +143,13 @@ def enrich_simulation_line(line) -> dict:
     }
 
 
-def actual_pipeline_totals(*, year: int, month: int | None = None) -> dict:
+def actual_pipeline_totals(
+    *,
+    year: int,
+    month: int | None = None,
+    start_month: int | None = None,
+    end_month: int | None = None,
+) -> dict:
     from models import Opportunity, OpportunityCommissionSplit, db
 
     opp_q = Opportunity.query.filter(
@@ -82,6 +159,14 @@ def actual_pipeline_totals(*, year: int, month: int | None = None) -> dict:
     )
     if month is not None:
         opp_q = opp_q.filter(extract("month", Opportunity.updated_at) == month)
+    elif start_month is not None and end_month is not None:
+        sm = _clamp_month(start_month, 1)
+        em = _clamp_month(end_month, 12)
+        if sm <= em:
+            opp_q = opp_q.filter(
+                extract("month", Opportunity.updated_at) >= sm,
+                extract("month", Opportunity.updated_at) <= em,
+            )
 
     operations_value = _d(
         opp_q.with_entities(func.coalesce(func.sum(Opportunity.value_brl), 0)).scalar()
@@ -97,6 +182,14 @@ def actual_pipeline_totals(*, year: int, month: int | None = None) -> dict:
     )
     if month is not None:
         split_q = split_q.filter(extract("month", Opportunity.updated_at) == month)
+    elif start_month is not None and end_month is not None:
+        sm = _clamp_month(start_month, 1)
+        em = _clamp_month(end_month, 12)
+        if sm <= em:
+            split_q = split_q.filter(
+                extract("month", Opportunity.updated_at) >= sm,
+                extract("month", Opportunity.updated_at) <= em,
+            )
 
     company_share = Decimal("0")
     total_commission = Decimal("0")
@@ -173,8 +266,9 @@ def goal_commission_projection(goal, tier) -> dict | None:
 
     splits = list(tier.splits)
     annual_value = _d(goal.goal_annual_brl)
+    months = goal_period_months(goal)
     if annual_value > 0:
-        monthly_value = _q2(annual_value / Decimal("12"))
+        monthly_value = _q2(annual_value / Decimal(str(months)))
     else:
         monthly_value = _d(goal.goal_monthly_brl)
     if annual_value <= 0 and monthly_value <= 0:
@@ -250,8 +344,13 @@ def goal_commission_projection(goal, tier) -> dict | None:
 def finance_dashboard(goal, simulation_lines_enriched: list) -> dict:
     year = goal.goal_year or datetime.utcnow().year
     month = datetime.utcnow().month
+    period_start = _clamp_month(getattr(goal, "goal_start_month", None), 1)
+    period_end = _clamp_month(getattr(goal, "goal_end_month", None), 12)
+    in_period = period_start <= month <= period_end
 
-    pipeline_year = actual_pipeline_totals(year=year)
+    pipeline_year = actual_pipeline_totals(
+        year=year, start_month=period_start, end_month=period_end
+    )
     pipeline_month = actual_pipeline_totals(year=year, month=month)
     sim_totals = simulation_totals(simulation_lines_enriched)
 
@@ -264,15 +363,17 @@ def finance_dashboard(goal, simulation_lines_enriched: list) -> dict:
     )
     projected_month_company = _q2(_d(pipeline_month["company_share_brl"]))
 
-    monthly_goal = None
-    if goal.goal_annual_brl is not None:
-        monthly_goal = _q2(_d(goal.goal_annual_brl) / Decimal("12"))
-    elif goal.goal_monthly_brl is not None:
-        monthly_goal = _q2(_d(goal.goal_monthly_brl))
+    monthly_goal = monthly_goal_from_period_total(goal)
 
     return {
         "year": year,
         "month": month,
+        "period_start_month": period_start,
+        "period_end_month": period_end,
+        "period_months": goal_period_months(goal),
+        "period_label": goal_period_label(goal),
+        "period_label_short": goal_period_label(goal, short=True),
+        "in_period": in_period,
         "pipeline_year": pipeline_year,
         "pipeline_month": pipeline_month,
         "simulation": sim_totals,
@@ -283,6 +384,9 @@ def finance_dashboard(goal, simulation_lines_enriched: list) -> dict:
         "annual_progress": goal_progress(
             projected_year_operations, goal.goal_annual_brl
         ),
-        "monthly_progress": goal_progress(projected_month_operations, monthly_goal),
+        "monthly_progress": goal_progress(
+            projected_month_operations if in_period else Decimal("0"),
+            monthly_goal if in_period else None,
+        ),
         "monthly_goal_brl": monthly_goal,
     }

@@ -22,13 +22,33 @@
           <input id="goal_year" name="goal_year" type="number" min="2020" max="2100" value="{{ finance_goal.goal_year or goals_ctx.year }}">
         </div>
         <div>
-          <label for="goal_annual_brl">Meta anual de vendas (R$)</label>
-          <input id="goal_annual_brl" name="goal_annual_brl" placeholder="Ex.: 10.773,00" value="{% if finance_goal.goal_annual_brl is not none %}{{ finance_goal.goal_annual_brl|brl_decimal }}{% endif %}">
+          <label for="goal_annual_brl">Meta total do período (R$)</label>
+          <input id="goal_annual_brl" name="goal_annual_brl" placeholder="Ex.: 300.000,00" value="{% if finance_goal.goal_annual_brl is not none %}{{ finance_goal.goal_annual_brl|brl_decimal }}{% endif %}">
+          <p class="meta form-field-hint" style="margin:0.25rem 0 0">Volume de vendas a atingir no período selecionado abaixo.</p>
+        </div>
+        <div>
+          <label>Período da meta</label>
+          <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
+            <select id="goal_start_month" name="goal_start_month" aria-label="Mês inicial">
+              {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if (finance_goal.goal_start_month or 1) == m %}selected{% endif %}>{{ ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][m] }}</option>
+              {% endfor %}
+            </select>
+            <span class="meta">até</span>
+            <select id="goal_end_month" name="goal_end_month" aria-label="Mês final">
+              {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if (finance_goal.goal_end_month or 12) == m %}selected{% endif %}>{{ ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][m] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <p class="meta form-field-hint" style="margin:0.25rem 0 0">
+            Ex.: lançamento em julho → selecione <strong>julho</strong> até <strong>dezembro</strong> (6 meses).
+          </p>
         </div>
         <div>
           <label for="goal_monthly_brl">Meta mensal de vendas (R$)</label>
           <input id="goal_monthly_brl" readonly tabindex="-1" aria-readonly="true" placeholder="Calculado automaticamente" value="{% if finance_goal.goal_annual_brl is not none %}{{ goals_ctx.monthly_goal_brl|brl_decimal }}{% endif %}">
-          <p class="meta form-field-hint" style="margin:0.25rem 0 0">Calculado automaticamente: meta anual ÷ 12.</p>
+          <p class="meta form-field-hint" id="goal_monthly_hint" style="margin:0.25rem 0 0">Calculado: meta total ÷ {{ goals_ctx.period_months }} meses ({{ goals_ctx.period_label_short }}).</p>
         </div>
         <div>
           <label for="goal_commission_tier">Faixa de comissão (simulação)</label>
@@ -50,19 +70,19 @@
         <div class="crm-kpi-grid crm-kpi-grid--goals">
           <div class="crm-kpi">
             <strong>{% if goals_ctx.annual_progress.goal_brl %}{{ goals_ctx.annual_progress.goal_brl|brl }}{% else %}—{% endif %}</strong>
-            <span>Meta anual de vendas {{ goals_ctx.year }}</span>
+            <span>Meta do período ({{ goals_ctx.period_label_short }})</span>
           </div>
           <div class="crm-kpi crm-kpi--ok">
             <strong>{{ goals_ctx.projected_year_operations_brl|brl }}</strong>
-            <span>Vendas no ano (pipeline + simulação)</span>
+            <span>Vendas no período (pipeline + simulação)</span>
           </div>
           <div class="crm-kpi">
             <strong>{% if goals_ctx.annual_progress.percent is not none %}{{ '%.1f'|format(goals_ctx.annual_progress.percent) }}%{% else %}—{% endif %}</strong>
-            <span>Atingimento anual</span>
+            <span>Atingimento do período</span>
           </div>
           <div class="crm-kpi">
             <strong>{% if goals_ctx.monthly_progress.goal_brl %}{{ goals_ctx.monthly_progress.goal_brl|brl }}{% else %}—{% endif %}</strong>
-            <span>Meta mensal de vendas</span>
+            <span>Meta mensal{% if not goals_ctx.in_period %} (fora do período){% endif %}</span>
           </div>
           <div class="crm-kpi">
             <strong>{{ goals_ctx.projected_month_operations_brl|brl }}</strong>
@@ -75,7 +95,7 @@
         </div>
         {% if goals_ctx.annual_progress.goal_brl and goals_ctx.annual_progress.percent is not none %}
         <div style="margin-top:1rem">
-          <div class="meta" style="margin-bottom:0.35rem">Progresso anual — volume de vendas</div>
+          <div class="meta" style="margin-bottom:0.35rem">Progresso do período — volume de vendas ({{ goals_ctx.period_label_short }})</div>
           <div style="height:10px;background:var(--surface-muted,#e2e8f0);border-radius:999px;overflow:hidden">
             <div style="height:100%;width:{{ [goals_ctx.annual_progress.percent, 100]|min }}%;background:var(--gov-blue-70,#1351B4);border-radius:999px"></div>
           </div>
@@ -86,7 +106,7 @@
           <h3 style="font-size:0.98rem;margin:0 0 0.35rem">Comissões projetadas na meta</h3>
           <p class="meta" style="margin:0 0 0.75rem">
             {% if goal_commission.project %}{{ goal_commission.project.title }} · {{ tier_label_fn(goal_commission.tier) }}{% endif %}
-            — meta de vendas: {{ goal_commission.monthly_value_brl|brl }} (mês) · {{ goal_commission.annual_value_brl|brl }} (ano)
+            — meta de vendas: {{ goal_commission.monthly_value_brl|brl }} (mês) · {{ goal_commission.annual_value_brl|brl }} (período {{ goals_ctx.period_label_short }})
             · comissão bruta {{ goal_commission.tier_total_percent|float }}% = {{ goal_commission.totals.monthly_commission_gross_brl|brl }}/mês
             · líquido após {{ goal_commission.tax_percent|int }}% imposto = {{ goal_commission.totals.monthly_commission_brl|brl }}/mês
           </p>
@@ -136,7 +156,7 @@
         <p class="meta" style="margin:1rem 0 0">Informe a meta anual ou mensal e salve para projetar comissões.</p>
         {% endif %}
         <p class="meta" style="margin:0.75rem 0 0">
-          Pipeline {{ goals_ctx.year }}: {{ goals_ctx.pipeline_year.lead_count }} lead(s) · {{ goals_ctx.pipeline_year.operations_value_brl|brl }} em vendas
+          Pipeline {{ goals_ctx.period_label_short }}: {{ goals_ctx.pipeline_year.lead_count }} lead(s) · {{ goals_ctx.pipeline_year.operations_value_brl|brl }} em vendas
           · {{ goals_ctx.pipeline_year.company_share_brl|brl }} retorno sócios
           {% if goals_ctx.simulation.line_count %} · Simulação: {{ goals_ctx.simulation.line_count }} operação(ões) · {{ goals_ctx.simulation.operations_value_brl|brl }} vendas{% endif %}
         </p>

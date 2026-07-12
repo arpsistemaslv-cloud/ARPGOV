@@ -52,6 +52,7 @@ from finance_goals_service import (
     finance_dashboard,
     get_or_create_finance_goal,
     goal_commission_projection,
+    goal_period_months,
 )
 from commission_service import (
     add_tier_to_project,
@@ -1231,9 +1232,16 @@ def metas_save():
     except ValueError:
         goal.goal_year = datetime.utcnow().year
     goal.goal_annual_brl = _parse_money(request.form.get("goal_annual_brl"))
+    start_raw = request.form.get("goal_start_month", type=int)
+    end_raw = request.form.get("goal_end_month", type=int)
+    goal.goal_start_month = min(max(start_raw or 1, 1), 12)
+    goal.goal_end_month = min(max(end_raw or 12, 1), 12)
+    if goal.goal_start_month > goal.goal_end_month:
+        goal.goal_start_month, goal.goal_end_month = goal.goal_end_month, goal.goal_start_month
     if goal.goal_annual_brl is not None:
+        months = goal_period_months(goal)
         goal.goal_monthly_brl = (
-            Decimal(str(goal.goal_annual_brl)) / Decimal("12")
+            Decimal(str(goal.goal_annual_brl)) / Decimal(str(months))
         ).quantize(Decimal("0.01"))
     else:
         goal.goal_monthly_brl = None

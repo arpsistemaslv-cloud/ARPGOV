@@ -675,6 +675,8 @@ class CompanyFinanceGoal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     company_label = db.Column(db.String(200), nullable=True)
     goal_year = db.Column(db.Integer, nullable=False, default=2026)
+    goal_start_month = db.Column(db.Integer, nullable=False, default=1)
+    goal_end_month = db.Column(db.Integer, nullable=False, default=12)
     goal_annual_brl = db.Column(db.Numeric(14, 2), nullable=True)
     goal_monthly_brl = db.Column(db.Numeric(14, 2), nullable=True)
     commission_tier_id = db.Column(
