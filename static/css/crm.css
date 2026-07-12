@@ -1864,92 +1864,394 @@
   margin-top: 0.35rem;
 }
 
-.email-marketing-layout {
-  margin-top: 0.5rem;
+.email-marketing-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--layout-gutter, 1.25rem) 2.5rem;
 }
 
-.email-marketing-recipient-kpi {
-  margin: 1rem 0 0;
-  padding: 0.85rem 1rem;
-  border-radius: 10px;
-  background: #f0f4fa;
-  border: 1px solid rgba(7, 29, 65, 0.1);
-  font-size: 0.92rem;
+.email-marketing-header {
+  margin-bottom: 1.25rem;
 }
 
-.email-marketing-recipient-kpi strong {
-  font-size: 1.35rem;
+.email-marketing-flash {
+  margin: 0 0 1rem;
+}
+
+.email-marketing-kpis {
+  margin-bottom: 1.25rem;
+}
+
+.email-marketing-kpis .crm-kpi strong {
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+}
+
+.email-marketing-filters {
+  margin-bottom: 1.25rem;
+}
+
+.email-marketing-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.email-marketing-section-head--compact {
+  margin-bottom: 0.85rem;
+}
+
+.email-marketing-section-head__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
   color: var(--gov-blue-90, #071d41);
 }
 
-.email-marketing-main {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  min-width: 0;
+.email-marketing-section-head__desc {
+  margin: 0.3rem 0 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+  max-width: 36rem;
+  line-height: 1.45;
 }
 
-.email-marketing-compose .lead-form-field,
-.email-marketing-arps,
-.email-marketing-preview {
-  margin-top: 0;
+.email-marketing-section-head__desc code {
+  font-size: 0.82rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: #f0f4fa;
+  color: var(--gov-blue-80, #0c3268);
 }
 
-.email-marketing-arp-list {
+.email-marketing-filters__form {
+  margin-bottom: 1rem;
+}
+
+.email-marketing-filters__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(160px, 0.8fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.email-marketing-field {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  max-height: 280px;
-  overflow: auto;
-  padding-right: 0.25rem;
-}
-
-.email-marketing-arp-item {
-  display: flex;
-  gap: 0.55rem;
-  align-items: flex-start;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  background: #fff;
-}
-
-.email-marketing-arp-item:hover {
-  border-color: rgba(7, 29, 65, 0.22);
-  background: #fafbfd;
-}
-
-.email-marketing-arp-item input {
-  margin-top: 0.2rem;
-}
-
-.email-marketing-arp-item__main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
   min-width: 0;
 }
 
-.email-marketing-actions {
+.email-marketing-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.email-marketing-field input,
+.email-marketing-field select,
+.email-marketing-field textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.92rem;
+  font-family: inherit;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text, #1a1a1a);
+  box-sizing: border-box;
+}
+
+.email-marketing-field input:focus,
+.email-marketing-field select:focus,
+.email-marketing-field textarea:focus {
+  outline: 2px solid rgba(19, 81, 180, 0.28);
+  outline-offset: 1px;
+  border-color: var(--gov-blue-70, #1351b4);
+}
+
+.email-marketing-field textarea {
+  resize: vertical;
+  min-height: 11rem;
+  line-height: 1.5;
+}
+
+.email-marketing-filters__submit .btn {
+  white-space: nowrap;
+}
+
+.email-marketing-sphere-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border, #e2e8f0);
+}
+
+.email-marketing-sphere-bar__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.email-marketing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.email-marketing-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: #fff;
+  color: var(--gov-blue-80, #0c3268);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.email-marketing-chip:hover {
+  border-color: rgba(19, 81, 180, 0.35);
+  background: #f5f9ff;
+  color: var(--gov-blue-70, #1351b4);
+}
+
+.email-marketing-chip--active {
+  border-color: var(--gov-blue-70, #1351b4);
+  background: var(--gov-blue-70, #1351b4);
+  color: #fff;
+}
+
+.email-marketing-chip--active:hover {
+  background: var(--gov-blue-80, #0c3268);
+  color: #fff;
+}
+
+.email-marketing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+}
+
+.email-marketing-card {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  padding: 0.25rem 0 1rem;
+  min-width: 0;
 }
 
-.email-marketing-confirm {
+.email-marketing-card--arps {
+  max-height: 620px;
+}
+
+.email-marketing-badge {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #edf5ff;
+  color: var(--gov-blue-70, #1351b4);
+}
+
+.email-marketing-arp-grid {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
+  overflow: auto;
+  max-height: 480px;
+  padding-right: 0.15rem;
+}
+
+.email-marketing-arp-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  background: #fafbfd;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.email-marketing-arp-card:hover {
+  border-color: rgba(19, 81, 180, 0.28);
+  background: #fff;
+}
+
+.email-marketing-arp-card:has(.email-marketing-arp-card__check:checked) {
+  border-color: var(--gov-blue-70, #1351b4);
+  background: #f5f9ff;
+  box-shadow: 0 0 0 1px rgba(19, 81, 180, 0.12);
+}
+
+.email-marketing-arp-card__check {
+  margin-top: 0.25rem;
+  accent-color: var(--gov-blue-70, #1351b4);
+}
+
+.email-marketing-arp-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.email-marketing-arp-card__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gov-blue-90, #071d41);
+  line-height: 1.35;
+}
+
+.email-marketing-arp-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.email-marketing-arp-card__sphere {
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: #e8eef5;
+  color: var(--gov-blue-80, #0c3268);
+  font-weight: 600;
+}
+
+.email-marketing-arp-card__price {
+  font-weight: 700;
+  color: var(--gov-blue-70, #1351b4);
+}
+
+.email-marketing-arp-card__valid {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.email-marketing-recipients {
+  margin-bottom: 0;
+}
+
+.email-marketing-table-note {
+  margin: 0.65rem 0 0;
+}
+
+.email-marketing-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.email-marketing-empty--panel {
+  padding: 2rem 1.25rem;
+  text-align: center;
+  border: 1px dashed var(--border, #e2e8f0);
+  border-radius: 10px;
+  background: #fafbfd;
+}
+
+.email-marketing-sendbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem 1.25rem;
+  margin-top: 1.25rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -4px 24px rgba(7, 29, 65, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.email-marketing-sendbar__confirm {
+  display: flex;
+  gap: 0.55rem;
   align-items: flex-start;
   font-size: 0.9rem;
+  margin: 0;
+  cursor: pointer;
+  min-width: min(100%, 320px);
 }
 
-.email-marketing-actions__buttons {
+.email-marketing-sendbar__confirm input {
+  margin-top: 0.2rem;
+  accent-color: var(--gov-blue-70, #1351b4);
+}
+
+.email-marketing-sendbar__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.portal-backoffice .email-marketing-page input,
+.portal-backoffice .email-marketing-page select,
+.portal-backoffice .email-marketing-page textarea {
+  background: #fff;
+}
+
+@media (max-width: 960px) {
+  .email-marketing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .email-marketing-card--arps {
+    max-height: none;
+  }
+
+  .email-marketing-arp-grid {
+    max-height: 320px;
+  }
+
+  .email-marketing-filters__row {
+    grid-template-columns: 1fr;
+  }
+
+  .email-marketing-filters__submit .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .email-marketing-sendbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .email-marketing-sendbar__actions {
+    margin-left: 0;
+    justify-content: stretch;
+  }
+
+  .email-marketing-sendbar__actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
 }
 
 .portal-backoffice .lead-form-page input,
