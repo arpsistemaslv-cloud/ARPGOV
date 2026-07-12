@@ -160,6 +160,20 @@
         }
       }
       syncLeadSaleTotal(total, hasPrice);
+      emitChange();
+    }
+
+    function emitChange() {
+      var items = [];
+      selected.forEach(function (item) {
+        items.push({ id: item.id, title: item.title || "" });
+      });
+      root.dispatchEvent(
+        new CustomEvent("catalog-picker:change", {
+          bubbles: true,
+          detail: { items: items },
+        })
+      );
     }
 
     function linesPayload() {

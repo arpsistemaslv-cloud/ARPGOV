@@ -1603,6 +1603,21 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.lead-auto-title-card {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e2e6ea);
+}
+
+.lead-auto-title {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+  line-height: 1.35;
+}
+
 .lead-form-page .catalog-picker__results {
   max-height: min(260px, 38vh);
 }

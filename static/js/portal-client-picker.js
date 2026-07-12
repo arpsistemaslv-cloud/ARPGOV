@@ -78,6 +78,12 @@
         if (selectedWrap) selectedWrap.hidden = true;
         if (searchWrap) searchWrap.hidden = false;
       }
+      root.dispatchEvent(
+        new CustomEvent("portal-client-picker:change", {
+          bubbles: true,
+          detail: { client: client },
+        })
+      );
     }
 
     function buildRow(item) {

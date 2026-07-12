@@ -5137,6 +5137,12 @@ def inject_site_settings():
     except OSError:
         portal_client_picker_js_v = css_v
     try:
+        comercial_lead_title_js_v = int(
+            os.path.getmtime(os.path.join(static_root, "js", "comercial-lead-auto-title.js"))
+        )
+    except OSError:
+        comercial_lead_title_js_v = css_v
+    try:
         loja_cat_js_v = int(
             os.path.getmtime(os.path.join(static_root, "js", "loja-category-search.js"))
         )
@@ -5162,6 +5168,7 @@ def inject_site_settings():
             "gallery_js_v": gallery_js_v,
             "catalog_picker_js_v": catalog_picker_js_v,
             "portal_client_picker_js_v": portal_client_picker_js_v,
+            "comercial_lead_title_js_v": comercial_lead_title_js_v,
             "loja_cat_js_v": loja_cat_js_v,
             "client_cart_count": _client_cart_count() if session.get("client_id") else 0,
             "format_currency_brl": _format_currency_brl,
@@ -5183,6 +5190,7 @@ def inject_site_settings():
             "gallery_js_v": gallery_js_v,
             "catalog_picker_js_v": catalog_picker_js_v,
             "portal_client_picker_js_v": portal_client_picker_js_v,
+            "comercial_lead_title_js_v": comercial_lead_title_js_v,
             "loja_cat_js_v": loja_cat_js_v,
             "client_cart_count": _client_cart_count() if session.get("client_id") else 0,
             "format_currency_brl": _format_currency_brl,
@@ -6367,7 +6375,7 @@ def comercial_op_new():
             )
             ctx = _comercial_op_captacao_ctx(rep, catalog_choices, selected_client)
             return render_template("comercial/op_captacao.html", **ctx)
-        title = (request.form.get("title") or "").strip() or "Captação de adesão"
+        title = _comercial_lead_auto_title(selected_client, catalog_lines)
         opp = Opportunity(
             sales_rep_id=rid,
             title=title,
@@ -6703,6 +6711,41 @@ def _comercial_op_prefill_client() -> PortalClient | None:
         if client:
             return client
     return None
+
+
+def _comercial_client_label(client: PortalClient) -> str:
+    return (
+        (client.organization or "").strip()
+        or (client.razao_social or "").strip()
+        or (client.name or "").strip()
+        or "Cliente"
+    )
+
+
+def _truncate_lead_title_part(text: str, max_len: int) -> str:
+    text = (text or "").strip()
+    if len(text) <= max_len:
+        return text
+    return text[: max_len - 1].rstrip() + "…"
+
+
+def _comercial_lead_auto_title(
+    client: PortalClient,
+    catalog_lines: list[tuple[int, int]],
+) -> str:
+    org = _comercial_client_label(client)
+    product_part = "Produto"
+    if catalog_lines:
+        first_id = catalog_lines[0][0]
+        item = db.session.get(CatalogItem, first_id)
+        if item and item.title:
+            product_part = _truncate_lead_title_part(item.title, 50)
+        if len(catalog_lines) > 1:
+            product_part += f" (+{len(catalog_lines) - 1})"
+    title = f"Adesão — {product_part} — {org}"
+    if len(title) > 200:
+        title = title[:199].rstrip() + "…"
+    return title
 
 
 def _comercial_op_captacao_ctx(
