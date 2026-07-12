@@ -1842,6 +1842,7 @@ def init_schema():
         ensure_commission_projects_catalog_item()
         ensure_global_commission_projects()
         ensure_finance_goals_tables()
+        ensure_company_expenses_table()
         ensure_portal_client_profile_columns()
         ensure_partner_profile_columns()
         ensure_portal_client_upload_dir()
@@ -1879,6 +1880,15 @@ def ensure_finance_goals_tables():
                     )
             except Exception:
                 pass
+
+
+def ensure_company_expenses_table():
+    db.create_all()
+    try:
+        db.session.execute(text("SELECT id FROM company_expenses LIMIT 1"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 def ensure_opportunity_rep_commission_columns():

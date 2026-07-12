@@ -1,14 +1,22 @@
 {% extends "base.html" %}
 {% from "crm/_finance_rateio_groups.html" import finance_rateio_groups %}
-{% block title %}CRM — Financeiro (comissões){% endblock %}
+{% block title %}CRM — Financeiro{% endblock %}
 {% block body %}
 <div class="crm-shell">
   <div class="crm-shell__inner">
     {% include "crm/_subnav.html" %}
-    <h1 style="margin-top:0">Financeiro — Comissões</h1>
-    <p class="meta">Rateio por sócios e vendedor, agrupado por lead. <a href="{{ url_for('crm.crm_metas_home') }}">Metas</a> · <a href="{{ url_for('crm.crm_commission_projects') }}">Comissionamento</a></p>
+    <h1 style="margin-top:0">Financeiro</h1>
+    <p class="meta">Comissões, rateio e despesas da empresa. <a href="{{ url_for('crm.crm_metas_home') }}">Metas</a> · <a href="{{ url_for('crm.crm_commission_projects') }}">Comissionamento</a> · <a href="{{ url_for('crm.crm_financeiro_custos') }}">Despesas</a></p>
 
     <div class="crm-kpi-grid" style="margin-top:1.25rem">
+      <div class="crm-kpi crm-kpi--warn">
+        <strong>{{ expense_totals.monthly|float|brl }}</strong>
+        <span>Despesas em {{ '%02d'|format(expense_month) }}/{{ expense_year }}</span>
+      </div>
+      <div class="crm-kpi crm-kpi--warn">
+        <strong>{{ expense_totals.annual|float|brl }}</strong>
+        <span>Despesas no ano {{ expense_year }}</span>
+      </div>
       <div class="crm-kpi">
         <strong>{{ total_commission|float|brl }}</strong>
         <span>Comissão vendedor (leads)</span>
@@ -26,6 +34,46 @@
         <span>Docs. representantes pagos</span>
       </div>
     </div>
+
+    <section class="finance-rateio-section">
+      <header class="finance-rateio-section__head">
+        <h2 class="finance-rateio-section__title">Despesas do mês</h2>
+        <span class="finance-rateio-section__count meta">{{ recent_expenses|length }} registro{% if recent_expenses|length != 1 %}s{% endif %}</span>
+      </header>
+      <p class="meta finance-rateio-section__desc">
+        Custos internos em {{ '%02d'|format(expense_month) }}/{{ expense_year }}.
+        <a href="{{ url_for('crm.crm_financeiro_custos') }}">Ver todas</a> ·
+        <a href="{{ url_for('crm.crm_financeiro_custo_nova') }}">Nova despesa</a>
+      </p>
+      <div class="crm-table-card">
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Título</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Anexos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in recent_expenses %}
+              <tr>
+                <td class="meta">{% if e.expense_date %}{{ e.expense_date.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</td>
+                <td><strong>{{ e.title }}</strong></td>
+                <td class="meta">{{ e.category or '—' }}</td>
+                <td>{% if e.amount_brl is not none %}{{ e.amount_brl|float|brl }}{% else %}—{% endif %}</td>
+                <td class="meta">{% if e.attachment_list %}{{ e.attachment_list|length }} arquivo{% if e.attachment_list|length != 1 %}s{% endif %}{% else %}—{% endif %}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="meta">Nenhuma despesa neste mês. <a href="{{ url_for('crm.crm_financeiro_custo_nova') }}">Cadastrar</a></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
     <section class="finance-rateio-section">
       <header class="finance-rateio-section__head">

@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 import json
 import unicodedata
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from functools import wraps
 
@@ -22,7 +22,7 @@ from flask import (
     session,
     url_for,
 )
-from sqlalchemy import func, or_
+from sqlalchemy import extract, func, or_
 from sqlalchemy.orm import selectinload
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -33,6 +33,7 @@ from models import (
     CommissionProjectTier,
     CommissionSale,
     CommissionSaleSplit,
+    CompanyExpense,
     CompanyFinanceGoal,
     CompanyStakeholder,
     FinanceSimulationLine,
@@ -444,6 +445,65 @@ def crm_login_required(view):
 
 def _parse_money(raw: str | None) -> Decimal | None:
     return _main().parse_money_brl(raw)
+
+
+def _company_expense_date_expr():
+    return func.coalesce(CompanyExpense.expense_date, func.date(CompanyExpense.created_at))
+
+
+def _company_expense_totals(year: int, month: int | None = None) -> dict[str, Decimal]:
+    date_expr = _company_expense_date_expr()
+    annual = (
+        db.session.query(func.coalesce(func.sum(CompanyExpense.amount_brl), 0))
+        .filter(extract("year", date_expr) == year)
+        .scalar()
+    )
+    monthly = Decimal(0)
+    if month is not None:
+        monthly = (
+            db.session.query(func.coalesce(func.sum(CompanyExpense.amount_brl), 0))
+            .filter(
+                extract("year", date_expr) == year,
+                extract("month", date_expr) == month,
+            )
+            .scalar()
+        )
+    return {
+        "annual": Decimal(str(annual or 0)),
+        "monthly": Decimal(str(monthly or 0)),
+    }
+
+
+def _company_expenses_query(year: int, month: int | None = None):
+    date_expr = _company_expense_date_expr()
+    q = CompanyExpense.query.filter(extract("year", date_expr) == year)
+    if month is not None:
+        q = q.filter(extract("month", date_expr) == month)
+    return q.order_by(
+        CompanyExpense.expense_date.desc(),
+        CompanyExpense.created_at.desc(),
+    )
+
+
+def _parse_expense_year_month() -> tuple[int, int | None, int]:
+    today = date.today()
+    year = request.args.get("ano", type=int) or today.year
+    month_raw = request.args.get("mes", type=str)
+    month: int | None
+    if month_raw is None or month_raw == "":
+        month = today.month
+    elif month_raw == "all":
+        month = None
+    else:
+        try:
+            month = int(month_raw)
+        except (TypeError, ValueError):
+            month = today.month
+    if month is not None and not (1 <= month <= 12):
+        month = today.month
+    if year < 2000 or year > 2100:
+        year = today.year
+    return year, month, today.year
 
 
 def _parse_catalog_lines() -> list[tuple[int, int]]:
@@ -1394,6 +1454,11 @@ def finance_home():
         .filter(RepFinancialEntry.status == "pago")
         .scalar()
     )
+    today = date.today()
+    expense_totals = _company_expense_totals(today.year, today.month)
+    recent_expenses = (
+        _company_expenses_query(today.year, today.month).limit(8).all()
+    )
     return render_template(
         "crm/financeiro.html",
         leads_with_commission=leads_with_commission,
@@ -1406,6 +1471,10 @@ def finance_home():
         total_splits_open=total_splits_open,
         total_splits_paid=total_splits_paid,
         total_documents_paid=total_documents_paid,
+        expense_totals=expense_totals,
+        expense_year=today.year,
+        expense_month=today.month,
+        recent_expenses=recent_expenses,
         tier_label_fn=tier_label,
     )
 
@@ -1992,6 +2061,111 @@ def finance_entry_status(entry_id):
     return redirect(url_for("crm.crm_financeiro_home"))
 
 
+@crm_bp.route("/financeiro/custos", endpoint="crm_financeiro_custos")
+@crm_login_required
+def financeiro_custos():
+    year, month, current_year = _parse_expense_year_month()
+    expenses = _company_expenses_query(year, month).all()
+    totals = _company_expense_totals(year, month)
+    return render_template(
+        "crm/financeiro_custos.html",
+        expenses=expenses,
+        filter_year=year,
+        filter_month=month,
+        current_year=current_year,
+        expense_totals=totals,
+    )
+
+
+@crm_bp.route(
+    "/financeiro/custos/nova",
+    methods=["GET", "POST"],
+    endpoint="crm_financeiro_custo_nova",
+)
+@crm_login_required
+def financeiro_custo_nova():
+    m = _main()
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        if not title:
+            flash("Informe um título para a despesa.", "error")
+            return render_template("crm/financeiro_custo_form.html")
+        expense = CompanyExpense(
+            title=title,
+            category=(request.form.get("category") or "").strip() or None,
+            notes=(request.form.get("notes") or "").strip() or None,
+            amount_brl=_parse_money(request.form.get("amount_brl")),
+            expense_date=m.parse_optional_date(request.form.get("expense_date")),
+        )
+        files = m._lead_chat_files_from_request()
+        if files:
+            atts, err = m._save_finance_upload_files(files, m.FINANCE_COMPANY_PREFIX)
+            if err:
+                flash(err, "error")
+                return render_template("crm/financeiro_custo_form.html")
+            if atts:
+                expense.attachments_json = json.dumps(atts, ensure_ascii=False)
+        db.session.add(expense)
+        db.session.commit()
+        flash("Despesa registrada.", "ok")
+        return redirect(url_for("crm.crm_financeiro_custos"))
+    return render_template("crm/financeiro_custo_form.html")
+
+
+@crm_bp.route(
+    "/financeiro/custos/<int:expense_id>/excluir",
+    methods=["POST"],
+    endpoint="crm_financeiro_custo_excluir",
+)
+@crm_login_required
+def financeiro_custo_excluir(expense_id: int):
+    m = _main()
+    expense = CompanyExpense.query.get_or_404(expense_id)
+    m._finance_delete_disk_attachments(expense.attachment_list)
+    db.session.delete(expense)
+    db.session.commit()
+    flash("Despesa excluída.", "ok")
+    return redirect(url_for("crm.crm_financeiro_custos"))
+
+
+@crm_bp.route(
+    "/financeiro/custos/<int:expense_id>/anexo/<int:idx>",
+    endpoint="crm_financeiro_anexo_empresa",
+)
+@crm_login_required
+def financeiro_anexo_empresa(expense_id: int, idx: int):
+    m = _main()
+    expense = CompanyExpense.query.get_or_404(expense_id)
+    lst = expense.attachment_list
+    if idx < 0 or idx >= len(lst):
+        abort(404)
+    rel = (lst[idx].get("relpath") or "").strip()
+    dn = lst[idx].get("name") or os.path.basename(rel)
+    return m._finance_send_attachment_download(rel, dn, company=True)
+
+
+@crm_bp.route(
+    "/financeiro/custos/<int:expense_id>/anexo/<int:idx>/excluir",
+    methods=["POST"],
+    endpoint="crm_financeiro_anexo_empresa_excluir",
+)
+@crm_login_required
+def financeiro_anexo_empresa_excluir(expense_id: int, idx: int):
+    m = _main()
+    expense = CompanyExpense.query.get_or_404(expense_id)
+    lst = list(expense.attachment_list)
+    if idx < 0 or idx >= len(lst):
+        abort(404)
+    removed = lst.pop(idx)
+    rel = (removed.get("relpath") or "").strip()
+    if rel:
+        m._finance_delete_disk_attachments([removed])
+    expense.attachments_json = json.dumps(lst, ensure_ascii=False) if lst else None
+    db.session.commit()
+    flash("Anexo removido.", "ok")
+    return redirect(url_for("crm.crm_financeiro_custos"))
+
+
 @crm_bp.route("/email-marketing", methods=["GET", "POST"], endpoint="crm_email_marketing")
 @crm_login_required
 def crm_email_marketing():
@@ -2017,7 +2191,6 @@ def legacy_crm_brand_kit_redirect():
 
 
 # Compatibilidade: rotas antigas de financeiro redirecionam
-@crm_bp.route("/financeiro/custos")
 @crm_bp.route("/financeiro/representantes")
 @crm_bp.route("/importar-planilha")
 def legacy_finance_redirect():
