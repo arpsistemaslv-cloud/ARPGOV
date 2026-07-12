@@ -45,7 +45,12 @@
           <span class="logo__tagline">Atas de registro de preço</span>
         </span>
       </a>
-      <nav class="nav">
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Abrir menu de navegação">
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+        <span class="nav-toggle__bar" aria-hidden="true"></span>
+      </button>
+      <nav class="nav" id="site-nav">
         <a href="{{ url_for('home') }}">Início</a>
         <a href="{{ url_for('arps') }}">Atas de registro de preço</a>
         <a href="{{ url_for('como_aderir') }}">Como aderir</a>
@@ -186,6 +191,28 @@
   </footer>
   {% endif %}
   {% block extra_js %}{% endblock %}
+  {% if not is_backoffice and not request.path.startswith('/comercial') and not request.path.startswith('/parceiro') %}
+  <script>
+  (function () {
+    var header = document.querySelector('.site-header');
+    var btn = document.querySelector('.nav-toggle');
+    var nav = document.getElementById('site-nav');
+    if (!header || !btn || !nav) return;
+    btn.addEventListener('click', function () {
+      var open = header.classList.toggle('site-header--nav-open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.setAttribute('aria-label', open ? 'Fechar menu de navegação' : 'Abrir menu de navegação');
+    });
+    nav.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        header.classList.remove('site-header--nav-open');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-label', 'Abrir menu de navegação');
+      });
+    });
+  })();
+  </script>
+  {% endif %}
   <script src="{{ url_for('static', filename='js/br-address-lookup.js') }}" defer></script>
 </body>
 </html>
