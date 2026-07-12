@@ -2158,6 +2158,60 @@
   margin-bottom: 1rem;
 }
 
+/* Prospecção — filtros laterais (mesmo padrão do catálogo /arps) */
+.comercial-orgaos-layout.loja-layout {
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.comercial-orgaos-filters input[type="search"],
+.comercial-orgaos-filters input[type="text"] {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.55rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.84rem;
+  font-family: inherit;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text, #1a1a1a);
+  box-sizing: border-box;
+}
+
+.comercial-orgaos-filters input[type="search"]:focus {
+  outline: 2px solid rgba(19, 81, 180, 0.35);
+  outline-offset: 1px;
+  border-color: var(--gov-blue-70, #1351b4);
+}
+
+.comercial-orgaos-search__btn {
+  margin-top: 0.15rem;
+  font-size: 0.86rem;
+}
+
+.comercial-orgaos-filters__scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.comercial-orgaos-filters__scroll--tipo {
+  max-height: 280px;
+}
+
+.comercial-orgaos-main .comercial-stats-line {
+  margin: 0 0 0.65rem;
+}
+
+.comercial-orgaos-main .loja-results-bar {
+  margin-bottom: 0.85rem;
+}
+
+.portal-backoffice--comercial .loja-sidebar .filters--stack a {
+  font-size: 0.82rem;
+}
+
 .staff-login--comercial .staff-login__brand {
   background: linear-gradient(160deg, #071d41 0%, #0c3268 45%, #1351b4 100%);
 }

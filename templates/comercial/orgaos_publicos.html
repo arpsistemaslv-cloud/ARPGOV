@@ -6,131 +6,162 @@
 <header class="comercial-page-header">
   <div class="comercial-page-header__main">
     <p class="comercial-page-header__eyebrow">Prospecção</p>
-    <h1 class="comercial-page-header__title">Diretório de órgãos públicos</h1>
-    <p class="comercial-page-header__lead">Diretório nacional para encontrar órgãos com potencial de adesão. Consulte contatos e, ao fechar interesse, cadastre o lead manualmente em <a href="{{ url_for('comercial_op_new') }}">Registrar captação</a>.</p>
+    <h1 class="comercial-page-header__title">Órgãos públicos</h1>
   </div>
   <div class="comercial-page-header__actions">
-    <a class="btn btn--primary" href="{{ url_for('comercial_op_new') }}">Nova captação</a>
+    <a class="btn btn--primary" href="{{ url_for('comercial_op_new') }}">Registrar captação</a>
   </div>
 </header>
-
-<div class="comercial-info-callout">
-  <p>Base: <strong>prefeituras</strong> (IBGE), <strong>administração estadual</strong>, <strong>Sistema S</strong> e <strong>órgãos PNCP</strong>. Habitantes usam estimativa IBGE{% if ano_pop_ibge %} (ref. {{ ano_pop_ibge }}){% endif %}. O <strong>potencial de orçamento</strong> é estimativa B2G — não substitui LOA/LDO.</p>
-</div>
 
 {% if total == 0 %}
 <p class="flash flash--error">Ainda não há registros no diretório. No <strong>Painel do site</strong>, abra <strong>Órgãos públicos BR</strong> e execute as importações.</p>
 {% endif %}
 
-{% if regiao_filter and pop_regiao %}
-<p class="comercial-stats-line"><strong>População da região {{ regiao_filter }}</strong> (soma das UFs, IBGE): ~{{ "{:,}".format(pop_regiao|int).replace(",", ".") }} habitantes.</p>
-{% endif %}
-{% if uf_filter and pop_uf %}
-<p class="comercial-stats-line"><strong>População de {{ uf_filter }}</strong> (IBGE): ~{{ "{:,}".format(pop_uf|int).replace(",", ".") }} habitantes.</p>
-{% endif %}
+<div class="loja-layout comercial-orgaos-layout">
+  <aside class="loja-sidebar" aria-label="Filtros do diretório">
+    <details class="loja-filters-panel" id="comercial-orgaos-filters" open>
+      <summary class="loja-filters-panel__summary">
+        <span>Filtros</span>
+        {% if q or uf_filter or regiao_filter or tipo_filter %}
+        <span class="loja-filters-panel__badge">Ativos</span>
+        {% endif %}
+      </summary>
+      <div class="loja-toolbar comercial-orgaos-filters">
+        <form method="get" class="comercial-orgaos-search">
+          <div class="filters-block">
+            <span class="filters-block__label">Buscar</span>
+            <input
+              type="search"
+              id="q"
+              name="q"
+              value="{{ q }}"
+              placeholder="Nome, município, CNPJ, e-mail…"
+              autocomplete="off"
+              spellcheck="false"
+            >
+            {% if uf_filter %}<input type="hidden" name="uf" value="{{ uf_filter }}">{% endif %}
+            {% if regiao_filter %}<input type="hidden" name="regiao" value="{{ regiao_filter }}">{% endif %}
+            {% if tipo_filter %}<input type="hidden" name="tipo" value="{{ tipo_filter }}">{% endif %}
+            <button type="submit" class="btn btn--primary btn--block comercial-orgaos-search__btn">Buscar</button>
+          </div>
+        </form>
 
-<div class="comercial-filter-card">
-  <form method="get" class="comercial-filter-form">
-    <div>
-      <label for="q">Buscar</label>
-      <input id="q" name="q" value="{{ q }}" placeholder="Nome, município, CNPJ, e-mail…">
-    </div>
-    <div>
-      <label for="uf">UF</label>
-      <select id="uf" name="uf">
-        <option value="">Todas</option>
-        {% for sigla, nome in br_ufs %}
-        <option value="{{ sigla }}" {% if uf_filter == sigla %}selected{% endif %}>{{ sigla }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="regiao">Região</label>
-      <select id="regiao" name="regiao">
-        <option value="">Todas</option>
-        {% for r in regioes %}
-        <option value="{{ r }}" {% if regiao_filter == r %}selected{% endif %}>{{ r }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="tipo">Tipo</label>
-      <select id="tipo" name="tipo">
-        <option value="">Todos</option>
-        {% for value, label in tipos_org %}
-        <option value="{{ value }}" {% if tipo_filter == value %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="comercial-filter-form__submit">
-      <button type="submit" class="btn btn--primary">Aplicar filtros</button>
-    </div>
-  </form>
-</div>
+        <div class="filters-block">
+          <span class="filters-block__label">UF</span>
+          <div class="filters filters--stack comercial-orgaos-filters__scroll">
+            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, regiao=regiao_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if not uf_filter else '' }}">Todas</a>
+            {% for sigla, nome in br_ufs %}
+            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=sigla, regiao=regiao_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if uf_filter == sigla else '' }}" title="{{ nome }}">{{ sigla }}</a>
+            {% endfor %}
+          </div>
+        </div>
 
-<p class="comercial-results-meta">{{ total }} registro(s){% if total > per_page %} — página {{ page }} de {{ total_pages }}{% endif %}</p>
+        <div class="filters-block">
+          <span class="filters-block__label">Região</span>
+          <div class="filters filters--stack">
+            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if not regiao_filter else '' }}">Todas</a>
+            {% for r in regioes %}
+            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=r, tipo=tipo_filter or none) }}" class="{{ 'active' if regiao_filter == r else '' }}">{{ r }}</a>
+            {% endfor %}
+          </div>
+        </div>
 
-<div class="crm-table-card">
-  <div class="table-wrap">
-    <table class="data comercial-orgaos-table">
-      <thead>
-        <tr>
-          <th>Órgão</th>
-          <th>Tipo</th>
-          <th>UF / região</th>
-          <th>População</th>
-          <th>Potencial orç.</th>
-          <th>Contato</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-        {% set pop_row = row.populacao_ibge if row.populacao_ibge is not none else (row.populacao_local if row.populacao_local else (pop_uf_map.get(row.uf) if row.tipo == 'orgao_estadual' and row.uf else none)) %}
-        {% set sphere = 'Municipal' if row.tipo == 'prefeitura' else ('Estadual' if row.tipo in ('orgao_estadual', 'autarquia_estadual') else ('Federal — Executivo' if row.tipo == 'federal_executivo' else ('Federal — Autarquia' if row.tipo == 'autarquia_federal' else ('Federal' if row.tipo in ('federal',) else ('Poder Judiciário / MP' if row.tipo == 'orgao_juridico' else ('Justiça do Trabalho / MPT' if row.tipo == 'justica_trabalho' else ('Poder Legislativo' if row.tipo == 'orgao_legislativo' else ('Segurança pública' if row.tipo == 'seguranca_publica' else ('Educação' if row.tipo == 'educacao_instituicoes' else ('Sistema S' if row.tipo == 'sistema_s' else ('Serviços SENAR/SEBRAE' if row.tipo == 'servico_aprendizagem' else 'Órgão público'))))))))))) %}
-        {% set org_label = row.nome ~ (' — ' ~ row.nome_unidade if row.nome_unidade else '') %}
-        <tr>
-          <td>
-            <strong>{{ row.nome }}</strong>
-            {% if row.nome_unidade %}<br><span class="meta">{{ row.nome_unidade }}</span>{% endif %}
-            {% if row.municipio_nome %}<br><span class="meta">{{ row.municipio_nome }}</span>{% endif %}
-            {% if row.cnpj %}<br><span class="meta">CNPJ {{ format_cnpj(row.cnpj) }}</span>{% endif %}
-          </td>
-          <td class="meta">{{ tipo_labels.get(row.tipo, row.tipo) }}</td>
-          <td class="meta">
-            {% if row.uf %}{{ row.uf }}{% else %}—{% endif %}
-            {% if row.regiao %}<br>{{ row.regiao }}{% endif %}
-          </td>
-          <td class="meta">{% if pop_row is not none %}{{ "{:,}".format(pop_row|int).replace(",", ".") }}{% else %}—{% endif %}</td>
-          <td class="meta">{{ format_currency_brl(row.potencial_orcamento_anual_brl) }}{% if row.orcamento_metodo %}<br><span class="comercial-orgaos-table__method">{{ row.orcamento_metodo }}</span>{% endif %}</td>
-          <td class="meta">
-            {% if row.email_contato %}{{ row.email_contato }}<br>{% endif %}
-            {% if row.telefone_contato %}{{ row.telefone_contato }}<br>{% endif %}
-            {% if row.nome_contato %}<span>{{ row.nome_contato }}</span><br>{% endif %}
-            {% if row.contato_obs %}<span class="comercial-orgaos-table__obs">{{ row.contato_obs[:100] }}{% if row.contato_obs|length > 100 %}…{% endif %}</span>{% elif not row.email_contato and not row.telefone_contato and not row.nome_contato %}—{% endif %}
-          </td>
-          <td class="comercial-orgaos-table__actions">
-            <a href="{{ url_for('comercial_orgao_publico_contato', org_id=row.id, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter, page=page) }}">Contato</a>
-            <a class="btn btn--primary btn--compact" href="{{ url_for('comercial_op_new', organization=org_label, cnpj=format_cnpj(row.cnpj) if row.cnpj else '', sphere=sphere, contact_name=row.nome_contato or '', email=row.email_contato or '', phone=row.telefone_contato or '') }}">Captar</a>
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="7" class="comercial-empty">Nada para exibir com estes filtros.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        <div class="filters-block">
+          <span class="filters-block__label">Tipo</span>
+          <div class="filters filters--stack comercial-orgaos-filters__scroll comercial-orgaos-filters__scroll--tipo">
+            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=regiao_filter or none) }}" class="{{ 'active' if not tipo_filter else '' }}">Todos</a>
+            {% for value, label in tipos_org %}
+            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=regiao_filter or none, tipo=value) }}" class="{{ 'active' if tipo_filter == value else '' }}">{{ label }}</a>
+            {% endfor %}
+          </div>
+        </div>
+
+        {% if q or uf_filter or regiao_filter or tipo_filter %}
+        <p class="meta loja-sidebar__clear"><a href="{{ url_for('comercial_orgaos_publicos') }}">Limpar todos os filtros</a></p>
+        {% endif %}
+      </div>
+    </details>
+  </aside>
+
+  <div class="loja-main comercial-orgaos-main">
+    {% if regiao_filter and pop_regiao %}
+    <p class="comercial-stats-line"><strong>População da região {{ regiao_filter }}</strong> (IBGE): ~{{ "{:,}".format(pop_regiao|int).replace(",", ".") }} habitantes.</p>
+    {% endif %}
+    {% if uf_filter and pop_uf %}
+    <p class="comercial-stats-line"><strong>População de {{ uf_filter }}</strong> (IBGE): ~{{ "{:,}".format(pop_uf|int).replace(",", ".") }} habitantes.</p>
+    {% endif %}
+
+    <p class="loja-results-bar" aria-live="polite">
+      <strong>{{ total }}</strong> {{ 'registro' if total == 1 else 'registros' }} encontrado{{ '' if total == 1 else 's' }}
+      {% if total > per_page %}<span class="loja-results-bar__filters">· página {{ page }} de {{ total_pages }}</span>{% endif %}
+      {% if q or uf_filter or regiao_filter or tipo_filter %}
+      <span class="loja-results-bar__filters">· filtros aplicados</span>
+      {% endif %}
+    </p>
+
+    <div class="crm-table-card">
+      <div class="table-wrap">
+        <table class="data comercial-orgaos-table">
+          <thead>
+            <tr>
+              <th>Órgão</th>
+              <th>Tipo</th>
+              <th>UF / região</th>
+              <th>População</th>
+              <th>Potencial orç.</th>
+              <th>Contato</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            {% set pop_row = row.populacao_ibge if row.populacao_ibge is not none else (row.populacao_local if row.populacao_local else (pop_uf_map.get(row.uf) if row.tipo == 'orgao_estadual' and row.uf else none)) %}
+            {% set sphere = 'Municipal' if row.tipo == 'prefeitura' else ('Estadual' if row.tipo in ('orgao_estadual', 'autarquia_estadual') else ('Federal — Executivo' if row.tipo == 'federal_executivo' else ('Federal — Autarquia' if row.tipo == 'autarquia_federal' else ('Federal' if row.tipo in ('federal',) else ('Poder Judiciário / MP' if row.tipo == 'orgao_juridico' else ('Justiça do Trabalho / MPT' if row.tipo == 'justica_trabalho' else ('Poder Legislativo' if row.tipo == 'orgao_legislativo' else ('Segurança pública' if row.tipo == 'seguranca_publica' else ('Educação' if row.tipo == 'educacao_instituicoes' else ('Sistema S' if row.tipo == 'sistema_s' else ('Serviços SENAR/SEBRAE' if row.tipo == 'servico_aprendizagem' else 'Órgão público'))))))))))) %}
+            {% set org_label = row.nome ~ (' — ' ~ row.nome_unidade if row.nome_unidade else '') %}
+            <tr>
+              <td>
+                <strong>{{ row.nome }}</strong>
+                {% if row.nome_unidade %}<br><span class="meta">{{ row.nome_unidade }}</span>{% endif %}
+                {% if row.municipio_nome %}<br><span class="meta">{{ row.municipio_nome }}</span>{% endif %}
+                {% if row.cnpj %}<br><span class="meta">CNPJ {{ format_cnpj(row.cnpj) }}</span>{% endif %}
+              </td>
+              <td class="meta">{{ tipo_labels.get(row.tipo, row.tipo) }}</td>
+              <td class="meta">
+                {% if row.uf %}{{ row.uf }}{% else %}—{% endif %}
+                {% if row.regiao %}<br>{{ row.regiao }}{% endif %}
+              </td>
+              <td class="meta">{% if pop_row is not none %}{{ "{:,}".format(pop_row|int).replace(",", ".") }}{% else %}—{% endif %}</td>
+              <td class="meta">{{ format_currency_brl(row.potencial_orcamento_anual_brl) }}{% if row.orcamento_metodo %}<br><span class="comercial-orgaos-table__method">{{ row.orcamento_metodo }}</span>{% endif %}</td>
+              <td class="meta">
+                {% if row.email_contato %}{{ row.email_contato }}<br>{% endif %}
+                {% if row.telefone_contato %}{{ row.telefone_contato }}<br>{% endif %}
+                {% if row.nome_contato %}<span>{{ row.nome_contato }}</span><br>{% endif %}
+                {% if row.contato_obs %}<span class="comercial-orgaos-table__obs">{{ row.contato_obs[:100] }}{% if row.contato_obs|length > 100 %}…{% endif %}</span>{% elif not row.email_contato and not row.telefone_contato and not row.nome_contato %}—{% endif %}
+              </td>
+              <td class="comercial-orgaos-table__actions">
+                <a href="{{ url_for('comercial_orgao_publico_contato', org_id=row.id, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter, page=page) }}">Contato</a>
+                <a class="btn btn--primary btn--compact" href="{{ url_for('comercial_op_new', organization=org_label, cnpj=format_cnpj(row.cnpj) if row.cnpj else '', sphere=sphere, contact_name=row.nome_contato or '', email=row.email_contato or '', phone=row.telefone_contato or '') }}">Captar</a>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="comercial-empty">Nada para exibir com estes filtros.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav class="comercial-pagination" aria-label="Paginação">
+      {% if page > 1 %}
+      <a href="{{ url_for('comercial_orgaos_publicos', page=page-1, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter) }}">← Anterior</a>
+      {% endif %}
+      <span class="comercial-pagination__info">Página {{ page }} de {{ total_pages }}</span>
+      {% if page < total_pages %}
+      <a href="{{ url_for('comercial_orgaos_publicos', page=page+1, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter) }}">Próxima →</a>
+      {% endif %}
+    </nav>
+    {% endif %}
   </div>
 </div>
-
-{% if total_pages > 1 %}
-<nav class="comercial-pagination" aria-label="Paginação">
-  {% if page > 1 %}
-  <a href="{{ url_for('comercial_orgaos_publicos', page=page-1, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter) }}">← Anterior</a>
-  {% endif %}
-  <span class="comercial-pagination__info">Página {{ page }} de {{ total_pages }}</span>
-  {% if page < total_pages %}
-  <a href="{{ url_for('comercial_orgaos_publicos', page=page+1, q=q, uf=uf_filter, regiao=regiao_filter, tipo=tipo_filter) }}">Próxima →</a>
-  {% endif %}
-</nav>
-{% endif %}
 {% endblock %}
