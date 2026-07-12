@@ -41,8 +41,10 @@
       <table class="data comercial-leads-table">
         <thead>
           <tr>
+            <th>Cód.</th>
             <th>Título</th>
             <th>Organização / CNPJ</th>
+            <th>Qtd.</th>
             <th>Contato</th>
             <th>Valor (R$)</th>
             <th>Estágio</th>
@@ -54,8 +56,10 @@
         <tbody>
           {% for o in opportunities %}
           <tr>
+            <td class="comercial-leads-table__code"><span class="comercial-lead-code">{{ '%02d'|format(o.id) }}</span></td>
             <td><strong>{{ o.title }}</strong></td>
             <td>{{ o.organization or '—' }}{% if o.cnpj %}<br><span class="meta">CNPJ: {{ o.cnpj }}</span>{% endif %}</td>
+            <td class="comercial-leads-table__qty"><strong>{{ lead_quantity_summary(o.catalog_lines) }}</strong></td>
             <td class="meta">{{ o.contact_name or '—' }}<br>{{ o.email or '' }}{% if o.phone %}<br>{{ o.phone }}{% endif %}</td>
             <td class="comercial-leads-table__value">{% if o.value_brl is not none %}{{ o.value_brl|float|brl }}{% else %}—{% endif %}</td>
             <td>
@@ -78,7 +82,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="{{ 8 if rep.is_admin else 7 }}" class="comercial-empty">
+            <td colspan="{{ 10 if rep.is_admin else 9 }}" class="comercial-empty">
               {% if rep.is_admin %}Nenhum lead cadastrado ainda.{% else %}Nenhum lead atribuído a você. Peça ao gestor para vincular oportunidades ao seu usuário no CRM (campo “Representante comercial”).{% endif %}
             </td>
           </tr>

@@ -13,18 +13,20 @@
     );
   }
 
+  function productPart(products) {
+    if (!products || !products.length) return "Produto";
+    var first = products[0];
+    var qty = parseInt(first.qty, 10);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    var name = truncate(first.title || "Produto #" + first.id, 42);
+    var part = qty + "× " + name;
+    if (products.length > 1) part += " (+" + (products.length - 1) + ")";
+    return part;
+  }
+
   function buildTitle(client, products) {
     var org = clientLabel(client);
-    var productPart = "Produto";
-    if (products && products.length) {
-      var first = products[0];
-      productPart = truncate(first.title || "Produto #" + first.id, 50);
-      if (products.length > 1) {
-        productPart += " (+" + (products.length - 1) + ")";
-      }
-    }
-    var title = "Adesão — " + productPart;
-    if (org) title += " — " + org;
+    var title = "?? — " + org + " — " + productPart(products);
     if (title.length > 200) title = title.slice(0, 199).trim() + "…";
     return title;
   }

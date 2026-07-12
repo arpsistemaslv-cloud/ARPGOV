@@ -166,7 +166,11 @@
     function emitChange() {
       var items = [];
       selected.forEach(function (item) {
-        items.push({ id: item.id, title: item.title || "" });
+        items.push({
+          id: item.id,
+          title: item.title || "",
+          qty: getQty(item.id),
+        });
       });
       root.dispatchEvent(
         new CustomEvent("catalog-picker:change", {

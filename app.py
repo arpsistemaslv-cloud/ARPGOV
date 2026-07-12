@@ -6339,6 +6339,7 @@ def comercial_dashboard():
         filter_stage=stage,
         rep=rep,
         lead_total=lead_total,
+        lead_quantity_summary=_comercial_lead_quantity_summary,
     )
 
 
@@ -6375,10 +6376,9 @@ def comercial_op_new():
             )
             ctx = _comercial_op_captacao_ctx(rep, catalog_choices, selected_client)
             return render_template("comercial/op_captacao.html", **ctx)
-        title = _comercial_lead_auto_title(selected_client, catalog_lines)
         opp = Opportunity(
             sales_rep_id=rid,
-            title=title,
+            title="Novo lead",
             stage=normalize_stage_key(request.form.get("stage"), default="novo"),
             notes=(request.form.get("notes") or "").strip() or None,
             source=f"Captação comercial — {rep.name}",
@@ -6386,6 +6386,7 @@ def comercial_op_new():
         _opportunity_from_portal_client(opp, selected_client)
         db.session.add(opp)
         db.session.flush()
+        opp.title = _comercial_lead_auto_title(selected_client, catalog_lines, opp.id)
         _sync_opportunity_catalog_lines(opp, catalog_lines)
         db.session.commit()
         flash(
@@ -6730,23 +6731,43 @@ def _truncate_lead_title_part(text: str, max_len: int) -> str:
     return text[: max_len - 1].rstrip() + "…"
 
 
+def _comercial_lead_product_part(catalog_lines: list[tuple[int, int]]) -> str:
+    if not catalog_lines:
+        return "Produto"
+    first_id, first_qty = catalog_lines[0]
+    item = db.session.get(CatalogItem, first_id)
+    name = (
+        _truncate_lead_title_part(item.title, 42)
+        if item and item.title
+        else "Produto"
+    )
+    product_part = f"{max(1, int(first_qty))}× {name}"
+    if len(catalog_lines) > 1:
+        product_part += f" (+{len(catalog_lines) - 1})"
+    return product_part
+
+
 def _comercial_lead_auto_title(
     client: PortalClient,
     catalog_lines: list[tuple[int, int]],
+    seq: int,
 ) -> str:
+    code = f"{seq:02d}"
     org = _comercial_client_label(client)
-    product_part = "Produto"
-    if catalog_lines:
-        first_id = catalog_lines[0][0]
-        item = db.session.get(CatalogItem, first_id)
-        if item and item.title:
-            product_part = _truncate_lead_title_part(item.title, 50)
-        if len(catalog_lines) > 1:
-            product_part += f" (+{len(catalog_lines) - 1})"
-    title = f"Adesão — {product_part} — {org}"
+    product_part = _comercial_lead_product_part(catalog_lines)
+    title = f"{code} — {org} — {product_part}"
     if len(title) > 200:
         title = title[:199].rstrip() + "…"
     return title
+
+
+def _comercial_lead_quantity_summary(catalog_lines) -> str:
+    lines = list(catalog_lines or [])
+    if not lines:
+        return "—"
+    if len(lines) == 1:
+        return str(int(lines[0].quantity))
+    return ", ".join(str(int(ln.quantity)) for ln in lines)
 
 
 def _comercial_op_captacao_ctx(

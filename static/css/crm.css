@@ -2171,6 +2171,28 @@
   background: #fff;
 }
 
+.comercial-leads-table__code {
+  width: 3rem;
+  white-space: nowrap;
+}
+
+.comercial-lead-code {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(19, 81, 180, 0.08);
+  color: var(--gov-blue, #1351b4);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.comercial-leads-table__qty {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: center;
+}
+
 .comercial-leads-table__value {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
