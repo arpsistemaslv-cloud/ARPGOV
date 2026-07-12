@@ -1889,6 +1889,23 @@ def ensure_company_expenses_table():
         db.session.commit()
     except Exception:
         db.session.rollback()
+    for col, ddl in (
+        ("installment_group_id", "VARCHAR(32)"),
+        ("installment_index", "INTEGER"),
+        ("installment_count", "INTEGER"),
+    ):
+        try:
+            db.session.execute(text(f"SELECT {col} FROM company_expenses LIMIT 1"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            try:
+                with db.engine.begin() as conn:
+                    conn.exec_driver_sql(
+                        f"ALTER TABLE company_expenses ADD COLUMN {col} {ddl}"
+                    )
+            except Exception:
+                pass
 
 
 def ensure_opportunity_rep_commission_columns():

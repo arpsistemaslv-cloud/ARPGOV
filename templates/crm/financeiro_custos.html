@@ -68,7 +68,7 @@
             {% for e in expenses %}
             <tr>
               <td class="meta">{% if e.expense_date %}{{ e.expense_date.strftime('%d/%m/%Y') }}{% else %}—{% endif %}<br><span class="meta">cad. {{ e.created_at.strftime('%d/%m/%Y') if e.created_at else '' }}</span></td>
-              <td><strong>{{ e.title }}</strong>{% if e.notes %}<br><span class="meta">{{ e.notes[:120] }}{% if e.notes|length > 120 %}…{% endif %}</span>{% endif %}</td>
+              <td><strong>{{ e.title }}</strong>{% if e.installment_label %} <span class="meta">· parcela {{ e.installment_label }}</span>{% endif %}{% if e.notes %}<br><span class="meta">{{ e.notes[:120] }}{% if e.notes|length > 120 %}…{% endif %}</span>{% endif %}</td>
               <td class="meta">{{ e.category or '—' }}</td>
               <td>{% if e.amount_brl is not none %}<strong>{{ e.amount_brl|float|brl }}</strong>{% else %}—{% endif %}</td>
               <td class="meta">
@@ -84,9 +84,15 @@
                 {% else %}—{% endif %}
               </td>
               <td>
-                <form method="post" action="{{ url_for('crm.crm_financeiro_custo_excluir', expense_id=e.id) }}" style="margin:0" onsubmit="return confirm('Excluir este registro e apagar anexos?');">
+                <form method="post" action="{{ url_for('crm.crm_financeiro_custo_excluir', expense_id=e.id) }}" style="margin:0" onsubmit="return confirm('Excluir esta parcela?');">
                   <button type="submit" class="btn btn--ghost" style="font-size:0.8rem;padding:0.25rem 0.5rem">Excluir</button>
                 </form>
+                {% if e.installment_group_id and e.installment_count and e.installment_count > 1 %}
+                <form method="post" action="{{ url_for('crm.crm_financeiro_custo_excluir', expense_id=e.id) }}" style="margin:0.35rem 0 0" onsubmit="return confirm('Excluir todas as {{ e.installment_count }} parcelas deste lançamento?');">
+                  <input type="hidden" name="delete_all" value="1">
+                  <button type="submit" class="btn btn--ghost" style="font-size:0.8rem;padding:0.25rem 0.5rem">Excluir todas</button>
+                </form>
+                {% endif %}
               </td>
             </tr>
             {% else %}

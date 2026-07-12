@@ -16,12 +16,19 @@
         <input id="category" name="category" placeholder="Infra, marketing, pessoal…">
       </div>
       <div>
-        <label for="amount_brl">Valor (R$)</label>
+        <label for="amount_brl">Valor total (R$)</label>
         <input id="amount_brl" name="amount_brl" placeholder="0,00">
+        <p class="meta" style="margin:0.35rem 0 0">Com parcelas, o sistema divide este valor automaticamente.</p>
       </div>
       <div>
-        <label for="expense_date">Data da despesa</label>
+        <label for="installment_count">Quantidade de parcelas</label>
+        <input id="installment_count" name="installment_count" type="number" min="1" max="120" value="1" inputmode="numeric">
+        <p class="meta" style="margin:0.35rem 0 0">Ex.: 12 parcelas gera um lançamento por mês.</p>
+      </div>
+      <div>
+        <label for="expense_date">Data da 1ª parcela</label>
         <input id="expense_date" name="expense_date" type="date">
+        <p class="meta" style="margin:0.35rem 0 0">As demais parcelas caem no mesmo dia dos meses seguintes.</p>
       </div>
       <div>
         <label for="notes">Observações</label>
@@ -30,7 +37,7 @@
       <div>
         <label for="attachments">Anexos (NF, comprovantes)</label>
         <input id="attachments" type="file" name="attachments" multiple accept=".pdf,.xml,.zip,image/*,.doc,.docx,application/pdf">
-        <p class="meta" style="margin:0.35rem 0 0">Até 15 arquivos, 15 MB cada — PDF, XML, ZIP, imagens, Word.</p>
+        <p class="meta" style="margin:0.35rem 0 0">Até 15 arquivos, 15 MB cada. Em parcelas, os anexos ficam na 1ª parcela.</p>
       </div>
       <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
         <button type="submit" class="btn btn--primary">Salvar</button>

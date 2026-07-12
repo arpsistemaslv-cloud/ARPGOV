@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import os
 import json
+import uuid
+import calendar
 import unicodedata
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 from functools import wraps
 
 from flask import (
@@ -504,6 +506,51 @@ def _parse_expense_year_month() -> tuple[int, int | None, int]:
     if year < 2000 or year > 2100:
         year = today.year
     return year, month, today.year
+
+
+def _parse_installment_count(raw: str | None) -> int:
+    try:
+        count = int((raw or "1").strip() or "1")
+    except (TypeError, ValueError):
+        count = 1
+    return max(1, min(count, 120))
+
+
+def _split_installment_amounts(total: Decimal, count: int) -> list[Decimal]:
+    total = total.quantize(Decimal("0.01"))
+    if count <= 1:
+        return [total]
+    base = (total / Decimal(count)).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+    amounts = [base] * count
+    pennies = int((total - sum(amounts)) / Decimal("0.01"))
+    for i in range(pennies):
+        amounts[i] += Decimal("0.01")
+    return amounts
+
+
+def _add_months(base: date, months: int) -> date:
+    month_index = base.month - 1 + months
+    year = base.year + month_index // 12
+    month = month_index % 12 + 1
+    last_day = calendar.monthrange(year, month)[1]
+    return date(year, month, min(base.day, last_day))
+
+
+def _installment_notes(
+    user_notes: str | None,
+    *,
+    total_amount: Decimal,
+    installment_count: int,
+    installment_index: int,
+) -> str | None:
+    total_txt = f"R$ {total_amount:.2f}".replace(".", ",")
+    parcel_line = (
+        f"Parcela {installment_index} de {installment_count} "
+        f"(valor total {total_txt})."
+    )
+    if user_notes:
+        return f"{user_notes.strip()}\n\n{parcel_line}"
+    return parcel_line
 
 
 def _parse_catalog_lines() -> list[tuple[int, int]]:
@@ -2090,21 +2137,58 @@ def financeiro_custo_nova():
         if not title:
             flash("Informe um título para a despesa.", "error")
             return render_template("crm/financeiro_custo_form.html")
-        expense = CompanyExpense(
-            title=title,
-            category=(request.form.get("category") or "").strip() or None,
-            notes=(request.form.get("notes") or "").strip() or None,
-            amount_brl=_parse_money(request.form.get("amount_brl")),
-            expense_date=m.parse_optional_date(request.form.get("expense_date")),
-        )
+        installment_count = _parse_installment_count(request.form.get("installment_count"))
+        amount_brl = _parse_money(request.form.get("amount_brl"))
+        expense_date = m.parse_optional_date(request.form.get("expense_date")) or date.today()
+        category = (request.form.get("category") or "").strip() or None
+        notes = (request.form.get("notes") or "").strip() or None
+
         files = m._lead_chat_files_from_request()
+        atts_json = None
         if files:
             atts, err = m._save_finance_upload_files(files, m.FINANCE_COMPANY_PREFIX)
             if err:
                 flash(err, "error")
                 return render_template("crm/financeiro_custo_form.html")
             if atts:
-                expense.attachments_json = json.dumps(atts, ensure_ascii=False)
+                atts_json = json.dumps(atts, ensure_ascii=False)
+
+        if installment_count > 1:
+            if amount_brl is None or amount_brl <= 0:
+                flash("Informe o valor total para dividir em parcelas.", "error")
+                return render_template("crm/financeiro_custo_form.html")
+            amounts = _split_installment_amounts(amount_brl, installment_count)
+            group_id = uuid.uuid4().hex
+            for idx in range(installment_count):
+                expense = CompanyExpense(
+                    title=f"{title} ({idx + 1}/{installment_count})",
+                    category=category,
+                    notes=_installment_notes(
+                        notes,
+                        total_amount=amount_brl,
+                        installment_count=installment_count,
+                        installment_index=idx + 1,
+                    ),
+                    amount_brl=amounts[idx],
+                    expense_date=_add_months(expense_date, idx),
+                    installment_group_id=group_id,
+                    installment_index=idx + 1,
+                    installment_count=installment_count,
+                    attachments_json=atts_json if idx == 0 else None,
+                )
+                db.session.add(expense)
+            db.session.commit()
+            flash(f"{installment_count} parcelas registradas.", "ok")
+            return redirect(url_for("crm.crm_financeiro_custos"))
+
+        expense = CompanyExpense(
+            title=title,
+            category=category,
+            notes=notes,
+            amount_brl=amount_brl,
+            expense_date=expense_date,
+            attachments_json=atts_json,
+        )
         db.session.add(expense)
         db.session.commit()
         flash("Despesa registrada.", "ok")
@@ -2121,6 +2205,17 @@ def financeiro_custo_nova():
 def financeiro_custo_excluir(expense_id: int):
     m = _main()
     expense = CompanyExpense.query.get_or_404(expense_id)
+    delete_all = request.form.get("delete_all") == "1"
+    if delete_all and expense.installment_group_id:
+        siblings = CompanyExpense.query.filter_by(
+            installment_group_id=expense.installment_group_id
+        ).all()
+        for row in siblings:
+            m._finance_delete_disk_attachments(row.attachment_list)
+            db.session.delete(row)
+        db.session.commit()
+        flash(f"{len(siblings)} parcelas excluídas.", "ok")
+        return redirect(url_for("crm.crm_financeiro_custos"))
     m._finance_delete_disk_attachments(expense.attachment_list)
     db.session.delete(expense)
     db.session.commit()

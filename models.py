@@ -620,11 +620,20 @@ class CompanyExpense(db.Model):
     category = db.Column(db.String(80), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     attachments_json = db.Column(db.Text, nullable=True)
+    installment_group_id = db.Column(db.String(32), nullable=True, index=True)
+    installment_index = db.Column(db.Integer, nullable=True)
+    installment_count = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     @property
     def attachment_list(self) -> list[dict]:
         return _finance_attachment_list(self.attachments_json)
+
+    @property
+    def installment_label(self) -> str | None:
+        if self.installment_index and self.installment_count and self.installment_count > 1:
+            return f"{self.installment_index}/{self.installment_count}"
+        return None
 
 
 class RepFinancialEntry(db.Model):
