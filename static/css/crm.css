@@ -1847,6 +1847,23 @@
   font-size: 0.82rem;
 }
 
+.lead-commission-value {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--gov-blue-90, #071d41);
+  letter-spacing: -0.02em;
+}
+
+.lead-form-card--internal-chat {
+  border-color: rgba(7, 29, 65, 0.12);
+  background: linear-gradient(180deg, #fafbfd 0%, #fff 100%);
+}
+
+.lead-form-aside-meta--note {
+  margin-top: 0.35rem;
+}
+
 .portal-backoffice .lead-form-page input,
 .portal-backoffice .lead-form-page select,
 .portal-backoffice .lead-form-page textarea {

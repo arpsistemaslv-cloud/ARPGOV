@@ -1135,6 +1135,21 @@ def ensure_lead_message_attachments_json_column():
             pass
 
 
+def ensure_lead_message_thread_column():
+    try:
+        db.session.execute(text("SELECT thread FROM lead_messages LIMIT 1"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        try:
+            with db.engine.begin() as conn:
+                conn.exec_driver_sql(
+                    "ALTER TABLE lead_messages ADD COLUMN thread VARCHAR(20) NOT NULL DEFAULT 'client'"
+                )
+        except Exception:
+            pass
+
+
 def ensure_finance_upload_dirs():
     for sub in ("finance_company", "finance_rep", "lead_pipeline"):
         d = os.path.join(app.root_path, "static", "uploads", sub)
@@ -1377,6 +1392,7 @@ def init_schema():
         ensure_lead_chat_upload_dir()
         ensure_social_post_upload_dir()
         ensure_lead_message_attachments_json_column()
+        ensure_lead_message_thread_column()
         ensure_partner_product_approval_columns()
         ensure_partner_product_deletion_request_columns()
         ensure_finance_upload_dirs()
@@ -2999,12 +3015,36 @@ def _crm_import_opportunities_from_csv(text: str) -> tuple[int, list[str], list[
     return created, errors, warnings
 
 
-def _lead_chat_messages_for_opportunity(opp_id: int) -> list[LeadMessage]:
+LEAD_CHAT_THREAD_CLIENT = "client"
+LEAD_CHAT_THREAD_INTERNAL = "internal"
+
+
+def _lead_chat_messages_for_opportunity(
+    opp_id: int, thread: str = LEAD_CHAT_THREAD_CLIENT
+) -> list[LeadMessage]:
     return (
-        LeadMessage.query.filter_by(opportunity_id=opp_id)
+        LeadMessage.query.filter_by(opportunity_id=opp_id, thread=thread)
         .order_by(LeadMessage.created_at.asc())
         .all()
     )
+
+
+def _lead_chat_internal_access_allowed(opp: Opportunity) -> bool:
+    if session.get("crm_ok"):
+        return True
+    rid = session.get("rep_id")
+    if rid is None:
+        return False
+    try:
+        rid_int = int(rid)
+    except (TypeError, ValueError):
+        return False
+    rep = db.session.get(SalesRepresentative, rid_int)
+    if not rep or not rep.is_active:
+        return False
+    if _rep_is_admin(rep):
+        return True
+    return opp.sales_rep_id == rid_int
 
 
 _LEAD_CHAT_MIME_EXT: dict[str, str] = {
@@ -3110,6 +3150,8 @@ def _lead_chat_access_allowed(msg: LeadMessage) -> bool:
     opp = msg.opportunity
     if opp is None:
         return False
+    if msg.chat_thread == LEAD_CHAT_THREAD_INTERNAL:
+        return _lead_chat_internal_access_allowed(opp)
     if session.get("crm_ok"):
         return True
     rid = session.get("rep_id")
@@ -3128,6 +3170,20 @@ def _lead_chat_access_allowed(msg: LeadMessage) -> bool:
         return opp.portal_client_id == int(cid)
     except (TypeError, ValueError):
         return False
+
+
+def _lead_chat_validate_post() -> tuple[str, list[dict], str | None]:
+    """Valida corpo e anexos do chat; retorna (body, attachments, erro)."""
+    body = (request.form.get("chat_body") or "").strip()
+    files = _lead_chat_files_from_request()
+    atts, att_err = _save_lead_chat_files(files)
+    if att_err:
+        return body, atts, att_err
+    if not body and not atts:
+        return body, atts, "Escreva uma mensagem ou anexe ao menos um arquivo."
+    if len(body) > 12000:
+        return body, atts, "Mensagem muito longa (máx. 12.000 caracteres)."
+    return body, atts, None
 
 
 def _lead_chat_delete_disk_files_for_entries(entries: list[dict]) -> None:
@@ -5844,6 +5900,7 @@ def cliente_lead_detail(oid):
         else:
             msg = LeadMessage(
                 opportunity_id=opp.id,
+                thread=LEAD_CHAT_THREAD_CLIENT,
                 sender="client",
                 body=body,
                 attachments_json=json.dumps(atts, ensure_ascii=False) if atts else None,
@@ -6409,6 +6466,7 @@ def comercial_op_edit(opp_id):
         Opportunity.query.options(
             selectinload(Opportunity.catalog_lines),
             selectinload(Opportunity.lead_messages),
+            selectinload(Opportunity.sales_rep),
         )
         .filter_by(id=opp_id)
     )
@@ -6435,8 +6493,10 @@ def comercial_op_edit(opp_id):
         _notify_portal_client_crm_update(opp, change_lines, None)
         flash("Salvo.", "ok")
         return redirect(url_for("comercial_dashboard"))
-    chat_messages = _lead_chat_messages_for_opportunity(opp.id)
+    chat_messages = _lead_chat_messages_for_opportunity(opp.id, LEAD_CHAT_THREAD_CLIENT)
+    internal_chat_messages = _lead_chat_messages_for_opportunity(opp.id, LEAD_CHAT_THREAD_INTERNAL)
     clients = _comercial_portal_clients_query().all()
+    rep_name = (opp.sales_rep.name if opp.sales_rep else "") or "Vendedor"
     return render_template(
         "crm/op_form.html",
         opp=opp,
@@ -6447,6 +6507,10 @@ def comercial_op_edit(opp_id):
         clients=clients,
         chat_messages=chat_messages,
         chat_form_action=url_for("comercial_op_chat", opp_id=opp.id),
+        internal_chat_messages=internal_chat_messages,
+        internal_chat_form_action=url_for("comercial_op_internal_chat", opp_id=opp.id),
+        internal_chat_viewer_is_rep=True,
+        internal_chat_rep_name=rep_name,
         cancel_url=url_for("comercial_dashboard"),
         comercial_subnav=True,
     )
@@ -6507,6 +6571,7 @@ def comercial_op_chat(opp_id):
     else:
         msg = LeadMessage(
             opportunity_id=opp.id,
+            thread=LEAD_CHAT_THREAD_CLIENT,
             sender="staff",
             body=body,
             attachments_json=json.dumps(atts, ensure_ascii=False) if atts else None,
@@ -6517,6 +6582,34 @@ def comercial_op_chat(opp_id):
             opp, [], body if body else None, has_attachments=bool(atts)
         )
         flash("Mensagem enviada ao cliente.", "ok")
+    return redirect(url_for("comercial_op_edit", opp_id=opp_id))
+
+
+@app.route("/comercial/oportunidade/<int:opp_id>/mensagem-interna", methods=["POST"])
+@rep_login_required
+def comercial_op_internal_chat(opp_id):
+    rep = _session_sales_rep()
+    if rep is None:
+        return redirect(url_for("comercial_login", next=request.path))
+    opp = _comercial_get_opportunity(rep, opp_id)
+    if opp is None:
+        abort(404)
+    if not _lead_chat_internal_access_allowed(opp):
+        abort(403)
+    body, atts, err = _lead_chat_validate_post()
+    if err:
+        flash(err, "error")
+    else:
+        msg = LeadMessage(
+            opportunity_id=opp.id,
+            thread=LEAD_CHAT_THREAD_INTERNAL,
+            sender="rep",
+            body=body,
+            attachments_json=json.dumps(atts, ensure_ascii=False) if atts else None,
+        )
+        db.session.add(msg)
+        db.session.commit()
+        flash("Mensagem enviada à administração.", "ok")
     return redirect(url_for("comercial_op_edit", opp_id=opp_id))
 
 

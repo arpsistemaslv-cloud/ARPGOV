@@ -1,6 +1,6 @@
-{% macro lead_chat_bubble(m, client_area=false, allow_delete=false) %}
-<div class="lead-chat__msg lead-chat__msg--{{ m.sender }}" title="{{ m.created_at.strftime('%d/%m/%Y %H:%M') if m.created_at else '' }}">
-  <span class="lead-chat__msg-label">{% if m.sender == 'staff' %}Equipe{% elif client_area %}Você{% else %}Cliente{% endif %}</span>
+{% macro lead_chat_bubble(m, client_area=false, allow_delete=false, internal=false, viewer_is_rep=false, rep_name='') %}
+<div class="lead-chat__msg lead-chat__msg--{{ m.sender }}{% if internal %} lead-chat__msg--internal{% endif %}" title="{{ m.created_at.strftime('%d/%m/%Y %H:%M') if m.created_at else '' }}">
+  <span class="lead-chat__msg-label">{% if internal %}{% if m.sender == 'rep' %}{% if viewer_is_rep %}Você{% else %}{{ rep_name or 'Vendedor' }}{% endif %}{% else %}Administração{% endif %}{% elif m.sender == 'staff' %}Equipe{% elif client_area %}Você{% else %}Cliente{% endif %}</span>
   {% if m.body and m.body.strip() %}
   <div class="lead-chat__msg-body">{{ m.body }}</div>
   {% endif %}

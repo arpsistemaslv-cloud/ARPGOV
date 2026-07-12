@@ -262,6 +262,52 @@
       </section>
       {% endif %}
 
+      {% if opp and comercial_subnav %}
+      <section class="lead-form-card lead-form-card--compact lead-form-card--aside-compact lead-form-card--commission" aria-label="Comissionamento">
+        <h2 class="lead-form-card__title">Sua comissão</h2>
+        {% if opp.rep_commission_brl is not none %}
+        <p class="lead-commission-value">{{ opp.rep_commission_brl|float|brl }}</p>
+        <p class="meta lead-form-aside-meta">Definida pela administração no CRM.</p>
+        {% else %}
+        <p class="meta lead-form-aside-meta">Ainda sem comissão definida.</p>
+        <p class="meta lead-form-aside-meta">Negocie no chat com a administração abaixo.</p>
+        {% endif %}
+        {% if opp.rep_commission_note %}
+        <p class="meta lead-form-aside-meta lead-form-aside-meta--note"><strong>Obs.:</strong> {{ opp.rep_commission_note }}</p>
+        {% endif %}
+        {% if opp.value_brl is not none and opp.value_brl %}
+        <p class="meta lead-form-aside-meta">Valor do lead: <strong>{{ opp.value_brl|float|brl }}</strong></p>
+        {% endif %}
+        <p class="meta lead-form-aside-meta lead-form-aside-meta--links">
+          <a href="{{ url_for('comercial_financeiro_novo') }}?oportunidade={{ opp.id }}">Anexar documento</a>
+          · <a href="{{ url_for('comercial_financeiro') }}">Financeiro</a>
+        </p>
+      </section>
+      {% endif %}
+
+      {% if internal_chat_form_action is defined %}
+      <section class="lead-form-card lead-form-card--chat lead-form-card--aside-chat lead-form-card--internal-chat">
+        <h2 class="lead-form-card__title">{% if comercial_subnav %}Chat com a administração{% else %}Chat com o vendedor{% endif %}</h2>
+        <p class="lead-form-card__desc lead-form-card__desc--tight">{% if comercial_subnav %}Negocie comissões e anexe documentos. O cliente não vê este chat.{% else %}Conversa interna para negociar comissão. O cliente não vê este chat.{% endif %}</p>
+        <div class="lead-chat__thread lead-chat__thread--crm lead-chat__thread--aside lead-chat__thread--internal{% if not internal_chat_messages %} lead-chat__thread--empty{% endif %}">
+          {% if internal_chat_messages %}
+          {% for m in internal_chat_messages %}
+          {{ lead_chat_bubble(m, client_area=false, allow_delete=true, internal=true, viewer_is_rep=internal_chat_viewer_is_rep|default(false), rep_name=internal_chat_rep_name|default('')) }}
+          {% endfor %}
+          {% else %}
+          <p class="meta" style="margin:0">Sem mensagens ainda. Use para propor ou negociar comissão.</p>
+          {% endif %}
+        </div>
+        <form method="post" action="{{ internal_chat_form_action }}" class="lead-chat__form lead-chat__form--compact" enctype="multipart/form-data">
+          <textarea name="chat_body" rows="2" placeholder="{% if comercial_subnav %}Mensagem para administração…{% else %}Mensagem para o vendedor…{% endif %}"></textarea>
+          <div class="lead-chat__form-row">
+            <input type="file" name="attachments" multiple accept="image/*,.pdf,.doc,.docx">
+            <button type="submit" class="btn btn--primary btn--compact">Enviar</button>
+          </div>
+        </form>
+      </section>
+      {% endif %}
+
       {% if opp and opp.catalog_lines %}
       <div class="lead-form-aside-summary">
         <span class="lead-form-aside-summary__label">Produtos vinculados</span>
@@ -274,19 +320,6 @@
       {% endif %}
 
       {% if opp and comercial_subnav %}
-      <section class="lead-form-card lead-form-card--compact lead-form-card--aside-compact" aria-label="Comissionamento">
-        <h2 class="lead-form-card__title">Comissionamento</h2>
-        {% if opp.rep_commission_brl is not none %}
-        <p class="meta lead-form-aside-meta">Comissão: <strong>{{ opp.rep_commission_brl|float|brl }}</strong></p>
-        {% else %}
-        <p class="meta lead-form-aside-meta">Sem comissão definida.</p>
-        {% endif %}
-        <p class="meta lead-form-aside-meta lead-form-aside-meta--links">
-          <a href="{{ url_for('comercial_financeiro_novo') }}?oportunidade={{ opp.id }}">Anexar documento</a>
-          · <a href="{{ url_for('comercial_financeiro') }}">Financeiro</a>
-        </p>
-      </section>
-
       <section class="lead-form-card lead-form-card--danger lead-form-card--aside-compact lead-form-card--aside-danger">
         <h2 class="lead-form-card__title lead-form-card__title--danger">Zona de risco</h2>
         <p class="lead-form-card__desc lead-form-card__desc--tight">Remove o lead e o chat. Lançamentos financeiros permanecem.</p>

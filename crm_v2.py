@@ -976,6 +976,7 @@ def lead_edit(opp_id):
             selectinload(Opportunity.catalog_lines),
             selectinload(Opportunity.commission_splits),
             selectinload(Opportunity.commission_tier),
+            selectinload(Opportunity.sales_rep),
         )
         .filter_by(id=opp_id)
         .first_or_404()
@@ -988,11 +989,21 @@ def lead_edit(opp_id):
         link_err = _apply_lead_links(opp)
         if link_err:
             flash(link_err, "error")
-            chat_messages = _main()._lead_chat_messages_for_opportunity(opp.id)
+            chat_messages = _main()._lead_chat_messages_for_opportunity(
+                opp.id, _main().LEAD_CHAT_THREAD_CLIENT
+            )
+            internal_chat_messages = _main()._lead_chat_messages_for_opportunity(
+                opp.id, _main().LEAD_CHAT_THREAD_INTERNAL
+            )
+            rep_name = (opp.sales_rep.name if opp.sales_rep else "") or "Vendedor"
             return render_template(
                 "crm/op_form.html",
                 chat_messages=chat_messages,
                 chat_form_action=url_for("crm.crm_op_chat", opp_id=opp.id),
+                internal_chat_messages=internal_chat_messages,
+                internal_chat_form_action=url_for("crm.crm_op_internal_chat", opp_id=opp.id),
+                internal_chat_viewer_is_rep=False,
+                internal_chat_rep_name=rep_name,
                 **_op_form_base_ctx(opp),
             )
         opp.title = (request.form.get("title") or "").strip() or opp.title
@@ -1013,11 +1024,21 @@ def lead_edit(opp_id):
         db.session.commit()
         flash("Lead salvo.", "ok")
         return redirect(url_for("crm.crm_op_edit", opp_id=opp.id))
-    chat_messages = _main()._lead_chat_messages_for_opportunity(opp.id)
+    chat_messages = _main()._lead_chat_messages_for_opportunity(
+        opp.id, _main().LEAD_CHAT_THREAD_CLIENT
+    )
+    internal_chat_messages = _main()._lead_chat_messages_for_opportunity(
+        opp.id, _main().LEAD_CHAT_THREAD_INTERNAL
+    )
+    rep_name = (opp.sales_rep.name if opp.sales_rep else "") or "Vendedor"
     return render_template(
         "crm/op_form.html",
         chat_messages=chat_messages,
         chat_form_action=url_for("crm.crm_op_chat", opp_id=opp.id),
+        internal_chat_messages=internal_chat_messages,
+        internal_chat_form_action=url_for("crm.crm_op_internal_chat", opp_id=opp.id),
+        internal_chat_viewer_is_rep=False,
+        internal_chat_rep_name=rep_name,
         **_op_form_base_ctx(opp),
     )
 
@@ -1092,6 +1113,7 @@ def lead_chat(opp_id):
     else:
         msg = LeadMessage(
             opportunity_id=opp.id,
+            thread=_main().LEAD_CHAT_THREAD_CLIENT,
             sender="staff",
             body=body,
             attachments_json=json.dumps(atts, ensure_ascii=False) if atts else None,
@@ -1102,6 +1124,29 @@ def lead_chat(opp_id):
             opp, [], body if body else None, has_attachments=bool(atts)
         )
         flash("Mensagem enviada ao cliente.", "ok")
+    return redirect(url_for("crm.crm_op_edit", opp_id=opp.id))
+
+
+@crm_bp.route("/leads/<int:opp_id>/mensagem-interna", methods=["POST"], endpoint="crm_op_internal_chat")
+@crm_bp.route("/oportunidade/<int:opp_id>/mensagem-interna", methods=["POST"])
+@crm_login_required
+def lead_internal_chat(opp_id):
+    m = _main()
+    opp = Opportunity.query.get_or_404(opp_id)
+    body, atts, err = m._lead_chat_validate_post()
+    if err:
+        flash(err, "error")
+    else:
+        msg = LeadMessage(
+            opportunity_id=opp.id,
+            thread=m.LEAD_CHAT_THREAD_INTERNAL,
+            sender="staff",
+            body=body,
+            attachments_json=json.dumps(atts, ensure_ascii=False) if atts else None,
+        )
+        db.session.add(msg)
+        db.session.commit()
+        flash("Mensagem enviada ao vendedor.", "ok")
     return redirect(url_for("crm.crm_op_edit", opp_id=opp.id))
 
 

@@ -478,18 +478,24 @@ class PortalClient(db.Model):
 
 
 class LeadMessage(db.Model):
-    """Mensagem no fio do lead — cliente (portal) ou equipe (CRM)."""
+    """Mensagem no fio do lead — cliente (portal), equipe (CRM) ou vendedor (interno)."""
 
     __tablename__ = "lead_messages"
 
     id = db.Column(db.Integer, primary_key=True)
     opportunity_id = db.Column(db.Integer, db.ForeignKey("opportunities.id"), nullable=False, index=True)
-    sender = db.Column(db.String(20), nullable=False)  # "client" | "staff"
+    thread = db.Column(db.String(20), nullable=False, default="client")  # "client" | "internal"
+    sender = db.Column(db.String(20), nullable=False)  # "client" | "staff" | "rep"
     body = db.Column(db.Text, nullable=False, default="")
     attachments_json = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     opportunity = db.relationship("Opportunity", back_populates="lead_messages")
+
+    @property
+    def chat_thread(self) -> str:
+        t = (self.thread or "client").strip()
+        return t if t in ("client", "internal") else "client"
 
     @property
     def attachment_list(self) -> list[dict]:

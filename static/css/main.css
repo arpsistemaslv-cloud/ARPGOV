@@ -3585,6 +3585,23 @@ body.produto-lightbox-open {
   background: #ecfdf5;
 }
 
+.lead-chat__msg--rep {
+  align-self: flex-end;
+  margin-left: 10%;
+  border-color: rgba(7, 29, 65, 0.18);
+  background: #f0f4fa;
+}
+
+.lead-chat__msg--internal.lead-chat__msg--staff {
+  border-color: #dbeafe;
+  background: #eff6ff;
+}
+
+.lead-chat__msg--internal.lead-chat__msg--rep {
+  border-color: rgba(7, 29, 65, 0.22);
+  background: #f8fafc;
+}
+
 .lead-chat__msg-label {
   display: block;
   font-size: 0.72rem;
