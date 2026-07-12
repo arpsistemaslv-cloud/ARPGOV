@@ -66,6 +66,7 @@ from models import (
     LicitacaoWatch,
     Opportunity,
     OpportunityCatalogLine,
+    OpportunityCommissionSplit,
     Partner,
     PartnerProduct,
     PartnerProductArpCommission,
@@ -626,6 +627,29 @@ def _comercial_get_opportunity(rep: SalesRepresentative, opp_id: int) -> Opportu
     if not _rep_is_admin(rep):
         q = q.filter_by(sales_rep_id=rep.id)
     return q.first()
+
+
+def _comercial_finance_opportunities_query(rep: SalesRepresentative):
+    """Leads visíveis no financeiro comercial (atribuídos ou com comissão do vendedor)."""
+    if _rep_is_admin(rep):
+        return _comercial_opportunities_query(rep)
+    split_opp_ids = (
+        select(OpportunityCommissionSplit.opportunity_id)
+        .where(OpportunityCommissionSplit.sales_rep_id == rep.id)
+        .distinct()
+    )
+    return Opportunity.query.filter(
+        or_(
+            Opportunity.sales_rep_id == rep.id,
+            Opportunity.id.in_(split_opp_ids),
+        )
+    )
+
+
+def _comercial_get_finance_opportunity(
+    rep: SalesRepresentative, opp_id: int
+) -> Opportunity | None:
+    return _comercial_finance_opportunities_query(rep).filter_by(id=opp_id).first()
 
 
 def _stage_label(stage_key: str) -> str:
@@ -7454,8 +7478,10 @@ def comercial_clientes_sugeridos():
 @app.route("/comercial/financeiro")
 @rep_login_required
 def comercial_financeiro():
-    rid = int(session["rep_id"])
-    rep = db.session.get(SalesRepresentative, rid)
+    rep = _session_sales_rep()
+    if rep is None:
+        return redirect(url_for("comercial_login", next=request.path))
+    rid = rep.id
     so_comissao = request.args.get("so_comissao") == "1"
 
     def _total_to_float(v) -> float:
@@ -7466,9 +7492,10 @@ def comercial_financeiro():
         except (TypeError, ValueError):
             return 0.0
 
+    leads_q = _comercial_finance_opportunities_query(rep)
     total_commission = db.session.execute(
         select(func.coalesce(func.sum(Opportunity.rep_commission_brl), 0)).where(
-            Opportunity.sales_rep_id == rid,
+            Opportunity.id.in_(leads_q.with_entities(Opportunity.id)),
             Opportunity.rep_commission_brl.isnot(None),
         )
     ).scalar()
@@ -7491,15 +7518,14 @@ def comercial_financeiro():
     ).scalar()
     total_enviado_valores = _total_to_float(total_enviado_valores or 0)
 
-    q_leads = Opportunity.query.filter_by(sales_rep_id=rid).order_by(
-        Opportunity.updated_at.desc()
-    )
+    q_leads = leads_q.order_by(Opportunity.updated_at.desc())
     if so_comissao:
         q_leads = q_leads.filter(Opportunity.rep_commission_brl.isnot(None))
     lead_rows = []
     for o in q_leads.limit(500).all():
+        nf_rep_id = o.sales_rep_id if o.sales_rep_id is not None else rid
         nf_count = RepFinancialEntry.query.filter_by(
-            opportunity_id=o.id, sales_rep_id=rid
+            opportunity_id=o.id, sales_rep_id=nf_rep_id
         ).count()
         lead_rows.append({"opp": o, "nf_count": nf_count})
 
@@ -7525,10 +7551,12 @@ def comercial_financeiro():
 @app.route("/comercial/financeiro/novo", methods=["GET", "POST"])
 @rep_login_required
 def comercial_financeiro_novo():
-    rid = int(session["rep_id"])
-    rep = db.session.get(SalesRepresentative, rid)
+    rep = _session_sales_rep()
+    if rep is None:
+        return redirect(url_for("comercial_login", next=request.path))
+    rid = rep.id
     opps = (
-        Opportunity.query.filter_by(sales_rep_id=rid)
+        _comercial_finance_opportunities_query(rep)
         .order_by(Opportunity.updated_at.desc())
         .limit(500)
         .all()
@@ -7540,7 +7568,7 @@ def comercial_financeiro_novo():
             oid = (request.form.get("opportunity_id") or "").strip() or oid
         if not oid.isdigit():
             return None, ""
-        o = Opportunity.query.filter_by(id=int(oid), sales_rep_id=rid).first()
+        o = _comercial_get_finance_opportunity(rep, int(oid))
         return o, oid
 
     pre_opp, _ = _pre_opp_from_request()
@@ -7567,9 +7595,7 @@ def comercial_financeiro_novo():
         )
         oid = (request.form.get("opportunity_id") or "").strip()
         if oid.isdigit():
-            o = Opportunity.query.filter_by(
-                id=int(oid), sales_rep_id=rid
-            ).first()
+            o = _comercial_get_finance_opportunity(rep, int(oid))
             if o is not None:
                 entry.opportunity_id = o.id
         raw_val = request.form.get("amount_brl", "").strip().replace(",", ".")

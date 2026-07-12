@@ -68,7 +68,7 @@
             <td><a href="{{ url_for('comercial_financeiro_novo') }}?oportunidade={{ o.id }}">Anexar NF</a></td>
           </tr>
           {% else %}
-          <tr><td colspan="4" class="comercial-empty">{% if so_comissao %}Nenhum lead com comissão informada.{% else %}Nenhum lead atribuído a você.{% endif %}</td></tr>
+          <tr><td colspan="4" class="comercial-empty">{% if so_comissao %}Nenhum lead com comissão informada.{% elif rep.is_admin %}Nenhum lead no sistema.{% else %}Nenhum lead atribuído a você.{% endif %}</td></tr>
           {% endfor %}
         </tbody>
       </table>
