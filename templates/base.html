@@ -47,7 +47,7 @@
       </a>
       <nav class="nav">
         <a href="{{ url_for('home') }}">Início</a>
-        <a href="{{ url_for('loja') }}">Atas de registro de preço</a>
+        <a href="{{ url_for('arps') }}">Atas de registro de preço</a>
         <a href="{{ url_for('como_aderir') }}">Como aderir</a>
         <a href="{{ url_for('institucional') }}" class="nav__institucional">Institucional</a>
         <a href="{{ url_for('contato') }}">Contato</a>
@@ -62,7 +62,7 @@
         <a href="{{ url_for('cliente_entrar') }}">Área do cliente</a>
         {% endif %}
         {% endif %}
-        <a href="{{ url_for('loja') }}" class="nav__cta">Consultar atas</a>
+        <a href="{{ url_for('arps') }}" class="nav__cta">Consultar atas</a>
         {% for pg in nav_site_pages %}
         <a href="{{ url_for('site_page_public', slug=pg.slug) }}">{{ pg.nav_label or pg.title }}</a>
         {% endfor %}
@@ -123,7 +123,7 @@
           <span class="site-footer__col-title">Navegação</span>
           <ul class="site-footer__links">
             <li><a href="{{ url_for('home') }}">Início</a></li>
-            <li><a href="{{ url_for('loja') }}">Atas de registro de preço</a></li>
+            <li><a href="{{ url_for('arps') }}">Atas de registro de preço</a></li>
             <li><a href="{{ url_for('como_aderir') }}">Como aderir</a></li>
             <li><a href="{{ url_for('institucional') }}">Institucional</a></li>
             <li><a href="{{ url_for('contato') }}">Contato</a></li>

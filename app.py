@@ -788,7 +788,7 @@ RESERVED_PAGE_SLUGS = frozenset(
     {
         "admin",
         "crm",
-        "loja",
+        "arps",
         "contato",
         "produto",
         "static",
@@ -5129,7 +5129,7 @@ def _catalog_category_roots():
 
 
 @app.template_global()
-def loja_url(**overrides):
+def arps_url(**overrides):
     params = {}
     if request.args.get("sphere", "").strip():
         params["sphere"] = request.args.get("sphere", "").strip()
@@ -5144,7 +5144,7 @@ def loja_url(**overrides):
             params.pop(k, None)
         else:
             params[k] = v
-    return url_for("loja", **params)
+    return url_for("arps", **params)
 
 
 @app.route("/empresa")
@@ -5179,7 +5179,16 @@ def como_aderir():
 
 
 @app.route("/loja")
-def loja():
+def loja_redirect():
+    qs = request.query_string.decode()
+    target = url_for("arps")
+    if qs:
+        target = f"{target}?{qs}"
+    return redirect(target, code=301)
+
+
+@app.route("/arps")
+def arps():
     sphere = request.args.get("sphere", "").strip()
     cat_slug = request.args.get("categoria", "").strip()
     fabricante = request.args.get("fabricante", "").strip()

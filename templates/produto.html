@@ -5,7 +5,7 @@
   <nav class="breadcrumb" aria-label="Navegação">
     <a href="{{ url_for('home') }}">Início</a>
     <span class="breadcrumb__sep">/</span>
-    <a href="{{ url_for('loja') }}">Atas</a>
+    <a href="{{ url_for('arps') }}">Atas</a>
     <span class="breadcrumb__sep">/</span>
     <span>{{ item.title[:48] }}{% if item.title|length > 48 %}…{% endif %}</span>
   </nav>
@@ -113,7 +113,7 @@
             Solicitação ({{ client_cart_count }})
           </a>
           {% endif %}
-          <a class="btn btn--ghost btn--compact" href="{{ url_for('loja') }}" title="Ver outras atas">
+          <a class="btn btn--ghost btn--compact" href="{{ url_for('arps') }}" title="Ver outras atas">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Outras atas
           </a>

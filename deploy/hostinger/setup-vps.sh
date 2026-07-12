@@ -80,6 +80,7 @@ echo "y" | ufw enable 2>/dev/null || true
 
 echo ">>> Código do GitHub..."
 mkdir -p "$(dirname "$APP_DIR")"
+chown "$DEPLOY_USER:$DEPLOY_USER" "$(dirname "$APP_DIR")"
 if [[ "$SKIP_CLONE" == "1" ]]; then
   echo "Pulando clone (--skip-clone)."
 elif [[ -d "$APP_DIR/.git" ]]; then

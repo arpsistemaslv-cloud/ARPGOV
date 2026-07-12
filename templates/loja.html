@@ -28,7 +28,7 @@
           >
           <div class="loja-cat-list-wrap" id="loja_cat_list_wrap">
             <div class="filters filters--stack loja-cat-accordion" id="loja_cat_filters">
-              <a href="{{ loja_url(categoria='') }}" class="loja-cat-link loja-cat-link--all {{ 'active' if not filter_categoria else '' }}">Todos</a>
+              <a href="{{ arps_url(categoria='') }}" class="loja-cat-link loja-cat-link--all {{ 'active' if not filter_categoria else '' }}">Todos</a>
               {% for root in category_roots %}
               {% set child_slugs = root.children|map(attribute='slug')|list %}
               <details
@@ -42,7 +42,7 @@
                 <div class="loja-cat-group__children">
                   {% for ch in root.children %}
                   <a
-                    href="{{ loja_url(categoria=ch.slug) }}"
+                    href="{{ arps_url(categoria=ch.slug) }}"
                     class="loja-cat-link loja-cat-link--child {{ 'active' if filter_categoria == ch.slug else '' }}"
                     data-cat-parent="{{ root.id }}"
                   >{{ ch.name }}</a>
@@ -58,9 +58,9 @@
         <div class="filters-block">
           <span class="filters-block__label">Esfera</span>
           <div class="filters filters--stack">
-            <a href="{{ loja_url(sphere='') }}" class="{{ 'active' if not filter_sphere else '' }}">Todas</a>
+            <a href="{{ arps_url(sphere='') }}" class="{{ 'active' if not filter_sphere else '' }}">Todas</a>
             {% for s in sphere_labels %}
-            <a href="{{ loja_url(sphere=s) }}" class="{{ 'active' if filter_sphere == s else '' }}">{{ s }}</a>
+            <a href="{{ arps_url(sphere=s) }}" class="{{ 'active' if filter_sphere == s else '' }}">{{ s }}</a>
             {% endfor %}
           </div>
         </div>
@@ -69,15 +69,15 @@
         <div class="filters-block">
           <span class="filters-block__label">Fabricante</span>
           <div class="filters filters--stack">
-            <a href="{{ loja_url(fabricante='') }}" class="{{ 'active' if not filter_fabricante else '' }}">Todos</a>
+            <a href="{{ arps_url(fabricante='') }}" class="{{ 'active' if not filter_fabricante else '' }}">Todos</a>
             {% for m in manufacturer_labels %}
-            <a href="{{ loja_url(fabricante=m) }}" class="{{ 'active' if filter_fabricante == m else '' }}">{{ m }}</a>
+            <a href="{{ arps_url(fabricante=m) }}" class="{{ 'active' if filter_fabricante == m else '' }}">{{ m }}</a>
             {% endfor %}
           </div>
         </div>
         {% endif %}
 
-        <p class="meta loja-sidebar__clear"><a href="{{ url_for('loja') }}">Limpar todos os filtros</a></p>
+        <p class="meta loja-sidebar__clear"><a href="{{ url_for('arps') }}">Limpar todos os filtros</a></p>
       </div>
     </aside>
 
@@ -113,7 +113,7 @@
       </div>
     </article>
     {% else %}
-    <p class="meta">Nenhum item com estes filtros. <a href="{{ url_for('loja') }}">Limpar filtros</a> ou <a href="{{ url_for('admin_catalog_list') }}">cadastrar produtos</a>.</p>
+    <p class="meta">Nenhum item com estes filtros. <a href="{{ url_for('arps') }}">Limpar filtros</a> ou <a href="{{ url_for('admin_catalog_list') }}">cadastrar produtos</a>.</p>
     {% endfor %}
   </div>
     </div>

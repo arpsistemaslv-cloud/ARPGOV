@@ -1,4 +1,4 @@
-# Envia banco SQLite e uploads do PC para o VPS (primeira migração).
+# Envia banco SQLite e uploads do PC para o VPS (primeira migracao).
 # Uso no PowerShell:
 #   .\scripts\upload-data-to-vps.ps1 -VpsHost SEU_IP -VpsUser deploy
 
@@ -23,7 +23,7 @@ if (Test-Path $db) {
     ssh "${VpsUser}@${VpsHost}" "mkdir -p ${RemotePath}/instance"
     scp $db "${VpsUser}@${VpsHost}:${RemotePath}/instance/portal.db"
 } else {
-    Write-Warning "Banco não encontrado: $db (pule se for instalação nova)"
+    Write-Warning "Banco nao encontrado: $db"
 }
 
 if (Test-Path $uploads) {
@@ -32,10 +32,10 @@ if (Test-Path $uploads) {
         Write-Host ">>> Enviando static/uploads ($count arquivos)..."
         scp -r $uploads "${VpsUser}@${VpsHost}:${RemotePath}/static/"
     } else {
-        Write-Host ">>> uploads/ vazio — nada a enviar."
+        Write-Host ">>> uploads/ vazio - nada a enviar."
     }
 } else {
-    Write-Warning "Pasta uploads não encontrada: $uploads"
+    Write-Warning "Pasta uploads nao encontrada: $uploads"
 }
 
-Write-Host ">>> Concluído. No VPS: sudo systemctl restart arpgov" -ForegroundColor Green
+Write-Host ">>> Concluido. No VPS: sudo systemctl restart arpgov" -ForegroundColor Green

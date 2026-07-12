@@ -7,7 +7,7 @@
     <h1>{% if site_settings and site_settings.hero_headline %}{{ site_settings.hero_headline }}{% else %}Atas de registro de preço com representação comercial especializada{% endif %}</h1>
     <p class="hero__lead">{% if site_settings and site_settings.hero_text %}{{ site_settings.hero_text }}{% else %}Consulte itens por esfera administrativa, valores e prazos de vigência. Nossa equipe conduz a adesão com conformidade, transparência e agilidade — no padrão do ecossistema de contratações públicas.{% endif %}</p>
     <div class="hero__actions">
-      <a class="btn btn--primary" href="{{ url_for('loja') }}">Consultar atas</a>
+      <a class="btn btn--primary" href="{{ url_for('arps') }}">Consultar atas</a>
       <a class="btn btn--ghost hero__btn-ghost" href="{{ url_for('contato') }}">Solicitar adesão</a>
       <a class="btn btn--ghost hero__btn-ghost hero__btn-ghost--muted" href="{{ url_for('institucional') }}">Conheça a ARPGOV</a>
     </div>
@@ -22,7 +22,7 @@
         <h2 class="section-heading" id="home-highlight-title">Atas em destaque</h2>
         <p class="meta home-section__desc">Produtos com destaque para adesão imediata. Consulte o catálogo completo com filtros por categoria e esfera.</p>
       </div>
-      <a href="{{ url_for('loja') }}" class="btn btn--ghost">Ver todas as atas</a>
+      <a href="{{ url_for('arps') }}" class="btn btn--ghost">Ver todas as atas</a>
     </div>
     <div class="card-grid card-grid--home">
       {% for item in atas %}
@@ -105,7 +105,7 @@
     </div>
     <div class="hero__actions home-cta__actions">
       <a class="btn btn--primary home-cta__btn-primary" href="{{ url_for('contato') }}">Fale conosco</a>
-      <a class="btn btn--ghost home-cta__btn-ghost" href="{{ url_for('loja') }}">Ver catálogo</a>
+      <a class="btn btn--ghost home-cta__btn-ghost" href="{{ url_for('arps') }}">Ver catálogo</a>
     </div>
   </div>
 </section>

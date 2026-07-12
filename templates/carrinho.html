@@ -5,7 +5,7 @@
   <nav class="breadcrumb" aria-label="Navegação">
     <a href="{{ url_for('home') }}">Início</a>
     <span class="breadcrumb__sep">/</span>
-    <a href="{{ url_for('loja') }}">Atas</a>
+    <a href="{{ url_for('arps') }}">Atas</a>
     <span class="breadcrumb__sep">/</span>
     <span>Minha solicitação</span>
   </nav>
@@ -52,7 +52,7 @@
 
   <div class="carrinho-actions" style="margin-top:0.75rem">
     <a class="btn btn--primary" href="{{ url_for('contato') }}">Enviar solicitação de adesão</a>
-    <a class="btn btn--ghost" href="{{ url_for('loja') }}">Continuar consultando atas</a>
+    <a class="btn btn--ghost" href="{{ url_for('arps') }}">Continuar consultando atas</a>
     <form method="post" action="{{ url_for('carrinho_limpar') }}">
       <button type="submit" class="btn btn--ghost">Esvaziar lista</button>
     </form>
@@ -60,7 +60,7 @@
   {% else %}
   <div class="card" style="padding:1.5rem;margin-top:1.25rem;text-align:center">
     <p class="meta" style="margin:0 0 1rem">Nenhum produto na solicitação.</p>
-    <a class="btn btn--primary" href="{{ url_for('loja') }}">Consultar atas de registro de preço</a>
+    <a class="btn btn--primary" href="{{ url_for('arps') }}">Consultar atas de registro de preço</a>
   </div>
   {% endif %}
 </div>

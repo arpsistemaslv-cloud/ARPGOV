@@ -31,7 +31,7 @@
         <td>
           <a href="{{ url_for('admin_category_edit', cat_id=root.id) }}">Editar</a>
           · <a href="{{ url_for('admin_category_new', parent=root.id) }}">+ Subcatálogo</a>
-          · <a href="{{ loja_url(categoria=root.slug) }}" target="_blank" rel="noopener">Ver filtro</a>
+          · <a href="{{ arps_url(categoria=root.slug) }}" target="_blank" rel="noopener">Ver filtro</a>
           <form method="post" action="{{ url_for('admin_category_delete', cat_id=root.id) }}" style="display:inline;margin-left:0.35rem" onsubmit="return confirm('Excluir este catálogo? Só é permitido se não houver subcatálogos nem produtos.');">
             <button type="submit" class="btn btn--danger" style="padding:0.15rem 0.45rem;font-size:0.8rem">Excluir</button>
           </form>
@@ -45,7 +45,7 @@
         <td>{{ ch.items.count() }}</td>
         <td>
           <a href="{{ url_for('admin_category_edit', cat_id=ch.id) }}">Editar</a>
-          · <a href="{{ loja_url(categoria=ch.slug) }}" target="_blank" rel="noopener">Ver filtro</a>
+          · <a href="{{ arps_url(categoria=ch.slug) }}" target="_blank" rel="noopener">Ver filtro</a>
           <form method="post" action="{{ url_for('admin_category_delete', cat_id=ch.id) }}" style="display:inline;margin-left:0.35rem" onsubmit="return confirm('Excluir este subcatálogo?');">
             <button type="submit" class="btn btn--danger" style="padding:0.15rem 0.45rem;font-size:0.8rem">Excluir</button>
           </form>
