@@ -2190,14 +2190,23 @@
   font-size: 0.86rem;
 }
 
-.comercial-orgaos-filters__scroll {
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 0.15rem;
+.comercial-filter-group {
+  margin-bottom: 0.25rem;
 }
 
-.comercial-orgaos-filters__scroll--tipo {
-  max-height: 280px;
+.comercial-filter-group .loja-cat-group__summary strong {
+  font-weight: 700;
+  color: var(--gov-blue-70, #1351b4);
+}
+
+.comercial-filter-group[open] .comercial-orgaos-filters__scroll {
+  max-height: min(180px, 36vh);
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.comercial-filter-group[open] .comercial-orgaos-filters__scroll--tipo {
+  max-height: min(220px, 42vh);
 }
 
 .comercial-orgaos-main .comercial-stats-line {

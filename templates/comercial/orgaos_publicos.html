@@ -46,35 +46,47 @@
           </div>
         </form>
 
-        <div class="filters-block">
-          <span class="filters-block__label">UF</span>
-          <div class="filters filters--stack comercial-orgaos-filters__scroll">
-            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, regiao=regiao_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if not uf_filter else '' }}">Todas</a>
-            {% for sigla, nome in br_ufs %}
-            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=sigla, regiao=regiao_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if uf_filter == sigla else '' }}" title="{{ nome }}">{{ sigla }}</a>
-            {% endfor %}
+        <details class="loja-cat-group comercial-filter-group" {% if uf_filter %}open{% endif %}>
+          <summary class="loja-cat-group__summary">
+            <span class="loja-cat-group__label">UF{% if uf_filter %}: <strong>{{ uf_filter }}</strong>{% endif %}</span>
+          </summary>
+          <div class="loja-cat-group__children">
+            <div class="filters filters--stack comercial-orgaos-filters__scroll">
+              <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, regiao=regiao_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if not uf_filter else '' }}">Todas</a>
+              {% for sigla, nome in br_ufs %}
+              <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=sigla, regiao=regiao_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if uf_filter == sigla else '' }}" title="{{ nome }}">{{ sigla }}</a>
+              {% endfor %}
+            </div>
           </div>
-        </div>
+        </details>
 
-        <div class="filters-block">
-          <span class="filters-block__label">Região</span>
-          <div class="filters filters--stack">
-            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if not regiao_filter else '' }}">Todas</a>
-            {% for r in regioes %}
-            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=r, tipo=tipo_filter or none) }}" class="{{ 'active' if regiao_filter == r else '' }}">{{ r }}</a>
-            {% endfor %}
+        <details class="loja-cat-group comercial-filter-group" {% if regiao_filter %}open{% endif %}>
+          <summary class="loja-cat-group__summary">
+            <span class="loja-cat-group__label">Região{% if regiao_filter %}: <strong>{{ regiao_filter }}</strong>{% endif %}</span>
+          </summary>
+          <div class="loja-cat-group__children">
+            <div class="filters filters--stack">
+              <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, tipo=tipo_filter or none) }}" class="{{ 'active' if not regiao_filter else '' }}">Todas</a>
+              {% for r in regioes %}
+              <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=r, tipo=tipo_filter or none) }}" class="{{ 'active' if regiao_filter == r else '' }}">{{ r }}</a>
+              {% endfor %}
+            </div>
           </div>
-        </div>
+        </details>
 
-        <div class="filters-block">
-          <span class="filters-block__label">Tipo</span>
-          <div class="filters filters--stack comercial-orgaos-filters__scroll comercial-orgaos-filters__scroll--tipo">
-            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=regiao_filter or none) }}" class="{{ 'active' if not tipo_filter else '' }}">Todos</a>
-            {% for value, label in tipos_org %}
-            <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=regiao_filter or none, tipo=value) }}" class="{{ 'active' if tipo_filter == value else '' }}">{{ label }}</a>
-            {% endfor %}
+        <details class="loja-cat-group comercial-filter-group" {% if tipo_filter %}open{% endif %}>
+          <summary class="loja-cat-group__summary">
+            <span class="loja-cat-group__label">Tipo{% if tipo_filter %}: <strong>{{ tipo_labels.get(tipo_filter, tipo_filter) }}</strong>{% endif %}</span>
+          </summary>
+          <div class="loja-cat-group__children">
+            <div class="filters filters--stack comercial-orgaos-filters__scroll comercial-orgaos-filters__scroll--tipo">
+              <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=regiao_filter or none) }}" class="{{ 'active' if not tipo_filter else '' }}">Todos</a>
+              {% for value, label in tipos_org %}
+              <a href="{{ url_for('comercial_orgaos_publicos', q=q or none, uf=uf_filter or none, regiao=regiao_filter or none, tipo=value) }}" class="{{ 'active' if tipo_filter == value else '' }}">{{ label }}</a>
+              {% endfor %}
+            </div>
           </div>
-        </div>
+        </details>
 
         {% if q or uf_filter or regiao_filter or tipo_filter %}
         <p class="meta loja-sidebar__clear"><a href="{{ url_for('comercial_orgaos_publicos') }}">Limpar todos os filtros</a></p>
