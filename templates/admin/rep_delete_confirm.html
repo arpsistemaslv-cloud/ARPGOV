@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Excluir usuário{% endblock %}
+{% block body %}
+<div class="backoffice-hub">
+  {% include "backoffice/_area_switcher.html" %}
+
+  <section class="lead-form-card lead-form-card--danger admin-users-delete">
+    <h1 class="lead-form-card__title lead-form-card__title--danger">Excluir usuário</h1>
+    <p class="lead-form-card__desc">Você está prestes a remover <strong>{{ rep.name }}</strong> ({{ rep.email }}).</p>
+    {% if lead_count %}
+    <p class="meta">Este usuário tem <strong>{{ lead_count }}</strong> lead(s) vinculado(s). Os leads permanecem no sistema, mas ficam sem representante.</p>
+    {% endif %}
+    <p class="meta">Esta ação não pode ser desfeita. Usuários com lançamentos financeiros não podem ser excluídos — desative o acesso.</p>
+
+    <form method="post" class="admin-users-delete__form">
+      <div class="email-marketing-field">
+        <label for="confirm">Digite <strong>EXCLUIR</strong> para confirmar</label>
+        <input id="confirm" name="confirm" autocomplete="off" required>
+      </div>
+      <div class="admin-users-form__actions">
+        <button type="submit" class="btn btn--danger">Excluir definitivamente</button>
+        <a class="btn btn--ghost" href="{{ url_for('admin_rep_edit', rep_id=rep.id) }}">Cancelar</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

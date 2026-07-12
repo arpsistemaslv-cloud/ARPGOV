@@ -593,10 +593,12 @@ def login():
         email = m._normalize_rep_email(request.form.get("email"))
         password = (request.form.get("password") or "").strip()
         if email:
-            rep = m._authenticate_admin_rep(email, password)
+            rep = m._authenticate_rep_email_login(
+                email, password, require_crm=True
+            )
             if rep:
                 session["rep_id"] = rep.id
-                m._grant_staff_sessions_for_admin_rep(rep)
+                m._grant_staff_sessions_for_rep(rep)
                 session["crm_ok"] = True
                 session.modified = True
                 return redirect(m._safe_internal_redirect(

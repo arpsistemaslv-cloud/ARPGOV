@@ -513,11 +513,105 @@ def _rep_is_admin(rep: SalesRepresentative | None) -> bool:
     return bool(rep and rep.is_active and rep.is_admin)
 
 
-def _grant_staff_sessions_for_admin_rep(rep: SalesRepresentative) -> None:
-    if _rep_is_admin(rep):
+def _rep_has_comercial_access(rep: SalesRepresentative | None) -> bool:
+    return bool(rep and rep.is_active and getattr(rep, "access_comercial", True))
+
+
+def _rep_has_crm_access(rep: SalesRepresentative | None) -> bool:
+    return bool(rep and rep.is_active and rep.access_crm)
+
+
+def _rep_has_painel_access(rep: SalesRepresentative | None) -> bool:
+    return bool(rep and rep.is_active and rep.access_painel)
+
+
+def _grant_staff_sessions_for_rep(rep: SalesRepresentative) -> None:
+    session.pop("admin_ok", None)
+    session.pop("crm_ok", None)
+    if _rep_has_painel_access(rep):
         session["admin_ok"] = True
+    if _rep_has_crm_access(rep):
         session["crm_ok"] = True
-        session.modified = True
+    session.modified = True
+
+
+def _grant_staff_sessions_for_admin_rep(rep: SalesRepresentative) -> None:
+    """Compatibilidade — delega para permissões granulares."""
+    _grant_staff_sessions_for_rep(rep)
+
+
+def _authenticate_rep_email_login(
+    email: str,
+    password: str,
+    *,
+    require_comercial: bool = False,
+    require_crm: bool = False,
+    require_painel: bool = False,
+) -> SalesRepresentative | None:
+    if not email or "@" not in email:
+        return None
+    rep = SalesRepresentative.query.filter_by(email=email).first()
+    if rep is None or not rep.is_active:
+        return None
+    if require_comercial and not _rep_has_comercial_access(rep):
+        return None
+    if require_crm and not _rep_has_crm_access(rep):
+        return None
+    if require_painel and not _rep_has_painel_access(rep):
+        return None
+    if not check_password_hash(rep.password_hash, password):
+        return None
+    return rep
+
+
+def _authenticate_admin_rep(email: str, password: str) -> SalesRepresentative | None:
+    return _authenticate_rep_email_login(
+        email, password, require_painel=True
+    )
+
+
+def _apply_rep_permissions_from_form(rep: SalesRepresentative, *, is_new: bool) -> None:
+    preset = (request.form.get("role_preset") or "custom").strip()
+    if preset == "vendor":
+        rep.access_comercial = True
+        rep.access_crm = False
+        rep.access_painel = False
+        rep.is_admin = False
+    elif preset == "admin":
+        rep.access_comercial = True
+        rep.access_crm = True
+        rep.access_painel = True
+        rep.is_admin = True
+    else:
+        rep.access_comercial = request.form.get("access_comercial") == "1"
+        rep.access_crm = request.form.get("access_crm") == "1"
+        rep.access_painel = request.form.get("access_painel") == "1"
+        rep.is_admin = request.form.get("is_admin") == "1"
+    if is_new:
+        rep.is_active = True
+    else:
+        rep.is_active = request.form.get("is_active") == "1"
+
+
+def _delete_sales_rep(rep: SalesRepresentative) -> str | None:
+    rid = session.get("rep_id")
+    try:
+        if rid is not None and int(rid) == rep.id:
+            return "Não é possível excluir o usuário com o qual você está logado."
+    except (TypeError, ValueError):
+        pass
+    fin_count = RepFinancialEntry.query.filter_by(sales_rep_id=rep.id).count()
+    if fin_count:
+        return (
+            f"Este usuário tem {fin_count} lançamento(s) financeiro(s). "
+            "Desative o acesso em vez de excluir."
+        )
+    Opportunity.query.filter_by(sales_rep_id=rep.id).update(
+        {Opportunity.sales_rep_id: None},
+        synchronize_session=False,
+    )
+    db.session.delete(rep)
+    return None
 
 
 def _comercial_opportunities_query(rep: SalesRepresentative):
@@ -532,17 +626,6 @@ def _comercial_get_opportunity(rep: SalesRepresentative, opp_id: int) -> Opportu
     if not _rep_is_admin(rep):
         q = q.filter_by(sales_rep_id=rep.id)
     return q.first()
-
-
-def _authenticate_admin_rep(email: str, password: str) -> SalesRepresentative | None:
-    if not email or "@" not in email:
-        return None
-    rep = SalesRepresentative.query.filter_by(email=email).first()
-    if rep is None or not rep.is_active or not rep.is_admin:
-        return None
-    if not check_password_hash(rep.password_hash, password):
-        return None
-    return rep
 
 
 def _stage_label(stage_key: str) -> str:
@@ -1206,6 +1289,35 @@ def ensure_sales_rep_is_admin_column():
             pass
 
 
+def ensure_sales_rep_access_columns():
+    cols = (
+        ("access_comercial", "BOOLEAN NOT NULL DEFAULT 1"),
+        ("access_crm", "BOOLEAN NOT NULL DEFAULT 0"),
+        ("access_painel", "BOOLEAN NOT NULL DEFAULT 0"),
+    )
+    for col, ddl in cols:
+        try:
+            db.session.execute(text(f"SELECT {col} FROM sales_reps LIMIT 1"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            try:
+                with db.engine.begin() as conn:
+                    conn.exec_driver_sql(
+                        f"ALTER TABLE sales_reps ADD COLUMN {col} {ddl}"
+                    )
+            except Exception:
+                pass
+    try:
+        with db.engine.begin() as conn:
+            conn.exec_driver_sql(
+                "UPDATE sales_reps SET access_crm = 1, access_painel = 1 "
+                "WHERE is_admin = 1 AND (access_crm = 0 OR access_painel = 0)"
+            )
+    except Exception:
+        pass
+
+
 def ensure_arpgov_brand_defaults():
     """Garante marca ARPGOV quando ainda não há personalização no banco."""
     row = db.session.get(SiteSettings, 1)
@@ -1670,6 +1782,7 @@ def init_schema():
         ensure_opportunity_process_ref_column()
         ensure_site_settings_extra_columns()
         ensure_sales_rep_is_admin_column()
+        ensure_sales_rep_access_columns()
         ensure_arpgov_brand_defaults()
         ensure_catalog_images_json_column()
         ensure_catalog_item_category_id_column()
@@ -6313,8 +6426,11 @@ def comercial_login():
             ):
                 flash("E-mail ou senha incorretos.", "error")
                 return render_template("comercial/entrar.html")
+            if not _rep_has_comercial_access(rep):
+                flash("Este usuário não tem acesso à área comercial.", "error")
+                return render_template("comercial/entrar.html")
         session["rep_id"] = rep.id
-        _grant_staff_sessions_for_admin_rep(rep)
+        _grant_staff_sessions_for_rep(rep)
         session.modified = True
         nxt = _safe_internal_redirect(
             request.args.get("next"),
@@ -6328,10 +6444,12 @@ def comercial_login():
 @app.route("/comercial/sair")
 def comercial_logout():
     rep = _session_sales_rep()
-    if _rep_is_admin(rep):
-        session.pop("admin_ok", None)
-        session.pop("crm_ok", None)
     session.pop("rep_id", None)
+    if rep:
+        if _rep_has_painel_access(rep):
+            session.pop("admin_ok", None)
+        if _rep_has_crm_access(rep):
+            session.pop("crm_ok", None)
     session.modified = True
     flash("Você saiu da área do representante.", "ok")
     return redirect(url_for("home"))
@@ -7564,10 +7682,12 @@ def admin_login():
         email = _normalize_rep_email(request.form.get("email"))
         password = request.form.get("password") or ""
         if email:
-            rep = _authenticate_admin_rep(email, password)
+            rep = _authenticate_rep_email_login(
+                email, password, require_painel=True
+            )
             if rep:
                 session["rep_id"] = rep.id
-                _grant_staff_sessions_for_admin_rep(rep)
+                _grant_staff_sessions_for_rep(rep)
                 session.modified = True
                 nxt = _safe_internal_redirect(
                     request.args.get("next"),
@@ -7608,21 +7728,38 @@ def staff_logout_route():
 
 
 def _staff_logout():
-    rep = _session_sales_rep()
-    if _rep_is_admin(rep):
-        session.pop("rep_id", None)
     session.pop("admin_ok", None)
     session.pop("crm_ok", None)
+    session.pop("rep_id", None)
     session.modified = True
     flash("Você saiu do painel e do CRM.", "ok")
     return redirect(url_for("home"))
 
 
+@app.route("/admin/usuarios")
+@admin_login_required
+def admin_users_redirect():
+    return redirect(url_for("admin_rep_list"))
+
+
 @app.route("/admin/representantes")
 @admin_login_required
 def admin_rep_list():
-    reps = SalesRepresentative.query.order_by(SalesRepresentative.name.asc()).all()
-    return render_template("admin/rep_list.html", reps=reps)
+    reps = SalesRepresentative.query.order_by(
+        SalesRepresentative.is_active.desc(),
+        SalesRepresentative.name.asc(),
+    ).all()
+    lead_counts = dict(
+        db.session.query(Opportunity.sales_rep_id, func.count(Opportunity.id))
+        .filter(Opportunity.sales_rep_id.isnot(None))
+        .group_by(Opportunity.sales_rep_id)
+        .all()
+    )
+    return render_template(
+        "admin/rep_list.html",
+        reps=reps,
+        lead_counts=lead_counts,
+    )
 
 
 @app.route("/admin/representantes/novo", methods=["GET", "POST"])
@@ -7643,19 +7780,21 @@ def admin_rep_new():
             flash("As senhas não coincidem.", "error")
             return render_template("admin/rep_form.html", rep=None)
         if SalesRepresentative.query.filter_by(email=email).first():
-            flash("Já existe representante com este e-mail.", "error")
+            flash("Já existe usuário com este e-mail.", "error")
             return render_template("admin/rep_form.html", rep=None)
         rep = SalesRepresentative(
             name=name,
             email=email,
             phone=(request.form.get("phone") or "").strip() or None,
             password_hash=generate_password_hash(password),
-            is_active=True,
-            is_admin=request.form.get("is_admin") == "1",
         )
+        _apply_rep_permissions_from_form(rep, is_new=True)
+        if not (rep.access_comercial or rep.access_crm or rep.access_painel):
+            flash("Selecione ao menos uma área de acesso.", "error")
+            return render_template("admin/rep_form.html", rep=None)
         db.session.add(rep)
         db.session.commit()
-        flash("Representante cadastrado.", "ok")
+        flash("Usuário cadastrado.", "ok")
         return redirect(url_for("admin_rep_list"))
     return render_template("admin/rep_form.html", rep=None)
 
@@ -7674,13 +7813,15 @@ def admin_rep_edit(rep_id):
             SalesRepresentative.email == email, SalesRepresentative.id != rep.id
         ).first()
         if other:
-            flash("Outro representante usa este e-mail.", "error")
+            flash("Outro usuário usa este e-mail.", "error")
             return render_template("admin/rep_form.html", rep=rep)
         rep.name = name
         rep.email = email
         rep.phone = (request.form.get("phone") or "").strip() or None
-        rep.is_active = request.form.get("is_active") == "1"
-        rep.is_admin = request.form.get("is_admin") == "1"
+        _apply_rep_permissions_from_form(rep, is_new=False)
+        if not (rep.access_comercial or rep.access_crm or rep.access_painel):
+            flash("Selecione ao menos uma área de acesso.", "error")
+            return render_template("admin/rep_form.html", rep=rep)
         password = request.form.get("password") or ""
         password2 = request.form.get("password_confirm") or ""
         if password:
@@ -7692,9 +7833,53 @@ def admin_rep_edit(rep_id):
                 return render_template("admin/rep_form.html", rep=rep)
             rep.password_hash = generate_password_hash(password)
         db.session.commit()
-        flash("Representante atualizado.", "ok")
+        flash("Usuário atualizado.", "ok")
         return redirect(url_for("admin_rep_list"))
     return render_template("admin/rep_form.html", rep=rep)
+
+
+@app.route("/admin/representantes/<int:rep_id>/status", methods=["POST"])
+@admin_login_required
+def admin_rep_toggle_active(rep_id):
+    rep = SalesRepresentative.query.get_or_404(rep_id)
+    rid = session.get("rep_id")
+    try:
+        if rid is not None and int(rid) == rep.id and rep.is_active:
+            flash("Não é possível desativar o usuário com o qual você está logado.", "error")
+            return redirect(url_for("admin_rep_list"))
+    except (TypeError, ValueError):
+        pass
+    rep.is_active = not rep.is_active
+    db.session.commit()
+    flash(
+        f"Usuário {'ativado' if rep.is_active else 'desativado'}.",
+        "ok",
+    )
+    return redirect(url_for("admin_rep_list"))
+
+
+@app.route("/admin/representantes/<int:rep_id>/excluir", methods=["GET", "POST"])
+@admin_login_required
+def admin_rep_delete(rep_id):
+    rep = SalesRepresentative.query.get_or_404(rep_id)
+    lead_count = Opportunity.query.filter_by(sales_rep_id=rep.id).count()
+    if request.method == "GET":
+        return render_template(
+            "admin/rep_delete_confirm.html",
+            rep=rep,
+            lead_count=lead_count,
+        )
+    if not _delete_lead_confirmation_ok(request.form.get("confirm")):
+        flash("Digite EXCLUIR para confirmar a exclusão.", "error")
+        return redirect(url_for("admin_rep_delete", rep_id=rep_id))
+    err = _delete_sales_rep(rep)
+    if err:
+        db.session.rollback()
+        flash(err, "error")
+        return redirect(url_for("admin_rep_edit", rep_id=rep_id))
+    db.session.commit()
+    flash("Usuário excluído.", "ok")
+    return redirect(url_for("admin_rep_list"))
 
 
 @app.route("/admin/parceiros")
@@ -9606,6 +9791,9 @@ def cli_create_admin_rep(email: str, name: str, password: str | None, reset_pass
             email=email_norm,
             is_active=True,
             is_admin=True,
+            access_comercial=True,
+            access_crm=True,
+            access_painel=True,
             password_hash="",
         )
         db.session.add(rep)
@@ -9613,6 +9801,9 @@ def cli_create_admin_rep(email: str, name: str, password: str | None, reset_pass
         rep.name = display_name
         rep.is_active = True
         rep.is_admin = True
+        rep.access_comercial = True
+        rep.access_crm = True
+        rep.access_painel = True
     plain = (password or "").strip() or None
     if plain and len(plain) < 8:
         print("Senha deve ter no mínimo 8 caracteres.")

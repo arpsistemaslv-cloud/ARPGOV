@@ -1,45 +1,105 @@
 {% extends "base.html" %}
-{% block title %}{% if rep %}Editar{% else %}Novo{% endif %} representante{% endblock %}
+{% block title %}{% if rep %}Editar{% else %}Novo{% endif %} usuário{% endblock %}
 {% block body %}
-{% include "admin/_subnav.html" %}
-<h1 style="margin-top:0">{% if rep %}Editar{% else %}Novo{% endif %} representante comercial</h1>
-<form method="post" class="form-grid" style="max-width:480px">
-  <div>
-    <label for="name">Nome *</label>
-    <input id="name" name="name" required value="{{ rep.name if rep else '' }}">
-  </div>
-  <div>
-    <label for="email">E-mail (login) *</label>
-    <input id="email" name="email" type="email" required autocomplete="off" value="{{ rep.email if rep else '' }}">
-  </div>
-  <div>
-    <label for="phone">Telefone</label>
-    <input id="phone" name="phone" value="{{ rep.phone or '' if rep else '' }}">
-  </div>
-  {% if rep %}
-  <div>
-    <label><input type="checkbox" name="is_active" value="1" {% if rep.is_active %}checked{% endif %}> Ativo (pode entrar no sistema)</label>
-  </div>
-  <div>
-    <label><input type="checkbox" name="is_admin" value="1" {% if rep.is_admin %}checked{% endif %}> Administrador (Painel, CRM e todos os leads)</label>
-  </div>
-  {% else %}
-  <div>
-    <label><input type="checkbox" name="is_admin" value="1"> Administrador (Painel, CRM e todos os leads)</label>
-  </div>
-  {% endif %}
-  <div>
-    <label for="password">{% if rep %}Nova senha{% else %}Senha *{% endif %}</label>
-    <input id="password" name="password" type="password" autocomplete="new-password" {% if not rep %}required minlength="8"{% endif %}>
-    {% if rep %}<p class="meta" style="margin:0.25rem 0 0">Deixe em branco para manter a senha atual.</p>{% endif %}
-  </div>
-  <div>
-    <label for="password_confirm">Confirmar senha{% if not rep %} *{% endif %}</label>
-    <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" {% if not rep %}required minlength="8"{% endif %}>
-  </div>
-  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-    <button type="submit" class="btn btn--primary">Salvar</button>
-    <a class="btn btn--ghost" href="{{ url_for('admin_rep_list') }}">Cancelar</a>
-  </div>
-</form>
+<div class="backoffice-hub">
+  {% include "backoffice/_area_switcher.html" %}
+
+  <header class="comercial-page-header comercial-page-header--compact admin-users-header">
+    <div class="comercial-page-header__main">
+      <p class="comercial-page-header__eyebrow">Usuários da equipe</p>
+      <h1 class="comercial-page-header__title">{% if rep %}Editar usuário{% else %}Novo usuário{% endif %}</h1>
+    </div>
+    <div class="comercial-page-header__actions">
+      <a class="btn btn--ghost" href="{{ url_for('admin_rep_list') }}">Voltar à lista</a>
+    </div>
+  </header>
+
+  <form method="post" class="lead-form-card admin-users-form">
+    <div class="admin-users-form__grid">
+      <div class="email-marketing-field">
+        <label for="name">Nome *</label>
+        <input id="name" name="name" required value="{{ rep.name if rep else '' }}">
+      </div>
+      <div class="email-marketing-field">
+        <label for="email">E-mail (login) *</label>
+        <input id="email" name="email" type="email" required autocomplete="off" value="{{ rep.email if rep else '' }}">
+      </div>
+      <div class="email-marketing-field">
+        <label for="phone">Telefone</label>
+        <input id="phone" name="phone" value="{{ rep.phone or '' if rep else '' }}">
+      </div>
+    </div>
+
+    <section class="admin-users-permissions" aria-labelledby="admin-users-perm-title">
+      {% set is_vendor_profile = rep and not rep.is_admin and rep.access_comercial and not rep.access_crm and not rep.access_painel %}
+      {% set is_admin_profile = rep and rep.is_admin and rep.access_comercial and rep.access_crm and rep.access_painel %}
+      <h2 class="admin-users-permissions__title" id="admin-users-perm-title">Perfil e permissões</h2>
+      <p class="admin-users-permissions__desc">Escolha um modelo ou marque as áreas manualmente.</p>
+
+      <div class="admin-users-presets">
+        <label class="admin-users-preset">
+          <input type="radio" name="role_preset" value="vendor" {% if is_vendor_profile %}checked{% endif %}>
+          <span><strong>Vendedor</strong> — só área Comercial e leads atribuídos</span>
+        </label>
+        <label class="admin-users-preset">
+          <input type="radio" name="role_preset" value="admin" {% if is_admin_profile %}checked{% endif %}>
+          <span><strong>Administrador</strong> — Comercial, CRM, Painel e todos os leads</span>
+        </label>
+        <label class="admin-users-preset">
+          <input type="radio" name="role_preset" value="custom" {% if not rep or (not is_vendor_profile and not is_admin_profile) %}checked{% endif %}>
+          <span><strong>Personalizado</strong> — escolher áreas abaixo</span>
+        </label>
+      </div>
+
+      <div class="admin-users-access-grid">
+        <label class="admin-users-access-item">
+          <input type="checkbox" name="access_comercial" value="1" {% if not rep or rep.access_comercial %}checked{% endif %}>
+          <span><strong>Comercial</strong><small>Leads, prospecção, financeiro e e-mail marketing</small></span>
+        </label>
+        <label class="admin-users-access-item">
+          <input type="checkbox" name="access_crm" value="1" {% if rep and rep.access_crm %}checked{% endif %}>
+          <span><strong>CRM</strong><small>Clientes, leads, comissões e financeiro da empresa</small></span>
+        </label>
+        <label class="admin-users-access-item">
+          <input type="checkbox" name="access_painel" value="1" {% if rep and rep.access_painel %}checked{% endif %}>
+          <span><strong>Painel do site</strong><small>Catálogo, páginas, parceiros e este cadastro de usuários</small></span>
+        </label>
+        <label class="admin-users-access-item">
+          <input type="checkbox" name="is_admin" value="1" {% if rep and rep.is_admin %}checked{% endif %}>
+          <span><strong>Supervisor comercial</strong><small>Vê todos os leads na área Comercial (não só os próprios)</small></span>
+        </label>
+      </div>
+
+      {% if rep %}
+      <label class="admin-users-active">
+        <input type="checkbox" name="is_active" value="1" {% if rep.is_active %}checked{% endif %}>
+        Usuário ativo (pode fazer login)
+      </label>
+      {% endif %}
+    </section>
+
+    <section class="admin-users-password">
+      <h2 class="admin-users-permissions__title">Senha de acesso</h2>
+      <div class="admin-users-form__grid admin-users-form__grid--password">
+        <div class="email-marketing-field">
+          <label for="password">{% if rep %}Nova senha{% else %}Senha *{% endif %}</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" {% if not rep %}required minlength="8"{% endif %}>
+          {% if rep %}<p class="meta" style="margin:0.35rem 0 0">Deixe em branco para manter a senha atual.</p>{% endif %}
+        </div>
+        <div class="email-marketing-field">
+          <label for="password_confirm">Confirmar senha{% if not rep %} *{% endif %}</label>
+          <input id="password_confirm" name="password_confirm" type="password" autocomplete="new-password" {% if not rep %}required minlength="8"{% endif %}>
+        </div>
+      </div>
+    </section>
+
+    <div class="admin-users-form__actions">
+      <button type="submit" class="btn btn--primary">Salvar usuário</button>
+      <a class="btn btn--ghost" href="{{ url_for('admin_rep_list') }}">Cancelar</a>
+      {% if rep %}
+      <a class="btn btn--ghost admin-users-danger-link" href="{{ url_for('admin_rep_delete', rep_id=rep.id) }}">Excluir usuário…</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
 {% endblock %}

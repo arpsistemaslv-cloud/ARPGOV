@@ -1,36 +1,72 @@
 {% extends "base.html" %}
-{% block title %}Representantes comerciais{% endblock %}
+{% block title %}Usuários da equipe{% endblock %}
 {% block body %}
-{% include "admin/_subnav.html" %}
-<h1 style="margin-top:0">Representantes comerciais</h1>
-<p class="meta">Cada representante entra em <strong>Comercial</strong> no rodapé do site com e-mail e senha próprios. Representantes comuns veem só os leads atribuídos a eles; <strong>administradores</strong> acessam também o Painel, o CRM e todos os leads.</p>
-<p><a class="btn btn--primary" href="{{ url_for('admin_rep_new') }}">Novo representante</a></p>
-<div class="table-wrap" style="margin-top:1rem">
-  <table class="data">
-    <thead>
-      <tr>
-        <th>Nome</th>
-        <th>E-mail (login)</th>
-        <th>Telefone</th>
-        <th>Status</th>
-        <th>Perfil</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in reps %}
-      <tr>
-        <td><strong>{{ r.name }}</strong></td>
-        <td>{{ r.email }}</td>
-        <td class="meta">{{ r.phone or '—' }}</td>
-        <td>{% if r.is_active %}<span class="pill" style="background:#e8f5e9;color:#1b5e20">Ativo</span>{% else %}<span class="meta">Inativo</span>{% endif %}</td>
-        <td>{% if r.is_admin %}<span class="pill">Administrador</span>{% else %}<span class="meta">Representante</span>{% endif %}</td>
-        <td><a href="{{ url_for('admin_rep_edit', rep_id=r.id) }}">Editar</a></td>
-      </tr>
-      {% else %}
-      <tr><td colspan="6" class="meta">Nenhum representante. Cadastre o primeiro.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="backoffice-hub">
+  {% set switcher_in_hero = false %}
+  {% include "backoffice/_area_switcher.html" %}
+
+  <header class="comercial-page-header admin-users-header">
+    <div class="comercial-page-header__main">
+      <p class="comercial-page-header__eyebrow">Painel do site</p>
+      <h1 class="comercial-page-header__title">Usuários da equipe</h1>
+      <p class="comercial-page-header__lead">Cadastre vendedores e administradores, defina senha, permissões por área e status de acesso.</p>
+    </div>
+    <div class="comercial-page-header__actions">
+      <a class="btn btn--primary" href="{{ url_for('admin_rep_new') }}">Novo usuário</a>
+    </div>
+  </header>
+
+  <div class="crm-table-card admin-users-table">
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail (login)</th>
+            <th>Acessos</th>
+            <th>Leads</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reps %}
+          <tr>
+            <td>
+              <strong>{{ r.name }}</strong>
+              {% if r.is_admin %}<span class="admin-users-pill admin-users-pill--super">Supervisor</span>{% endif %}
+            </td>
+            <td>{{ r.email }}</td>
+            <td>
+              <div class="admin-users-access">
+                {% if r.access_comercial %}<span class="admin-users-pill">Comercial</span>{% endif %}
+                {% if r.access_crm %}<span class="admin-users-pill">CRM</span>{% endif %}
+                {% if r.access_painel %}<span class="admin-users-pill">Painel</span>{% endif %}
+                {% if not r.access_comercial and not r.access_crm and not r.access_painel %}<span class="meta">—</span>{% endif %}
+              </div>
+            </td>
+            <td class="meta">{{ lead_counts.get(r.id, 0) }}</td>
+            <td>
+              {% if r.is_active %}
+              <span class="admin-users-pill admin-users-pill--ok">Ativo</span>
+              {% else %}
+              <span class="admin-users-pill admin-users-pill--off">Inativo</span>
+              {% endif %}
+            </td>
+            <td class="admin-users-actions">
+              <a href="{{ url_for('admin_rep_edit', rep_id=r.id) }}">Editar</a>
+              <form method="post" action="{{ url_for('admin_rep_toggle_active', rep_id=r.id) }}" class="admin-users-inline-form">
+                <button type="submit" class="btn btn--ghost btn--compact">{{ 'Desativar' if r.is_active else 'Ativar' }}</button>
+              </form>
+              <a href="{{ url_for('admin_rep_delete', rep_id=r.id) }}" class="admin-users-danger-link">Excluir</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="meta">Nenhum usuário cadastrado. <a href="{{ url_for('admin_rep_new') }}">Criar o primeiro</a>.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 {% endblock %}

@@ -410,6 +410,9 @@ class SalesRepresentative(db.Model):
     phone = db.Column(db.String(40), nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    access_comercial = db.Column(db.Boolean, default=True, nullable=False)
+    access_crm = db.Column(db.Boolean, default=False, nullable=False)
+    access_painel = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     opportunities = db.relationship("Opportunity", back_populates="sales_rep")
