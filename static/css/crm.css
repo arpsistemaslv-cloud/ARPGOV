@@ -2310,7 +2310,59 @@
 }
 
 .comercial-module-nav {
-  margin-bottom: 1.25rem;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.comercial-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin: -0.5rem 0 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.comercial-topbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  flex: 0 0 auto;
+}
+
+.comercial-topbar__link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.comercial-topbar__link:hover {
+  color: var(--gov-blue-70, #1351b4);
+  text-decoration: underline;
+}
+
+.comercial-topbar__logout {
+  font-size: 0.82rem;
+  padding: 0.38rem 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .comercial-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .comercial-topbar__actions {
+    justify-content: flex-end;
+    padding-top: 0.15rem;
+  }
 }
 
 .crm-module-nav__link--cta {

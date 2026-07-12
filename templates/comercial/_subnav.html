@@ -1,8 +1,14 @@
 {% set ep = (request.endpoint or '') %}
-<nav class="crm-module-nav comercial-module-nav" aria-label="Área comercial">
-  <a href="{{ url_for('comercial_dashboard') }}" class="crm-module-nav__link{% if ep in ('comercial_dashboard', 'comercial_op_new', 'comercial_op_edit', 'comercial_op_delete', 'comercial_op_chat', 'comercial_op_stage') %} crm-module-nav__link--active{% endif %}">Meus leads</a>
-  <a href="{{ url_for('comercial_clients_list') }}" class="crm-module-nav__link{% if ep in ('comercial_clients_list', 'comercial_client_new', 'comercial_client_edit') %} crm-module-nav__link--active{% endif %}">Clientes</a>
-  <a href="{{ url_for('comercial_orgaos_publicos') }}" class="crm-module-nav__link{% if ep in ('comercial_orgaos_publicos', 'comercial_orgao_publico_contato', 'comercial_clientes_sugeridos') %} crm-module-nav__link--active{% endif %}">Prospecção</a>
-  <a href="{{ url_for('comercial_email_marketing') }}" class="crm-module-nav__link{% if ep == 'comercial_email_marketing' %} crm-module-nav__link--active{% endif %}">E-mail marketing</a>
-  <a href="{{ url_for('comercial_financeiro') }}" class="crm-module-nav__link{% if ep in ('comercial_financeiro', 'comercial_financeiro_novo', 'comercial_financeiro_anexo', 'comercial_financeiro_status', 'comercial_financeiro_anexo_excluir') %} crm-module-nav__link--active{% endif %}">Financeiro</a>
-</nav>
+<header class="comercial-topbar">
+  <nav class="crm-module-nav comercial-module-nav" aria-label="Área comercial">
+    <a href="{{ url_for('comercial_dashboard') }}" class="crm-module-nav__link{% if ep in ('comercial_dashboard', 'comercial_op_new', 'comercial_op_edit', 'comercial_op_delete', 'comercial_op_chat', 'comercial_op_internal_chat', 'comercial_op_stage') %} crm-module-nav__link--active{% endif %}">Meus leads</a>
+    <a href="{{ url_for('comercial_clients_list') }}" class="crm-module-nav__link{% if ep in ('comercial_clients_list', 'comercial_client_new', 'comercial_client_edit') %} crm-module-nav__link--active{% endif %}">Clientes</a>
+    <a href="{{ url_for('comercial_orgaos_publicos') }}" class="crm-module-nav__link{% if ep in ('comercial_orgaos_publicos', 'comercial_orgao_publico_contato', 'comercial_clientes_sugeridos') %} crm-module-nav__link--active{% endif %}">Prospecção</a>
+    <a href="{{ url_for('comercial_email_marketing') }}" class="crm-module-nav__link{% if ep == 'comercial_email_marketing' %} crm-module-nav__link--active{% endif %}">E-mail marketing</a>
+    <a href="{{ url_for('comercial_financeiro') }}" class="crm-module-nav__link{% if ep in ('comercial_financeiro', 'comercial_financeiro_novo', 'comercial_financeiro_anexo', 'comercial_financeiro_status', 'comercial_financeiro_anexo_excluir') %} crm-module-nav__link--active{% endif %}">Financeiro</a>
+  </nav>
+  <div class="comercial-topbar__actions">
+    <a href="{{ url_for('home') }}" class="comercial-topbar__link" target="_blank" rel="noopener noreferrer">Site público</a>
+    <a href="{{ url_for('comercial_logout') }}" class="btn btn--ghost btn--compact comercial-topbar__logout">Sair</a>
+  </div>
+</header>
