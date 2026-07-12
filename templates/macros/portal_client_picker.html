@@ -1,0 +1,52 @@
+{% macro portal_client_picker(selected_client=None, required=false, hint='', initial_search='', clients_url='') %}
+<div
+  class="catalog-picker portal-client-picker"
+  data-portal-client-picker
+  data-api-url="{{ url_for('api_portal_client_picker') }}"
+  data-initial-client='{{ selected_client|tojson if selected_client else "null" }}'
+  data-initial-search="{{ initial_search }}"
+  {% if required %}data-portal-client-required="1"{% endif %}
+>
+  {% if hint %}
+  <p class="meta catalog-picker__hint">{{ hint }}{% if clients_url %} <a href="{{ clients_url }}">Cadastrar cliente</a>{% endif %}</p>
+  {% endif %}
+
+  <input type="hidden" name="portal_client_id" data-portal-client-id value="{{ selected_client.id if selected_client else '' }}">
+
+  <div class="portal-client-picker__selected" data-portal-client-selected{% if not selected_client %} hidden{% endif %}>
+    <div class="portal-client-picker__card" data-portal-client-card>
+      {% if selected_client %}
+      <p class="portal-client-picker__card-title">{{ selected_client.name }}</p>
+      <p class="portal-client-picker__card-meta meta">
+        {% if selected_client.organization %}{{ selected_client.organization }}{% endif %}
+        {% if selected_client.cnpj %}{% if selected_client.organization %} · {% endif %}{{ selected_client.cnpj }}{% endif %}
+        {% if selected_client.email %}<br>{{ selected_client.email }}{% endif %}
+        {% if selected_client.phone %} · {{ selected_client.phone }}{% endif %}
+        {% if selected_client.sphere %}<br>{{ selected_client.sphere }}{% endif %}
+      </p>
+      {% endif %}
+    </div>
+    <button type="button" class="btn btn--ghost btn--compact portal-client-picker__clear" data-portal-client-clear>Alterar cliente</button>
+  </div>
+
+  <div class="portal-client-picker__search-wrap" data-portal-client-search-wrap{% if selected_client %} hidden{% endif %}>
+    <label for="portal_client_search" class="portal-client-picker__label">Buscar cliente cadastrado{% if required %} *{% endif %}</label>
+    <input
+      type="search"
+      id="portal_client_search"
+      class="catalog-picker__search portal-client-picker__search"
+      placeholder="Nome, e-mail, órgão ou CNPJ…"
+      autocomplete="off"
+      data-portal-client-search
+      value="{{ initial_search }}"
+      aria-label="Buscar cliente cadastrado"
+    >
+    <p class="catalog-picker__prompt meta" data-portal-client-prompt>Digite ao menos 2 caracteres para buscar entre os clientes cadastrados.</p>
+    <div class="catalog-picker__results" data-portal-client-results hidden></div>
+    <p class="catalog-picker__empty meta" hidden data-portal-client-empty>Nenhum cliente encontrado. {% if clients_url %}<a href="{{ clients_url }}">Cadastre o cliente</a> antes de criar o lead.{% else %}Cadastre o cliente antes de criar o lead.{% endif %}</p>
+    <div class="catalog-picker__more" hidden data-portal-client-more>
+      <button type="button" class="btn btn--ghost btn--compact" data-portal-client-load-more>Carregar mais resultados</button>
+    </div>
+  </div>
+</div>
+{% endmacro %}

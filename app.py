@@ -3430,6 +3430,87 @@ def api_catalog_picker():
     )
 
 
+def _portal_client_picker_json(client: PortalClient) -> dict:
+    org = (client.organization or client.razao_social or "").strip()
+    cnpj_display = client.cnpj or ""
+    if cnpj_display and len(re.sub(r"\D", "", cnpj_display)) == 14:
+        cnpj_display = _format_cnpj_display(re.sub(r"\D", "", cnpj_display))
+    return {
+        "id": client.id,
+        "name": client.name,
+        "email": client.email or "",
+        "organization": org,
+        "cnpj": cnpj_display,
+        "phone": client.phone or "",
+        "sphere": client.sphere or "",
+    }
+
+
+@app.route("/api/portal-client-picker")
+def api_portal_client_picker():
+    if not session.get("rep_id") and not session.get("crm_ok"):
+        return jsonify({"error": "Não autorizado"}), 403
+
+    ids_raw = (request.args.get("ids") or "").strip()
+    if ids_raw:
+        id_list: list[int] = []
+        for part in ids_raw.split(","):
+            part = part.strip()
+            if part.isdigit():
+                id_list.append(int(part))
+        if not id_list:
+            return jsonify({"items": [], "total": 0, "page": 1, "pages": 1, "per_page": 0})
+        by_id = {
+            row.id: row
+            for row in PortalClient.query.filter(PortalClient.id.in_(id_list)).all()
+        }
+        items = [_portal_client_picker_json(by_id[i]) for i in id_list if i in by_id]
+        return jsonify(
+            {
+                "items": items,
+                "total": len(items),
+                "page": 1,
+                "pages": 1,
+                "per_page": len(items),
+            }
+        )
+
+    q = (request.args.get("q") or "").strip()
+    try:
+        page = max(1, int(request.args.get("page") or 1))
+    except ValueError:
+        page = 1
+    try:
+        per_page = min(30, max(5, int(request.args.get("per_page") or 15)))
+    except ValueError:
+        per_page = 15
+
+    if len(q) < 2:
+        return jsonify(
+            {
+                "items": [],
+                "total": 0,
+                "page": 1,
+                "pages": 0,
+                "per_page": per_page,
+                "hint": "Digite ao menos 2 caracteres para buscar.",
+            }
+        )
+
+    pagination = _comercial_portal_clients_query(q).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    return jsonify(
+        {
+            "items": [_portal_client_picker_json(row) for row in pagination.items],
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+            "per_page": per_page,
+        }
+    )
+
+
 def _partner_allowed_ufs_from_form() -> list[str]:
     if request.form.get("venda_nacional") == "1":
         return ["BR"]
@@ -5050,6 +5131,12 @@ def inject_site_settings():
     except OSError:
         catalog_picker_js_v = css_v
     try:
+        portal_client_picker_js_v = int(
+            os.path.getmtime(os.path.join(static_root, "js", "portal-client-picker.js"))
+        )
+    except OSError:
+        portal_client_picker_js_v = css_v
+    try:
         loja_cat_js_v = int(
             os.path.getmtime(os.path.join(static_root, "js", "loja-category-search.js"))
         )
@@ -5074,6 +5161,7 @@ def inject_site_settings():
             "main_css_v": css_v,
             "gallery_js_v": gallery_js_v,
             "catalog_picker_js_v": catalog_picker_js_v,
+            "portal_client_picker_js_v": portal_client_picker_js_v,
             "loja_cat_js_v": loja_cat_js_v,
             "client_cart_count": _client_cart_count() if session.get("client_id") else 0,
             "format_currency_brl": _format_currency_brl,
@@ -5094,6 +5182,7 @@ def inject_site_settings():
             "main_css_v": css_v,
             "gallery_js_v": gallery_js_v,
             "catalog_picker_js_v": catalog_picker_js_v,
+            "portal_client_picker_js_v": portal_client_picker_js_v,
             "loja_cat_js_v": loja_cat_js_v,
             "client_cart_count": _client_cart_count() if session.get("client_id") else 0,
             "format_currency_brl": _format_currency_brl,
@@ -6254,31 +6343,39 @@ def comercial_op_new():
     catalog_choices = _crm_catalog_choices()
     if request.method == "POST":
         catalog_lines = _parse_catalog_lines_from_form()
+        selected_client = _comercial_op_prefill_client()
+        portal_client_id_raw = (request.form.get("portal_client_id") or "").strip()
+        if portal_client_id_raw.isdigit():
+            client = db.session.get(PortalClient, int(portal_client_id_raw))
+            if client:
+                selected_client = client
+        if not selected_client:
+            flash(
+                "Selecione um cliente cadastrado. Cadastre-o em Clientes antes de criar o lead.",
+                "error",
+            )
+            ctx = _comercial_op_captacao_ctx(rep, catalog_choices, None)
+            if catalog_lines:
+                ctx["sel_cat_lines"] = [
+                    {"id": cid, "qty": qty} for cid, qty in catalog_lines
+                ]
+            return render_template("comercial/op_captacao.html", **ctx)
         if not catalog_lines:
             flash(
                 "Selecione ao menos um produto do catálogo para vincular esta demanda.",
                 "error",
             )
-            return render_template(
-                "comercial/op_captacao.html",
-                rep=rep,
-                catalog_choices=catalog_choices,
-                stages=STAGES,
-            )
+            ctx = _comercial_op_captacao_ctx(rep, catalog_choices, selected_client)
+            return render_template("comercial/op_captacao.html", **ctx)
         title = (request.form.get("title") or "").strip() or "Captação de adesão"
         opp = Opportunity(
             sales_rep_id=rid,
             title=title,
-            contact_name=(request.form.get("contact_name") or "").strip() or None,
-            organization=(request.form.get("organization") or "").strip() or None,
-            cnpj=_normalize_cnpj_field(request.form.get("cnpj")),
-            email=(request.form.get("email") or "").strip() or None,
-            phone=(request.form.get("phone") or "").strip() or None,
-            sphere=(request.form.get("sphere") or "").strip() or None,
             stage=normalize_stage_key(request.form.get("stage"), default="novo"),
             notes=(request.form.get("notes") or "").strip() or None,
             source=f"Captação comercial — {rep.name}",
         )
+        _opportunity_from_portal_client(opp, selected_client)
         db.session.add(opp)
         db.session.flush()
         _sync_opportunity_catalog_lines(opp, catalog_lines)
@@ -6288,12 +6385,9 @@ def comercial_op_new():
             "ok",
         )
         return redirect(url_for("comercial_op_edit", opp_id=opp.id))
-    return render_template(
-        "comercial/op_captacao.html",
-        rep=rep,
-        catalog_choices=catalog_choices,
-        stages=STAGES,
-    )
+    prefill_client = _comercial_op_prefill_client()
+    ctx = _comercial_op_captacao_ctx(rep, catalog_choices, prefill_client)
+    return render_template("comercial/op_captacao.html", **ctx)
 
 
 @app.route("/comercial/oportunidade/<int:opp_id>", methods=["GET", "POST"])
@@ -6571,6 +6665,66 @@ def _comercial_portal_clients_query(q: str = ""):
             )
         )
     return query.order_by(PortalClient.name.asc())
+
+
+def _portal_client_digits_cnpj(cnpj: str | None) -> str:
+    return re.sub(r"\D", "", cnpj or "")
+
+
+def _find_portal_client_by_cnpj(cnpj_raw: str | None) -> PortalClient | None:
+    digits = _portal_client_digits_cnpj(cnpj_raw)
+    if len(digits) != 14:
+        return None
+    for client in PortalClient.query.filter(PortalClient.cnpj.isnot(None)).all():
+        if _portal_client_digits_cnpj(client.cnpj) == digits:
+            return client
+    return None
+
+
+def _opportunity_from_portal_client(opp: Opportunity, client: PortalClient) -> None:
+    opp.portal_client_id = client.id
+    opp.contact_name = client.name
+    opp.email = client.email
+    opp.phone = client.phone
+    opp.organization = (client.organization or client.razao_social or "").strip() or None
+    opp.cnpj = client.cnpj
+    opp.sphere = client.sphere
+
+
+def _comercial_op_prefill_client() -> PortalClient | None:
+    raw_id = (request.form.get("portal_client_id") or "").strip()
+    if raw_id.isdigit():
+        client = db.session.get(PortalClient, int(raw_id))
+        if client:
+            return client
+    cnpj_arg = request.args.get("cnpj") or request.form.get("cnpj")
+    if cnpj_arg:
+        client = _find_portal_client_by_cnpj(cnpj_arg)
+        if client:
+            return client
+    return None
+
+
+def _comercial_op_captacao_ctx(
+    rep: SalesRepresentative,
+    catalog_choices,
+    selected_client: PortalClient | None = None,
+):
+    initial_search = ""
+    if not selected_client:
+        initial_search = (request.args.get("organization") or "").strip()
+        if not initial_search:
+            initial_search = (request.args.get("cnpj") or "").strip()
+    return {
+        "rep": rep,
+        "catalog_choices": catalog_choices,
+        "stages": STAGES,
+        "selected_client": (
+            _portal_client_picker_json(selected_client) if selected_client else None
+        ),
+        "initial_client_search": initial_search,
+        "clients_url": url_for("comercial_client_new"),
+    }
 
 
 def _apply_comercial_lead_portal_client(opp: Opportunity) -> None:
