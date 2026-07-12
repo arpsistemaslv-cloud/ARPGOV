@@ -6,7 +6,9 @@
 
 <header class="comercial-page-header comercial-page-header--compact">
   <div class="comercial-page-header__main">
-    <p class="comercial-page-header__back"><a href="{{ url_for('comercial_dashboard') }}">← Meus leads</a></p>
+    <div class="comercial-page-header__back">
+      <a class="comercial-back-btn" href="{{ url_for('comercial_dashboard') }}">Meus leads</a>
+    </div>
     <h1 class="comercial-page-header__title">Registrar captação de adesão</h1>
     <p class="comercial-page-header__lead">Demanda que <strong>você captou</strong>. Selecione ao menos um produto do catálogo — a oportunidade fica vinculada ao seu usuário.</p>
   </div>

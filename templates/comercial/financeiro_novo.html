@@ -5,7 +5,9 @@
 
 <header class="comercial-page-header comercial-page-header--compact">
   <div class="comercial-page-header__main">
-    <p class="comercial-page-header__back"><a href="{{ url_for('comercial_financeiro') }}">← Meu financeiro</a></p>
+    <div class="comercial-page-header__back">
+      <a class="comercial-back-btn" href="{{ url_for('comercial_financeiro') }}">Meu financeiro</a>
+    </div>
     <h1 class="comercial-page-header__title">Enviar NF / documento</h1>
     <p class="comercial-page-header__lead">Anexe a nota fiscal ou comprovante. Opcionalmente vincule a uma negociação para organizar o histórico.</p>
   </div>

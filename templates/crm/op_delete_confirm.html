@@ -5,7 +5,9 @@
 {% include "comercial/_subnav.html" %}
 <header class="comercial-page-header comercial-page-header--compact">
   <div class="comercial-page-header__main">
-    <p class="comercial-page-header__back"><a href="{{ url_for('comercial_op_edit', opp_id=opp.id) }}">← Voltar ao lead</a></p>
+    <div class="comercial-page-header__back">
+      <a class="comercial-back-btn" href="{{ url_for('comercial_op_edit', opp_id=opp.id) }}">Voltar ao lead</a>
+    </div>
     <h1 class="comercial-page-header__title" style="color:#c0392b">Excluir lead</h1>
     <p class="comercial-page-header__lead">Esta ação não pode ser desfeita. Serão removidos o registro, mensagens do chat e vínculos com produtos.</p>
   </div>

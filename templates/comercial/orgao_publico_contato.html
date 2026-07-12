@@ -5,7 +5,9 @@
 
 <header class="comercial-page-header comercial-page-header--compact">
   <div class="comercial-page-header__main">
-    <p class="comercial-page-header__back"><a href="{{ url_for('comercial_orgaos_publicos', q=back_params.q, uf=back_params.uf, regiao=back_params.regiao, tipo=back_params.tipo, page=back_params.page) }}">← Voltar ao diretório</a></p>
+    <div class="comercial-page-header__back">
+      <a class="comercial-back-btn" href="{{ url_for('comercial_orgaos_publicos', q=back_params.q, uf=back_params.uf, regiao=back_params.regiao, tipo=back_params.tipo, page=back_params.page) }}">Voltar ao diretório</a>
+    </div>
     <h1 class="comercial-page-header__title">Contato do órgão</h1>
     <p class="comercial-page-header__lead">
       <strong>{{ org.nome }}</strong>{% if org.nome_unidade %} — {{ org.nome_unidade }}{% endif %}{% if org.uf %} ({{ org.uf }}){% endif %}
