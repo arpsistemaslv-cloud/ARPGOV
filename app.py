@@ -6325,6 +6325,7 @@ def comercial_op_edit(opp_id):
         opp.stage = request.form.get("stage", opp.stage) or opp.stage
         opp.notes = request.form.get("notes", "").strip() or None
         opp.source = request.form.get("source", "").strip() or None
+        _apply_comercial_lead_portal_client(opp)
         _sync_opportunity_catalog_lines(opp, _parse_catalog_lines_from_form())
         db.session.commit()
         change_lines = _opp_notify_change_lines(before, opp)
@@ -6332,12 +6333,14 @@ def comercial_op_edit(opp_id):
         flash("Salvo.", "ok")
         return redirect(url_for("comercial_dashboard"))
     chat_messages = _lead_chat_messages_for_opportunity(opp.id)
+    clients = _comercial_portal_clients_query().all()
     return render_template(
         "crm/op_form.html",
         opp=opp,
         stages=STAGES,
         catalog_choices=catalog_choices,
         sales_reps=None,
+        clients=clients,
         chat_messages=chat_messages,
         chat_form_action=url_for("comercial_op_chat", opp_id=opp.id),
         cancel_url=url_for("comercial_dashboard"),
@@ -6550,6 +6553,148 @@ def comercial_orgao_publico_contato(org_id):
         tipos_org=dict(TIPOS_ORGAO_PUBLICO),
         back_params=back_params,
     )
+
+
+def _comercial_portal_clients_query(q: str = ""):
+    query = PortalClient.query
+    q = (q or "").strip()
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                PortalClient.name.ilike(like),
+                PortalClient.email.ilike(like),
+                PortalClient.organization.ilike(like),
+                PortalClient.razao_social.ilike(like),
+                PortalClient.sector.ilike(like),
+                PortalClient.cnpj.ilike(like),
+            )
+        )
+    return query.order_by(PortalClient.name.asc())
+
+
+def _apply_comercial_lead_portal_client(opp: Opportunity) -> None:
+    raw = (request.form.get("portal_client_id") or "").strip()
+    if raw:
+        try:
+            cid = int(raw)
+            if db.session.get(PortalClient, cid):
+                opp.portal_client_id = cid
+                return
+        except (TypeError, ValueError):
+            pass
+    if opp.email:
+        em = _normalize_portal_client_email(opp.email)
+        client = PortalClient.query.filter_by(email=em).first()
+        if client:
+            opp.portal_client_id = client.id
+
+
+@app.route("/comercial/clientes")
+@rep_login_required
+def comercial_clients_list():
+    rep = _session_sales_rep()
+    if rep is None:
+        return redirect(url_for("comercial_login", next=request.path))
+    q = (request.args.get("q") or "").strip()
+    clients = _comercial_portal_clients_query(q).all()
+    return render_template(
+        "comercial/clientes_list.html",
+        rep=rep,
+        clients=clients,
+        q=q,
+    )
+
+
+@app.route("/comercial/clientes/novo", methods=["GET", "POST"])
+@rep_login_required
+def comercial_client_new():
+    rep = _session_sales_rep()
+    if rep is None:
+        return redirect(url_for("comercial_login", next=request.path))
+    ctx = {
+        "rep": rep,
+        "client": None,
+        "br_ufs": BR_UFS,
+        "catalog_sphere_choices": CATALOG_SPHERE_CHOICES,
+    }
+    if request.method == "POST":
+        email = _normalize_portal_client_email(request.form.get("email"))
+        name = (request.form.get("name") or "").strip()
+        password = request.form.get("password") or ""
+        if not email or "@" not in email:
+            flash("Informe um e-mail válido.", "error")
+            return render_template("comercial/cliente_form.html", **ctx)
+        if not name:
+            flash("Informe o nome.", "error")
+            return render_template("comercial/cliente_form.html", **ctx)
+        if PortalClient.query.filter_by(email=email).first():
+            flash("Já existe cliente com este e-mail.", "error")
+            return render_template("comercial/cliente_form.html", **ctx)
+        if len(password) < 8:
+            flash("Senha mínima de 8 caracteres (acesso à área do cliente).", "error")
+            return render_template("comercial/cliente_form.html", **ctx)
+        client = PortalClient(
+            email=email,
+            password_hash=generate_password_hash(password),
+            name=name,
+        )
+        _apply_portal_client_profile_from_form(client)
+        db.session.add(client)
+        db.session.commit()
+        _retro_link_opportunities_to_client(client)
+        db.session.commit()
+        flash("Cliente cadastrado.", "ok")
+        return redirect(url_for("comercial_client_edit", client_id=client.id))
+    return render_template("comercial/cliente_form.html", **ctx)
+
+
+@app.route("/comercial/clientes/<int:client_id>", methods=["GET", "POST"])
+@rep_login_required
+def comercial_client_edit(client_id):
+    rep = _session_sales_rep()
+    if rep is None:
+        return redirect(url_for("comercial_login", next=request.path))
+    client = PortalClient.query.get_or_404(client_id)
+    ctx = {
+        "rep": rep,
+        "client": client,
+        "br_ufs": BR_UFS,
+        "catalog_sphere_choices": CATALOG_SPHERE_CHOICES,
+    }
+    if request.method == "POST":
+        email = _normalize_portal_client_email(request.form.get("email"))
+        name = (request.form.get("name") or "").strip()
+        if not email or "@" not in email:
+            flash("E-mail inválido.", "error")
+            return render_template("comercial/cliente_form.html", **ctx)
+        other = PortalClient.query.filter(
+            PortalClient.email == email, PortalClient.id != client.id
+        ).first()
+        if other:
+            flash("Outro cliente usa este e-mail.", "error")
+            return render_template("comercial/cliente_form.html", **ctx)
+        client.email = email
+        client.name = name or client.name
+        _apply_portal_client_profile_from_form(client)
+        password = request.form.get("password") or ""
+        if password:
+            if len(password) < 8:
+                flash("Nova senha: mínimo 8 caracteres.", "error")
+                return render_template("comercial/cliente_form.html", **ctx)
+            client.password_hash = generate_password_hash(password)
+        db.session.commit()
+        _retro_link_opportunities_to_client(client)
+        db.session.commit()
+        flash("Cliente atualizado.", "ok")
+        return redirect(url_for("comercial_clients_list"))
+    leads = (
+        Opportunity.query.filter_by(portal_client_id=client.id)
+        .order_by(Opportunity.updated_at.desc())
+        .limit(50)
+        .all()
+    )
+    return render_template("comercial/cliente_form.html", leads=leads, **ctx)
 
 
 @app.route("/comercial/clientes-sugeridos")

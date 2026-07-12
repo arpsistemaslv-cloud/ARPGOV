@@ -85,6 +85,23 @@
           </div>
         </div>
       </section>
+      {% elif clients is defined and comercial_subnav %}
+      <section class="lead-form-card" aria-labelledby="lead-sec-client">
+        <h2 class="lead-form-card__title" id="lead-sec-client">Cliente (portal)</h2>
+        <p class="lead-form-card__desc">Vincule a conta do cliente para chat e acompanhamento na área do cliente.</p>
+        <div class="lead-form-fields lead-form-fields--2col">
+          <div class="lead-form-field lead-form-field--wide">
+            <label for="portal_client_id">Cliente cadastrado</label>
+            <select id="portal_client_id" name="portal_client_id">
+              <option value="" {% if not opp or not opp.portal_client_id %}selected{% endif %}>— Não vinculado —</option>
+              {% for c in clients %}
+              <option value="{{ c.id }}" {% if opp and opp.portal_client_id == c.id %}selected{% endif %}>{{ c.name }} — {{ c.email }}</option>
+              {% endfor %}
+            </select>
+            <p class="meta" style="margin:0.35rem 0 0"><a href="{{ url_for('comercial_client_new') }}">+ Cadastrar cliente</a></p>
+          </div>
+        </div>
+      </section>
       {% endif %}
 
       <section class="lead-form-card" aria-labelledby="lead-sec-products">

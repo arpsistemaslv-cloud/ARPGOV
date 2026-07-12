@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "macros/portal_client_fields.html" import portal_client_profile_fields %}
+{% block title %}{% if client %}Editar cliente{% else %}Novo cliente{% endif %} — comercial{% endblock %}
+{% block body %}
+{% include "comercial/_subnav.html" %}
+
+<header class="comercial-page-header comercial-page-header--compact">
+  <div class="comercial-page-header__main">
+    <div class="comercial-page-header__back">
+      <a class="comercial-back-btn" href="{{ url_for('comercial_clients_list') }}">Clientes</a>
+    </div>
+    <h1 class="comercial-page-header__title">{% if client %}Editar cliente{% else %}Novo cliente{% endif %}</h1>
+    <p class="comercial-page-header__lead">Cadastro com login para a <strong>área do cliente</strong> no site público.</p>
+  </div>
+</header>
+
+<div class="comercial-form-card comercial-form-card--wide">
+  <form method="post" class="client-profile-form br-lookup-form">
+    {{ portal_client_profile_fields(
+      client=client,
+      show_login=True,
+      show_password=True,
+      password_required=not client
+    ) }}
+    <div class="comercial-form__actions comercial-form__full">
+      <button type="submit" class="btn btn--primary">Salvar</button>
+      <a class="btn btn--ghost" href="{{ url_for('comercial_clients_list') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{% if client and leads %}
+<section class="hub-section hub-section--table" style="margin-top:1.5rem">
+  <header class="hub-section__head">
+    <h2 class="hub-section__title">Leads deste cliente</h2>
+  </header>
+  <div class="crm-table-card">
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr><th>Título</th><th>Estágio</th><th>Processo</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for l in leads %}
+          <tr>
+            <td>{{ l.title }}</td>
+            <td class="meta">{{ l.stage }}</td>
+            <td class="meta">{{ l.process_ref or '—' }}</td>
+            <td>
+              {% if l.sales_rep_id == rep.id or rep.is_admin %}
+              <a href="{{ url_for('comercial_op_edit', opp_id=l.id) }}">Abrir</a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
