@@ -616,6 +616,179 @@ def _send_email_background(to_addr: str, subject: str, body: str) -> None:
     threading.Thread(target=run, daemon=True).start()
 
 
+def _marketing_recipients_query(
+    sphere: str | None = None,
+    uf: str | None = None,
+    q: str | None = None,
+):
+    query = PortalClient.query.filter(
+        PortalClient.email.isnot(None),
+        PortalClient.email != "",
+    )
+    if sphere:
+        query = query.filter(PortalClient.sphere == sphere)
+    if uf:
+        query = query.filter(PortalClient.address_state == uf)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                PortalClient.name.ilike(like),
+                PortalClient.email.ilike(like),
+                PortalClient.organization.ilike(like),
+                PortalClient.razao_social.ilike(like),
+                PortalClient.address_city.ilike(like),
+            )
+        )
+    return query.order_by(PortalClient.name.asc(), PortalClient.id.asc())
+
+
+def _marketing_personalize_body(template: str, client: PortalClient) -> str:
+    org = (client.organization or client.razao_social or "").strip()
+    return (
+        template.replace("{nome}", (client.name or "").strip())
+        .replace("{orgao}", org)
+        .replace("{esfera}", (client.sphere or "").strip())
+    )
+
+
+def _marketing_arp_block(items: list[CatalogItem], base_url: str) -> str:
+    if not items:
+        return ""
+    lines = ["", "— ARPs em destaque —", ""]
+    for it in items:
+        url = f"{base_url.rstrip('/')}{url_for('produto', slug=it.slug)}"
+        lines.append(f"• {it.title}")
+        lines.append(f"  Esfera: {it.sphere} | Valor unit.: {_format_currency_brl(it.unit_price)}")
+        if it.valid_until:
+            lines.append(f"  Válida até: {it.valid_until.strftime('%d/%m/%Y')}")
+        lines.append(f"  Ver no portal: {url}")
+        lines.append("")
+    lines.append(f"Catálogo completo: {base_url.rstrip('/')}{url_for('arps')}")
+    return "\n".join(lines)
+
+
+def _marketing_catalog_for_filters(sphere: str | None) -> list[CatalogItem]:
+    q = CatalogItem.query.order_by(CatalogItem.section.asc(), CatalogItem.title.asc())
+    if sphere:
+        q = q.filter(CatalogItem.sphere == sphere)
+    return q.limit(250).all()
+
+
+def _email_marketing_filter_params() -> dict[str, str]:
+    sphere = _normalize_sphere_field(
+        request.values.get("sphere") or request.values.get("sphere_filter")
+    )
+    uf = _normalize_uf_field(request.values.get("uf") or request.values.get("uf_filter"))
+    q = (request.values.get("q") or "").strip()
+    params: dict[str, str] = {}
+    if sphere:
+        params["sphere"] = sphere
+    if uf:
+        params["uf"] = uf
+    if q:
+        params["q"] = q
+    return params
+
+
+def _email_marketing_page_ctx(*, area: str, form_action: str, cancel_url: str) -> dict:
+    params = _email_marketing_filter_params()
+    sphere = params.get("sphere")
+    uf = params.get("uf")
+    q = params.get("q", "")
+    recipients_q = _marketing_recipients_query(sphere, uf, q or None)
+    total = recipients_q.count()
+    preview = recipients_q.limit(50).all()
+    catalog_items = _marketing_catalog_for_filters(sphere)
+    return {
+        "area": area,
+        "form_action": form_action,
+        "cancel_url": cancel_url,
+        "comercial_subnav": area == "comercial",
+        "sphere_filter": sphere or "",
+        "uf_filter": uf or "",
+        "q": q,
+        "total_recipients": total,
+        "preview_recipients": preview,
+        "catalog_items": catalog_items,
+        "sphere_choices": CATALOG_SPHERE_CHOICES,
+        "br_ufs": BR_UFS,
+        "smtp_ok": bool(_smtp_config()),
+        "filter_url_endpoint": (
+            "comercial_email_marketing" if area == "comercial" else "crm.crm_email_marketing"
+        ),
+    }
+
+
+def _email_marketing_handle_send(*, area: str, redirect_endpoint: str):
+    if request.form.get("action") != "send":
+        return None
+    subject = (request.form.get("subject") or "").strip()
+    body_tpl = (request.form.get("body") or "").strip()
+    if not subject:
+        flash("Informe o assunto do e-mail.", "error")
+        return redirect(url_for(redirect_endpoint, **_email_marketing_filter_params()))
+    if not body_tpl:
+        flash("Escreva a mensagem do e-mail.", "error")
+        return redirect(url_for(redirect_endpoint, **_email_marketing_filter_params()))
+    if request.form.get("confirm_send") != "1":
+        flash("Marque a confirmação para enviar a campanha.", "error")
+        return redirect(url_for(redirect_endpoint, **_email_marketing_filter_params()))
+    if not _smtp_config():
+        flash("SMTP não configurado no servidor (variáveis SMTP_HOST / SMTP_FROM).", "error")
+        return redirect(url_for(redirect_endpoint, **_email_marketing_filter_params()))
+    sphere = _normalize_sphere_field(request.form.get("sphere_filter"))
+    uf = _normalize_uf_field(request.form.get("uf_filter"))
+    q = (request.form.get("q") or "").strip()
+    catalog_ids: list[int] = []
+    for raw in request.form.getlist("catalog_ids"):
+        try:
+            catalog_ids.append(int(raw))
+        except (TypeError, ValueError):
+            pass
+    items = (
+        CatalogItem.query.filter(CatalogItem.id.in_(catalog_ids)).all()
+        if catalog_ids
+        else []
+    )
+    arp_block = _marketing_arp_block(items, _public_base_url())
+    recipients = _marketing_recipients_query(sphere, uf, q or None).all()
+    if not recipients:
+        flash("Nenhum cliente com e-mail corresponde aos filtros.", "error")
+        return redirect(url_for(redirect_endpoint, **_email_marketing_filter_params()))
+    _send_marketing_campaign_background(recipients, subject, body_tpl, arp_block)
+    flash(
+        f"Envio iniciado para {len(recipients)} destinatário(s). Os e-mails saem em segundo plano.",
+        "ok",
+    )
+    return redirect(url_for(redirect_endpoint, **_email_marketing_filter_params()))
+
+
+def _send_marketing_campaign_background(
+    recipients: list[PortalClient],
+    subject: str,
+    body_tpl: str,
+    arp_block: str,
+) -> None:
+    def run():
+        import time
+
+        for client in recipients:
+            to_addr = (client.email or "").strip()
+            if not to_addr or "@" not in to_addr:
+                continue
+            try:
+                body = _marketing_personalize_body(body_tpl, client)
+                if arp_block:
+                    body = body.rstrip() + "\n" + arp_block
+                _send_email_smtp(to_addr, subject, body)
+            except Exception:
+                app.logger.exception("Falha no e-mail marketing para %s", to_addr)
+            time.sleep(0.45)
+
+    threading.Thread(target=run, daemon=True).start()
+
+
 def _opp_snapshot_for_notify(opp: Opportunity) -> dict:
     cat_lines = tuple(
         sorted((ln.catalog_item_id, int(ln.quantity)) for ln in opp.catalog_lines)
@@ -6900,6 +7073,27 @@ def _apply_comercial_lead_portal_client(opp: Opportunity) -> None:
         client = PortalClient.query.filter_by(email=em).first()
         if client:
             opp.portal_client_id = client.id
+
+
+@app.route("/comercial/email-marketing", methods=["GET", "POST"])
+@rep_login_required
+def comercial_email_marketing():
+    rep = _session_sales_rep()
+    if rep is None:
+        return redirect(url_for("comercial_login", next=request.path))
+    if request.method == "POST":
+        redir = _email_marketing_handle_send(
+            area="comercial",
+            redirect_endpoint="comercial_email_marketing",
+        )
+        if redir is not None:
+            return redir
+    ctx = _email_marketing_page_ctx(
+        area="comercial",
+        form_action=url_for("comercial_email_marketing"),
+        cancel_url=url_for("comercial_dashboard"),
+    )
+    return render_template("email_marketing/index.html", rep=rep, **ctx)
 
 
 @app.route("/comercial/clientes")

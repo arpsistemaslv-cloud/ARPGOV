@@ -1972,6 +1972,25 @@ def finance_entry_status(entry_id):
     return redirect(url_for("crm.crm_financeiro_home"))
 
 
+@crm_bp.route("/email-marketing", methods=["GET", "POST"], endpoint="crm_email_marketing")
+@crm_login_required
+def crm_email_marketing():
+    m = _main()
+    if request.method == "POST":
+        redir = m._email_marketing_handle_send(
+            area="crm",
+            redirect_endpoint="crm.crm_email_marketing",
+        )
+        if redir is not None:
+            return redir
+    ctx = m._email_marketing_page_ctx(
+        area="crm",
+        form_action=url_for("crm.crm_email_marketing"),
+        cancel_url=url_for("crm.crm_dashboard"),
+    )
+    return render_template("email_marketing/index.html", **ctx)
+
+
 @crm_bp.route("/brand-kit")
 def legacy_crm_brand_kit_redirect():
     return redirect(url_for("admin_brand_kit"))

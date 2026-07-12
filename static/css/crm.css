@@ -1864,6 +1864,94 @@
   margin-top: 0.35rem;
 }
 
+.email-marketing-layout {
+  margin-top: 0.5rem;
+}
+
+.email-marketing-recipient-kpi {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: #f0f4fa;
+  border: 1px solid rgba(7, 29, 65, 0.1);
+  font-size: 0.92rem;
+}
+
+.email-marketing-recipient-kpi strong {
+  font-size: 1.35rem;
+  color: var(--gov-blue-90, #071d41);
+}
+
+.email-marketing-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.email-marketing-compose .lead-form-field,
+.email-marketing-arps,
+.email-marketing-preview {
+  margin-top: 0;
+}
+
+.email-marketing-arp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.email-marketing-arp-item {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.email-marketing-arp-item:hover {
+  border-color: rgba(7, 29, 65, 0.22);
+  background: #fafbfd;
+}
+
+.email-marketing-arp-item input {
+  margin-top: 0.2rem;
+}
+
+.email-marketing-arp-item__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.email-marketing-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.25rem 0 1rem;
+}
+
+.email-marketing-confirm {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+}
+
+.email-marketing-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 .portal-backoffice .lead-form-page input,
 .portal-backoffice .lead-form-page select,
 .portal-backoffice .lead-form-page textarea {

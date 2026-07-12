@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}E-mail marketing{% if comercial_subnav %} — comercial{% else %} — CRM{% endif %}{% endblock %}
+{% block body %}
+{% if comercial_subnav %}
+{% include "comercial/_subnav.html" %}
+<header class="comercial-page-header comercial-page-header--compact">
+  <div class="comercial-page-header__main">
+    <p class="comercial-page-header__eyebrow">Divulgação</p>
+    <h1 class="comercial-page-header__title">E-mail marketing</h1>
+    <p class="comercial-page-header__lead">Divulgue ARPs para clientes do portal com filtros por esfera e estado.</p>
+  </div>
+</header>
+{% else %}
+<div class="crm-shell"><div class="crm-shell__inner">
+{% include "crm/_subnav.html" %}
+<header class="comercial-page-header comercial-page-header--compact" style="margin-bottom:1rem">
+  <div class="comercial-page-header__main">
+    <p class="comercial-page-header__eyebrow">Divulgação</p>
+    <h1 class="comercial-page-header__title" style="margin-top:0">E-mail marketing</h1>
+    <p class="meta">Envie ARPs em destaque para clientes cadastrados no portal.</p>
+  </div>
+</header>
+{% endif %}
+
+{% if not smtp_ok %}
+<p class="flash flash--error">SMTP não configurado no servidor. Configure <code>SMTP_HOST</code> e <code>SMTP_FROM</code> para enviar campanhas.</p>
+{% endif %}
+
+<div class="loja-layout comercial-orgaos-layout email-marketing-layout">
+  <aside class="loja-sidebar" aria-label="Filtros de destinatários">
+    <details class="loja-filters-panel" open>
+      <summary class="loja-filters-panel__summary">
+        <span>Destinatários</span>
+        {% if sphere_filter or uf_filter or q %}
+        <span class="loja-filters-panel__badge">Ativos</span>
+        {% endif %}
+      </summary>
+      <div class="loja-toolbar comercial-orgaos-filters">
+        <form method="get" action="{{ url_for(filter_url_endpoint) }}" class="comercial-orgaos-search">
+          <div class="filters-block">
+            <span class="filters-block__label">Buscar cliente</span>
+            <input type="search" name="q" value="{{ q }}" placeholder="Nome, e-mail, órgão…" autocomplete="off">
+            {% if sphere_filter %}<input type="hidden" name="sphere" value="{{ sphere_filter }}">{% endif %}
+            {% if uf_filter %}<input type="hidden" name="uf" value="{{ uf_filter }}">{% endif %}
+            <button type="submit" class="btn btn--primary btn--block comercial-orgaos-search__btn">Aplicar</button>
+          </div>
+        </form>
+
+        <details class="loja-cat-group comercial-filter-group" {% if sphere_filter %}open{% endif %}>
+          <summary class="loja-cat-group__summary">
+            <span class="loja-cat-group__label">Esfera{% if sphere_filter %}: <strong>{{ sphere_filter }}</strong>{% endif %}</span>
+          </summary>
+          <div class="loja-cat-group__children">
+            <div class="filters filters--stack">
+              <a href="{{ url_for(filter_url_endpoint, q=q or none, uf=uf_filter or none) }}" class="{{ 'active' if not sphere_filter else '' }}">Todas</a>
+              {% for s in sphere_choices %}
+              <a href="{{ url_for(filter_url_endpoint, sphere=s, uf=uf_filter or none, q=q or none) }}" class="{{ 'active' if sphere_filter == s else '' }}">{{ s }}</a>
+              {% endfor %}
+            </div>
+          </div>
+        </details>
+
+        <details class="loja-cat-group comercial-filter-group" {% if uf_filter %}open{% endif %}>
+          <summary class="loja-cat-group__summary">
+            <span class="loja-cat-group__label">Estado (UF){% if uf_filter %}: <strong>{{ uf_filter }}</strong>{% endif %}</span>
+          </summary>
+          <div class="loja-cat-group__children">
+            <div class="filters filters--stack comercial-orgaos-filters__scroll">
+              <a href="{{ url_for(filter_url_endpoint, q=q or none, sphere=sphere_filter or none) }}" class="{{ 'active' if not uf_filter else '' }}">Todos</a>
+              {% for sigla, nome in br_ufs %}
+              <a href="{{ url_for(filter_url_endpoint, uf=sigla, sphere=sphere_filter or none, q=q or none) }}" class="{{ 'active' if uf_filter == sigla else '' }}" title="{{ nome }}">{{ sigla }}</a>
+              {% endfor %}
+            </div>
+          </div>
+        </details>
+
+        {% if sphere_filter or uf_filter or q %}
+        <p class="meta loja-sidebar__clear"><a href="{{ url_for(filter_url_endpoint) }}">Limpar filtros</a></p>
+        {% endif %}
+      </div>
+    </details>
+
+    <p class="email-marketing-recipient-kpi" aria-live="polite">
+      <strong>{{ total_recipients }}</strong>
+      {{ 'destinatário' if total_recipients == 1 else 'destinatários' }}
+      com e-mail
+    </p>
+  </aside>
+
+  <div class="loja-main email-marketing-main">
+    <form method="post" action="{{ form_action }}" class="email-marketing-form">
+      <input type="hidden" name="action" value="send">
+      <input type="hidden" name="sphere_filter" value="{{ sphere_filter }}">
+      <input type="hidden" name="uf_filter" value="{{ uf_filter }}">
+      <input type="hidden" name="q" value="{{ q }}">
+
+      <section class="lead-form-card email-marketing-compose">
+        <h2 class="lead-form-card__title">Mensagem</h2>
+        <p class="lead-form-card__desc">Use <code>{nome}</code>, <code>{orgao}</code> e <code>{esfera}</code> para personalizar cada e-mail.</p>
+
+        <div class="lead-form-field">
+          <label for="mk-subject">Assunto</label>
+          <input id="mk-subject" type="text" name="subject" maxlength="200" required placeholder="Novas ARPs disponíveis no portal">
+        </div>
+
+        <div class="lead-form-field">
+          <label for="mk-body">Corpo do e-mail</label>
+          <textarea id="mk-body" name="body" rows="8" required placeholder="Olá {nome},&#10;&#10;Temos novas oportunidades em atas de registro de preços para {orgao}.&#10;&#10;Confira abaixo os destaques e acesse nosso catálogo."></textarea>
+        </div>
+      </section>
+
+      <section class="lead-form-card email-marketing-arps">
+        <h2 class="lead-form-card__title">ARPs em destaque</h2>
+        <p class="lead-form-card__desc">Selecione os produtos/atas que serão listados ao final do e-mail (com link para o portal).</p>
+        {% if catalog_items %}
+        <div class="email-marketing-arp-list">
+          {% for item in catalog_items %}
+          <label class="email-marketing-arp-item">
+            <input type="checkbox" name="catalog_ids" value="{{ item.id }}">
+            <span class="email-marketing-arp-item__main">
+              <strong>{{ item.title[:72] }}{% if item.title|length > 72 %}…{% endif %}</strong>
+              <span class="meta">{{ item.sphere }} · {{ item.unit_price|float|brl }}{% if item.valid_until %} · até {{ item.valid_until.strftime('%d/%m/%Y') }}{% endif %}</span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="meta">Nenhum produto no catálogo{% if sphere_filter %} para a esfera {{ sphere_filter }}{% endif %}.</p>
+        {% endif %}
+      </section>
+
+      <section class="lead-form-card email-marketing-preview">
+        <h2 class="lead-form-card__title">Prévia dos destinatários</h2>
+        {% if preview_recipients %}
+        <div class="crm-table-card">
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Órgão</th>
+                  <th>Esfera</th>
+                  <th>UF</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in preview_recipients %}
+                <tr>
+                  <td>{{ c.name }}</td>
+                  <td class="meta">{{ c.email }}</td>
+                  <td>{{ c.organization or '—' }}</td>
+                  <td class="meta">{{ c.sphere or '—' }}</td>
+                  <td class="meta">{{ c.address_state or '—' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% if total_recipients > preview_recipients|length %}
+        <p class="meta">Mostrando {{ preview_recipients|length }} de {{ total_recipients }} destinatários.</p>
+        {% endif %}
+        {% else %}
+        <p class="meta">Nenhum cliente com e-mail corresponde aos filtros. Ajuste esfera ou estado.</p>
+        {% endif %}
+      </section>
+
+      <div class="email-marketing-actions">
+        <label class="email-marketing-confirm">
+          <input type="checkbox" name="confirm_send" value="1" required>
+          Confirmo o envio para <strong>{{ total_recipients }}</strong> destinatário(s) com os filtros atuais.
+        </label>
+        <div class="email-marketing-actions__buttons">
+          <a class="btn btn--ghost" href="{{ cancel_url }}">Cancelar</a>
+          <button type="submit" class="btn btn--primary" {% if not smtp_ok or total_recipients == 0 %}disabled{% endif %}>Enviar campanha</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if not comercial_subnav %}
+</div></div>
+{% endif %}
+{% endblock %}
