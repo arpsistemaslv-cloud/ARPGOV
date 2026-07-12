@@ -8,6 +8,7 @@ import smtplib
 import sys
 import threading
 from email.message import EmailMessage
+from email.utils import formataddr
 import unicodedata
 import uuid
 import webbrowser
@@ -556,6 +557,10 @@ def _url_cliente_meus_leads() -> str:
     return f"{_public_base_url()}{url_for('cliente_meus_leads')}"
 
 
+def _url_cliente_lead(opp_id: int) -> str:
+    return f"{_public_base_url()}{url_for('cliente_lead_detail', oid=opp_id)}"
+
+
 def _url_crm_oportunidade(opp_id: int) -> str:
     return f"{_public_base_url()}{url_for('crm.crm_op_edit', opp_id=opp_id)}"
 
@@ -586,14 +591,50 @@ def _smtp_config() -> dict | None:
     }
 
 
-def _send_email_smtp(to_addr: str, subject: str, body: str) -> None:
+def _format_email_sender(from_addr: str, from_name: str | None = None) -> str:
+    addr = (from_addr or "").strip()
+    if not addr:
+        return ""
+    name = (from_name or "").strip()
+    return formataddr((name, addr)) if name else addr
+
+
+def _email_sender_from_rep(rep: SalesRepresentative | None) -> dict[str, str]:
+    """Remetente do e-mail = cadastro do vendedor (área comercial)."""
+    if not rep or not rep.is_active:
+        return {}
+    em = (rep.email or "").strip()
+    if not em or "@" not in em:
+        return {}
+    out: dict[str, str] = {"from_addr": em, "reply_to": em}
+    nm = (rep.name or "").strip()
+    if nm:
+        out["from_name"] = nm
+    return out
+
+
+def _send_email_smtp(
+    to_addr: str,
+    subject: str,
+    body: str,
+    *,
+    from_addr: str | None = None,
+    from_name: str | None = None,
+    reply_to: str | None = None,
+) -> None:
     cfg = _smtp_config()
     if not cfg or not to_addr or "@" not in to_addr:
         return
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = cfg["from_addr"]
+    msg["From"] = _format_email_sender(
+        (from_addr or cfg["from_addr"]).strip(),
+        from_name,
+    )
     msg["To"] = to_addr
+    rt = (reply_to or "").strip()
+    if rt and "@" in rt:
+        msg["Reply-To"] = rt
     msg.set_content(body, charset="utf-8")
     with smtplib.SMTP(cfg["host"], cfg["port"], timeout=30) as smtp:
         if cfg["use_tls"]:
@@ -603,17 +644,94 @@ def _send_email_smtp(to_addr: str, subject: str, body: str) -> None:
         smtp.send_message(msg)
 
 
-def _send_email_background(to_addr: str, subject: str, body: str) -> None:
+def _send_email_background(
+    to_addr: str,
+    subject: str,
+    body: str,
+    *,
+    from_addr: str | None = None,
+    from_name: str | None = None,
+    reply_to: str | None = None,
+) -> None:
     if not _smtp_config():
+        app.logger.warning(
+            "SMTP não configurado; e-mail não enviado para %s (assunto: %s)",
+            to_addr,
+            subject[:80],
+        )
         return
 
     def run():
         try:
-            _send_email_smtp(to_addr, subject, body)
+            _send_email_smtp(
+                to_addr,
+                subject,
+                body,
+                from_addr=from_addr,
+                from_name=from_name,
+                reply_to=reply_to,
+            )
         except Exception:
             app.logger.exception("Falha ao enviar e-mail para %s", to_addr)
 
     threading.Thread(target=run, daemon=True).start()
+
+
+def _resolve_notify_client(opp: Opportunity) -> tuple[str, str] | None:
+    """Nome e e-mail do cliente para notificações do lead."""
+    client = opp.portal_client
+    if client and (client.email or "").strip():
+        return (client.name or opp.contact_name or "cliente", client.email.strip())
+    em = _normalize_portal_client_email(opp.email)
+    if em:
+        if client is None:
+            client = PortalClient.query.filter_by(email=em).first()
+        name = (
+            (client.name if client else None)
+            or opp.contact_name
+            or "cliente"
+        )
+        return (name, em)
+    return None
+
+
+def _notify_portal_client_lead_chat_reply(
+    opp: Opportunity,
+    staff_message: str | None,
+    *,
+    has_attachments: bool = False,
+    sender_rep: SalesRepresentative | None = None,
+) -> None:
+    """E-mail automático ao cliente quando a equipe responde no chat do lead."""
+    resolved = _resolve_notify_client(opp)
+    if resolved is None:
+        return
+    name, to_addr = resolved
+    sm = (staff_message or "").strip()
+    if not sm and not has_attachments:
+        return
+    sender = sender_rep or opp.sales_rep
+    sender_name = (sender.name if sender else "").strip() or "Equipe ARPGOV"
+    title = (opp.title or f"Lead #{opp.id}").strip()
+    parts = [
+        f"Olá, {name},",
+        f"{sender_name} respondeu no chat do seu lead «{title}».",
+    ]
+    if sm:
+        parts.append(f"Mensagem:\n\n{sm}")
+    if has_attachments:
+        parts.append(
+            "Foram enviado(s) arquivo(s) na conversa. Acesse o lead para visualizar os anexos."
+        )
+    parts.append(f"Ver conversa: {_url_cliente_lead(opp.id)}")
+    if sender and (sender.email or "").strip():
+        parts.append(
+            f"Responda este e-mail para falar diretamente com {sender.name or 'seu representante'}."
+        )
+    parts.append(f"Todos os seus leads: {_url_cliente_meus_leads()}")
+    body = "\n\n".join(parts)
+    subj = f"Nova resposta no seu lead — {title[:55]}"
+    _send_email_background(to_addr, subj, body, **_email_sender_from_rep(sender))
 
 
 def _marketing_recipients_query(
@@ -839,11 +957,11 @@ def _notify_portal_client_crm_update(
     sm = (staff_message or "").strip()
     if not change_lines and not sm and not has_attachments:
         return
-    client = opp.portal_client
-    if client is None or not (client.email or "").strip():
+    resolved = _resolve_notify_client(opp)
+    if resolved is None:
         return
-    to_addr = client.email.strip()
-    parts: list[str] = [f"Olá, {client.name},"]
+    name, to_addr = resolved
+    parts: list[str] = [f"Olá, {name},"]
     if change_lines:
         parts.append(
             "Há novidades no seu lead:\n\n"
@@ -853,9 +971,9 @@ def _notify_portal_client_crm_update(
         parts.append(f"Mensagem da equipe:\n\n{sm}")
     if has_attachments:
         parts.append(
-            "A equipe enviou arquivo(s) na conversa. Acesse Meus leads para ver os anexos."
+            "A equipe enviou arquivo(s) na conversa. Acesse o lead para ver os anexos."
         )
-    parts.append(f"\nAcompanhe em: {_url_cliente_meus_leads()}")
+    parts.append(f"\nAcompanhe em: {_url_cliente_lead(opp.id)}")
     body = "\n\n".join(parts)
     subj = f"Atualização no seu lead — {(opp.title or 'Lead')[:55]}"
     _send_email_background(to_addr, subj, body)
@@ -6751,8 +6869,11 @@ def comercial_op_chat(opp_id):
         )
         db.session.add(msg)
         db.session.commit()
-        _notify_portal_client_crm_update(
-            opp, [], body if body else None, has_attachments=bool(atts)
+        _notify_portal_client_lead_chat_reply(
+            opp,
+            body if body else None,
+            has_attachments=bool(atts),
+            sender_rep=rep,
         )
         flash("Mensagem enviada ao cliente.", "ok")
     return redirect(url_for("comercial_op_edit", opp_id=opp_id))

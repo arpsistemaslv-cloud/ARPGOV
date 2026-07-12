@@ -1120,8 +1120,18 @@ def lead_chat(opp_id):
         )
         db.session.add(msg)
         db.session.commit()
-        m._notify_portal_client_crm_update(
-            opp, [], body if body else None, has_attachments=bool(atts)
+        sender_rep = None
+        rid = session.get("rep_id")
+        if rid is not None:
+            try:
+                sender_rep = db.session.get(SalesRepresentative, int(rid))
+            except (TypeError, ValueError):
+                sender_rep = None
+        m._notify_portal_client_lead_chat_reply(
+            opp,
+            body if body else None,
+            has_attachments=bool(atts),
+            sender_rep=sender_rep,
         )
         flash("Mensagem enviada ao cliente.", "ok")
     return redirect(url_for("crm.crm_op_edit", opp_id=opp.id))
