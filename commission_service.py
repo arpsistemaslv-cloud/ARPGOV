@@ -78,6 +78,7 @@ def compute_split_rows(
     total_percent: Decimal,
     *,
     with_seller: bool,
+    apply_cashflow_reserve: bool = True,
 ) -> list[dict]:
     """Retorna linhas de rateio em % sobre o valor da operação."""
     total = _q4(Decimal(str(total_percent)))
@@ -108,13 +109,17 @@ def compute_split_rows(
                 "label": sh.name,
             }
         )
-    return apply_socio_cashflow_reserve_rows(rows, stakeholders)
+    if apply_cashflow_reserve:
+        return apply_socio_cashflow_reserve_rows(rows, stakeholders)
+    return rows
 
 
 def compute_split_rows_for_project(
     project: CommissionProject,
     stakeholders: list[CompanyStakeholder],
     total_percent: Decimal,
+    *,
+    apply_cashflow_reserve: bool = True,
 ) -> list[dict]:
     mode = project_effective_rateio_mode(project)
     if mode != "custom":
@@ -122,6 +127,7 @@ def compute_split_rows_for_project(
             stakeholders,
             total_percent,
             with_seller=(mode == "with_seller"),
+            apply_cashflow_reserve=apply_cashflow_reserve,
         )
 
     total = _q4(Decimal(str(total_percent)))
@@ -162,7 +168,9 @@ def compute_split_rows_for_project(
                     "label": line.label,
                 }
             )
-    return apply_socio_cashflow_reserve_rows(rows, stakeholders)
+    if apply_cashflow_reserve:
+        return apply_socio_cashflow_reserve_rows(rows, stakeholders)
+    return rows
 
 
 def sync_tier_splits(
@@ -327,6 +335,15 @@ def _is_socio_stakeholder_row(row: dict, roles_by_id: dict[int, str]) -> bool:
 
 
 def _is_fluxo_stakeholder_row(row: dict, roles_by_id: dict[int, str]) -> bool:
+    if _is_fluxo_row(row, roles_by_id):
+        return True
+    return False
+
+
+def _is_fluxo_row(row: dict, roles_by_id: dict[int, str]) -> bool:
+    label = (row.get("label") or "").strip().lower()
+    if label == "fluxo de caixa" or label.startswith("fluxo de caixa"):
+        return True
     if row.get("recipient_kind") != "stakeholder":
         return False
     sh_id = row.get("stakeholder_id")
@@ -347,12 +364,12 @@ def apply_socio_cashflow_reserve_rows(
     roles_by_id = _stakeholder_roles_by_id(stakeholders)
     reserve_factor = SOCIO_CASHFLOW_RESERVE_PERCENT / Decimal("100")
     out: list[dict] = []
-    fluxo_row: dict | None = None
+    fluxo_rows: list[dict] = []
     reserve_pct = Decimal("0")
 
     for row in rows:
-        if _is_fluxo_stakeholder_row(row, roles_by_id):
-            fluxo_row = dict(row)
+        if _is_fluxo_row(row, roles_by_id):
+            fluxo_rows.append(dict(row))
             continue
         if _is_socio_stakeholder_row(row, roles_by_id):
             pct = Decimal(str(row.get("share_percent") or 0))
@@ -364,6 +381,15 @@ def apply_socio_cashflow_reserve_rows(
                 out.append(updated)
                 continue
         out.append(dict(row))
+
+    fluxo_row: dict | None = None
+    if fluxo_rows:
+        fluxo_row = dict(fluxo_rows[0])
+        for extra in fluxo_rows[1:]:
+            fluxo_row["share_percent"] = _q4(
+                Decimal(str(fluxo_row.get("share_percent") or 0))
+                + Decimal(str(extra.get("share_percent") or 0))
+            )
 
     if reserve_pct <= 0:
         if fluxo_row is not None:
@@ -403,19 +429,16 @@ def apply_socio_cashflow_reserve_amounts(
     roles_by_id = _stakeholder_roles_by_id(stakeholders)
     reserve_factor = SOCIO_CASHFLOW_RESERVE_PERCENT / Decimal("100")
     out: list[dict] = []
-    fluxo_row: dict | None = None
+    fluxo_rows: list[dict] = []
     reserve_total = Decimal("0")
 
     for row in rows:
-        if _is_fluxo_stakeholder_row(row, roles_by_id):
-            fluxo_row = dict(row)
+        if _is_fluxo_row(row, roles_by_id):
+            fluxo_rows.append(dict(row))
             continue
         updated = dict(row)
         amount = updated.get("amount_brl")
-        if (
-            _is_socio_stakeholder_row(row, roles_by_id)
-            and amount is not None
-        ):
+        if _is_socio_stakeholder_row(row, roles_by_id) and amount is not None:
             amt = Decimal(str(amount))
             cut = _q2(amt * reserve_factor)
             if cut > 0:
@@ -424,6 +447,22 @@ def apply_socio_cashflow_reserve_amounts(
                 pct = Decimal(str(updated.get("share_percent") or 0))
                 updated["share_percent"] = _q4(pct * (Decimal("1") - reserve_factor))
         out.append(updated)
+
+    fluxo_row: dict | None = None
+    if fluxo_rows:
+        fluxo_row = dict(fluxo_rows[0])
+        for extra in fluxo_rows[1:]:
+            extra_amt = extra.get("amount_brl")
+            if extra_amt is not None:
+                base = fluxo_row.get("amount_brl")
+                fluxo_row["amount_brl"] = _q2(
+                    (Decimal(str(base)) if base is not None else Decimal("0"))
+                    + Decimal(str(extra_amt))
+                )
+            fluxo_row["share_percent"] = _q4(
+                Decimal(str(fluxo_row.get("share_percent") or 0))
+                + Decimal(str(extra.get("share_percent") or 0))
+            )
 
     if reserve_total <= 0:
         if fluxo_row is not None:

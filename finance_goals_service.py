@@ -8,9 +8,8 @@ from sqlalchemy import extract, func
 
 from commission_service import (
     SOCIO_CASHFLOW_RESERVE_PERCENT,
-    amounts_from_splits,
-    apply_socio_cashflow_reserve_amounts,
     active_stakeholders,
+    compute_split_rows_for_project,
 )
 
 # Imposto sobre o valor total da comissão (representação comercial).
@@ -264,12 +263,52 @@ def _split_key(row: dict) -> tuple:
     )
 
 
+def _is_socio_row_for_reserve(row: dict, roles_by_id: dict[int, str]) -> bool:
+    if row.get("recipient_kind") != "stakeholder":
+        return False
+    sh_id = row.get("stakeholder_id")
+    if sh_id is None:
+        return True
+    return roles_by_id.get(int(sh_id), "socio") == "socio"
+
+
+def _is_fluxo_display_row(row: dict, roles_by_id: dict[int, str]) -> bool:
+    label = (row.get("label") or "").strip().lower()
+    if label == "fluxo de caixa" or label.startswith("fluxo de caixa"):
+        return True
+    sh_id = row.get("stakeholder_id")
+    if sh_id is None:
+        return False
+    return roles_by_id.get(int(sh_id)) == "fluxo_caixa"
+
+
+def _rows_with_amounts(rows: list[dict], value_brl: Decimal) -> list[dict]:
+    base = _d(value_brl)
+    out: list[dict] = []
+    for row in rows:
+        pct = Decimal(str(row.get("share_percent") or 0))
+        out.append(
+            {
+                **row,
+                "amount_brl": _q2(base * pct / Decimal("100")),
+            }
+        )
+    return out
+
+
 def goal_commission_projection(goal, tier) -> dict | None:
     """Meta = volume de vendas negociado; comissão = faixa % × meta (representação comercial)."""
-    if tier is None or not list(getattr(tier, "splits", None) or []):
+    project = tier.project if tier else None
+    if tier is None or project is None:
         return None
 
-    splits = list(tier.splits)
+    stakeholders = active_stakeholders()
+    split_rows = compute_split_rows_for_project(
+        project, stakeholders, _d(tier.percent_total)
+    )
+    if not split_rows:
+        return None
+
     annual_value = _d(goal.goal_annual_brl)
     months = goal_period_months(goal)
     if annual_value > 0:
@@ -282,19 +321,41 @@ def goal_commission_projection(goal, tier) -> dict | None:
     annual_value = _q2(annual_value)
     monthly_value = _q2(monthly_value)
 
-    annual_rows = amounts_from_splits(splits, annual_value)
-    monthly_rows = amounts_from_splits(splits, monthly_value)
-    stakeholders = active_stakeholders()
+    raw_rows = compute_split_rows_for_project(
+        project,
+        stakeholders,
+        _d(tier.percent_total),
+        apply_cashflow_reserve=False,
+    )
+    annual_rows = _rows_with_amounts(split_rows, annual_value)
+    monthly_rows = _rows_with_amounts(split_rows, monthly_value)
+    annual_raw = _rows_with_amounts(raw_rows, annual_value)
     roles_by_id = {int(s.id): (s.role_key or "socio") for s in stakeholders}
-    annual_rows = apply_socio_cashflow_reserve_amounts(annual_rows, stakeholders)
-    monthly_rows = apply_socio_cashflow_reserve_amounts(monthly_rows, stakeholders)
     monthly_by_key = {_split_key(row): row for row in monthly_rows}
+
+    annual_cashflow_reserve = Decimal("0")
+    monthly_cashflow_reserve = Decimal("0")
+    monthly_raw = _rows_with_amounts(raw_rows, monthly_value)
+    annual_final_by_key = {_split_key(row): row for row in annual_rows}
+    monthly_final_by_key = {_split_key(row): row for row in monthly_rows}
+    for raw in annual_raw:
+        if not _is_socio_row_for_reserve(raw, roles_by_id):
+            continue
+        final = annual_final_by_key.get(_split_key(raw), {})
+        annual_cashflow_reserve += _d(raw.get("amount_brl")) - _d(
+            final.get("amount_brl")
+        )
+    for raw in monthly_raw:
+        if not _is_socio_row_for_reserve(raw, roles_by_id):
+            continue
+        final = monthly_final_by_key.get(_split_key(raw), {})
+        monthly_cashflow_reserve += _d(raw.get("amount_brl")) - _d(
+            final.get("amount_brl")
+        )
 
     recipients: list[dict] = []
     annual_commission_gross = Decimal("0")
     monthly_commission_gross = Decimal("0")
-    annual_cashflow_reserve = Decimal("0")
-    monthly_cashflow_reserve = Decimal("0")
     for row in annual_rows:
         key = _split_key(row)
         monthly_row = monthly_by_key.get(key, {})
@@ -305,16 +366,10 @@ def goal_commission_projection(goal, tier) -> dict | None:
         annual_net = _q2(annual_gross * COMMISSION_NET_FACTOR)
         monthly_net = _q2(monthly_gross * COMMISSION_NET_FACTOR)
         kind = row.get("recipient_kind")
-        sh_id = row.get("stakeholder_id")
-        role_key = roles_by_id.get(int(sh_id), "socio") if sh_id else None
         if kind == "seller":
             role = "Vendedor"
-        elif role_key == "fluxo_caixa" or (
-            (row.get("label") or "").strip().lower() == "fluxo de caixa"
-        ):
+        elif _is_fluxo_display_row(row, roles_by_id):
             role = "Fluxo de caixa"
-            annual_cashflow_reserve += annual_gross
-            monthly_cashflow_reserve += monthly_gross
         elif kind == "stakeholder":
             role = "Sócio"
         else:
@@ -339,8 +394,7 @@ def goal_commission_projection(goal, tier) -> dict | None:
     annual_commission_net = _q2(annual_commission_gross - annual_tax)
     monthly_commission_net = _q2(monthly_commission_gross - monthly_tax)
 
-    project = tier.project if tier else None
-    tier_total_pct = sum(_d(s.share_percent) for s in splits)
+    tier_total_pct = sum(_d(row.get("share_percent")) for row in split_rows)
     return {
         "tier": tier,
         "project": project,
