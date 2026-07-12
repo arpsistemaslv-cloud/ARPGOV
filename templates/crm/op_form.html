@@ -81,8 +81,8 @@
 
       {% if clients is defined and partners is defined and not comercial_subnav %}
       <section class="lead-form-card" aria-labelledby="lead-sec-links">
-        <h2 class="lead-form-card__title" id="lead-sec-links">Cliente e fornecedor *</h2>
-        <p class="lead-form-card__desc">O lead só pode ser salvo com cliente e fornecedor já cadastrados no CRM.</p>
+        <h2 class="lead-form-card__title" id="lead-sec-links">Cliente e fornecedor</h2>
+        <p class="lead-form-card__desc">O lead precisa de um cliente cadastrado. O fornecedor (empresa dona da ata) é opcional e pode ser vinculado depois.</p>
         <div class="lead-form-fields lead-form-fields--2col">
           <div class="lead-form-field lead-form-field--wide">
             <label for="portal_client_id">Cliente (portal) *</label>
@@ -95,7 +95,7 @@
             <p class="meta" style="margin:0.35rem 0 0"><a href="{{ url_for('crm.crm_client_new') }}" target="_blank">+ Cadastrar cliente</a></p>
           </div>
           <div class="lead-form-field lead-form-field--wide lead-form-field--partner">
-            {{ partner_owner_select('partner_id', opp.partner_id if opp else none, true, partners) }}
+            {{ partner_owner_select('partner_id', opp.partner_id if opp else none, false, partners) }}
             <p class="meta" style="margin:0.35rem 0 0"><a href="{{ url_for('crm.crm_partner_new') }}" target="_blank">+ Cadastrar fornecedor</a></p>
           </div>
         </div>

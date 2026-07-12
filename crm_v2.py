@@ -390,14 +390,17 @@ def _validate_lead_links(
     if not client:
         return None, None, "Cliente inválido. Cadastre o cliente em Clientes antes de salvar."
 
+    partner_id: int | None = None
     prid = (partner_id_raw or "").strip()
-    if not prid.isdigit():
-        return None, None, "Selecione um fornecedor cadastrado antes de salvar o lead."
-    partner = db.session.get(Partner, int(prid))
-    if not partner:
-        return None, None, "Fornecedor inválido. Cadastre o fornecedor em Fornecedores antes de salvar."
+    if prid:
+        if not prid.isdigit():
+            return None, None, "Fornecedor inválido. Cadastre o fornecedor em Fornecedores antes de salvar."
+        partner = db.session.get(Partner, int(prid))
+        if not partner:
+            return None, None, "Fornecedor inválido. Cadastre o fornecedor em Fornecedores antes de salvar."
+        partner_id = partner.id
 
-    return client.id, partner.id, None
+    return client.id, partner_id, None
 
 
 def _apply_lead_links(opp: Opportunity) -> str | None:
@@ -1045,6 +1048,7 @@ def lead_new():
                 "crm/op_form.html",
                 **_op_form_base_ctx(None),
             )
+        client = db.session.get(PortalClient, client_id)
         title = (request.form.get("title") or "").strip() or "Novo lead"
         catalog_lines = _parse_catalog_lines()
         source = (request.form.get("source") or "").strip() or "CRM"
@@ -1062,6 +1066,23 @@ def lead_new():
             portal_client_id=client_id,
             partner_id=partner_id,
         )
+        if client:
+            _main()._opportunity_from_portal_client(opp, client)
+            if title != "Novo lead":
+                opp.title = title
+            for field, key in (
+                ("contact_name", "contact_name"),
+                ("organization", "organization"),
+                ("email", "email"),
+                ("phone", "phone"),
+                ("sphere", "sphere"),
+            ):
+                raw = (request.form.get(key) or "").strip()
+                if raw:
+                    setattr(opp, field, raw)
+            cnpj_raw = _main()._normalize_cnpj_field(request.form.get("cnpj"))
+            if cnpj_raw:
+                opp.cnpj = cnpj_raw
         _apply_sales_rep(opp)
         db.session.add(opp)
         db.session.flush()
