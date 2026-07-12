@@ -4,7 +4,9 @@ import io
 import json
 import os
 import re
+import secrets
 import smtplib
+import string
 import sys
 import threading
 from email.message import EmailMessage
@@ -19,6 +21,7 @@ from decimal import Decimal
 from functools import wraps
 
 from dotenv import load_dotenv
+import click
 import requests
 
 from flask import (
@@ -9563,6 +9566,72 @@ def cli_seed():
     from seed import seed
 
     seed()
+
+
+@app.cli.command("create-admin-rep")
+@click.option(
+    "--email",
+    default="comercial@arpgov.com",
+    show_default=True,
+    help="E-mail de login (área comercial, CRM e painel se administrador).",
+)
+@click.option(
+    "--name",
+    default="Comercial ARPGOV",
+    show_default=True,
+    help="Nome exibido do representante.",
+)
+@click.option(
+    "--password",
+    default=None,
+    help="Senha com no mínimo 8 caracteres. Se omitida, gera uma senha aleatória.",
+)
+@click.option(
+    "--reset-password",
+    is_flag=True,
+    help="Redefine a senha quando o e-mail já estiver cadastrado.",
+)
+def cli_create_admin_rep(email: str, name: str, password: str | None, reset_password: bool):
+    """Cria ou promove representante comercial administrador (Painel + CRM + Comercial)."""
+    email_norm = _normalize_rep_email(email)
+    if not email_norm or "@" not in email_norm:
+        print("E-mail inválido.")
+        raise SystemExit(1)
+    display_name = (name or "").strip() or "Administrador ARPGOV"
+    rep = SalesRepresentative.query.filter_by(email=email_norm).first()
+    created = rep is None
+    if created:
+        rep = SalesRepresentative(
+            name=display_name,
+            email=email_norm,
+            is_active=True,
+            is_admin=True,
+            password_hash="",
+        )
+        db.session.add(rep)
+    else:
+        rep.name = display_name
+        rep.is_active = True
+        rep.is_admin = True
+    plain = (password or "").strip() or None
+    if plain and len(plain) < 8:
+        print("Senha deve ter no mínimo 8 caracteres.")
+        raise SystemExit(1)
+    if plain is None and (created or reset_password):
+        alphabet = string.ascii_letters + string.digits
+        plain = "".join(secrets.choice(alphabet) for _ in range(14))
+    if plain:
+        rep.password_hash = generate_password_hash(plain)
+    db.session.commit()
+    if created:
+        print(f"Administrador criado: {email_norm}")
+    else:
+        print(f"Administrador atualizado: {email_norm}")
+    if plain:
+        print(f"Senha de acesso: {plain}")
+    else:
+        print("Senha anterior mantida (use --reset-password para gerar outra).")
+    print("Acesso: /comercial/entrar, /crm/entrar ou /admin/entrar")
 
 
 @app.errorhandler(500)
