@@ -1277,90 +1277,130 @@
 }
 
 .lead-form-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.85rem 1.25rem;
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
+.lead-form-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
 .lead-form-header__main {
-  flex: 1 1 220px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .lead-form-header__actions {
   flex: 0 0 auto;
-  min-width: 0;
 }
 
 .lead-form-header__toolbar {
   display: flex;
   align-items: stretch;
-  gap: 0.5rem;
+  flex-wrap: nowrap;
+  border: 1px solid rgba(19, 81, 180, 0.16);
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(19, 81, 180, 0.07), rgba(19, 81, 180, 0.02));
+  box-shadow: 0 1px 2px rgba(7, 29, 65, 0.05);
 }
 
-.lead-sale-total-card--header {
-  padding: 0.55rem 0.75rem;
-  text-align: left;
-  margin: 0;
+.lead-form-header__stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
   min-width: 0;
-  flex: 1 1 auto;
 }
 
-.lead-sale-total-card--header .lead-sale-total {
-  font-size: 1.05rem;
-  margin: 0.1rem 0 0;
+.lead-form-header__stat-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gov-blue-70, #1351b4);
   line-height: 1.2;
-  white-space: nowrap;
 }
 
-.lead-sale-total-card--header .lead-sale-total-card__label {
-  font-size: 0.65rem;
-  letter-spacing: 0.05em;
+.lead-form-header__stat-value {
+  margin: 0.12rem 0 0;
+  font-size: clamp(0.92rem, 2.8vw, 1.12rem);
+  font-weight: 800;
+  color: var(--gov-blue-90, #071d41);
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .lead-form-header__save {
   flex: 0 0 auto;
   align-self: stretch;
+  margin: 0;
   padding: 0.55rem 1rem;
   font-size: 0.88rem;
+  font-weight: 700;
   white-space: nowrap;
+  border: none;
+  border-radius: 0;
+  border-left: 1px solid rgba(19, 81, 180, 0.14);
+  box-shadow: none;
+}
+
+.lead-form-header__save:hover {
+  filter: brightness(1.05);
 }
 
 @media (min-width: 900px) {
   .lead-form-header__toolbar {
     flex-direction: column;
-    width: 220px;
+    width: 210px;
   }
 
-  .lead-sale-total-card--header {
+  .lead-form-header__stat {
+    align-items: center;
     text-align: center;
+    padding: 0.65rem 0.75rem 0.55rem;
   }
 
-  .lead-sale-total-card--header .lead-sale-total {
+  .lead-form-header__stat-value {
     font-size: 1.15rem;
   }
 
   .lead-form-header__save {
     width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.6rem 0.85rem;
   }
 }
 
 @media (max-width: 899px) {
-  .lead-form-header {
+  .lead-form-header__top {
+    flex-direction: column;
     align-items: stretch;
-  }
-
-  .lead-form-header__actions {
-    width: 100%;
   }
 
   .lead-form-header__toolbar {
     width: 100%;
+  }
+
+  .lead-form-header__stat {
+    flex: 1 1 auto;
+  }
+
+  .lead-form-header__save {
+    min-width: 5.75rem;
+    padding-left: 1.15rem;
+    padding-right: 1.15rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .lead-form-header__stat-value {
+    font-size: 0.88rem;
   }
 }
 
@@ -1370,7 +1410,7 @@
   font-weight: 600;
   color: var(--gov-blue-70, #1351b4);
   text-decoration: none;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.5rem;
 }
 
 .lead-form-back:hover {

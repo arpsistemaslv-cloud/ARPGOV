@@ -13,29 +13,31 @@
 
 <div class="lead-form-page">
   <header class="lead-form-header">
-    <div class="lead-form-header__main">
-      <a class="lead-form-back" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">← Voltar</a>
-      <h1 class="lead-form-header__title">{% if opp %}Editar lead{% else %}Novo lead{% endif %}</h1>
-      {% if opp %}
-      <p class="lead-form-header__meta">
-        {% if opp.organization %}<span>{{ opp.organization }}</span>{% endif %}
-        {% if opp.contact_name %}<span>{{ opp.contact_name }}</span>{% endif %}
-        {% for key, label in stages %}{% if stage_normalize_fn(opp.stage) == key %}<span class="lead-form-stage">{{ label }}</span>{% endif %}{% endfor %}
-      </p>
-      {% else %}
-      <p class="lead-form-header__meta">Preencha os dados, vincule produtos e defina a comissão.</p>
-      {% endif %}
-    </div>
-    <div class="lead-form-header__actions">
-      <div class="lead-form-header__toolbar">
-        <div class="lead-sale-total-card lead-sale-total-card--header" id="lead_sale_total_wrap">
-          <span class="lead-sale-total-card__label">Valor total</span>
-          <p class="lead-sale-total" id="lead_sale_total_display" aria-live="polite">
-            {% if opp and opp.value_brl is not none %}{{ opp.value_brl|float|brl }}{% else %}—{% endif %}
-          </p>
-          <input type="hidden" id="value_brl" form="lead-main-form" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
+    <a class="lead-form-back" href="{{ cancel_url|default(url_for('crm.crm_dashboard')) }}">← Voltar</a>
+    <div class="lead-form-header__top">
+      <div class="lead-form-header__main">
+        <h1 class="lead-form-header__title">{% if opp %}Editar lead{% else %}Novo lead{% endif %}</h1>
+        {% if opp %}
+        <p class="lead-form-header__meta">
+          {% if opp.organization %}<span>{{ opp.organization }}</span>{% endif %}
+          {% if opp.contact_name %}<span>{{ opp.contact_name }}</span>{% endif %}
+          {% for key, label in stages %}{% if stage_normalize_fn(opp.stage) == key %}<span class="lead-form-stage">{{ label }}</span>{% endif %}{% endfor %}
+        </p>
+        {% else %}
+        <p class="lead-form-header__meta">Preencha os dados, vincule produtos e defina a comissão.</p>
+        {% endif %}
+      </div>
+      <div class="lead-form-header__actions">
+        <div class="lead-form-header__toolbar" id="lead_sale_total_wrap">
+          <div class="lead-form-header__stat">
+            <span class="lead-form-header__stat-label">Valor total</span>
+            <p class="lead-form-header__stat-value lead-sale-total" id="lead_sale_total_display" aria-live="polite">
+              {% if opp and opp.value_brl is not none %}{{ opp.value_brl|float|brl }}{% else %}—{% endif %}
+            </p>
+            <input type="hidden" id="value_brl" form="lead-main-form" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
+          </div>
+          <button type="submit" class="btn btn--primary lead-form-header__save" form="lead-main-form">Salvar</button>
         </div>
-        <button type="submit" class="btn btn--primary lead-form-header__save" form="lead-main-form">Salvar</button>
       </div>
     </div>
   </header>
