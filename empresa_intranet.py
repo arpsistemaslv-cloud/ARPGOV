@@ -194,11 +194,21 @@ def login():
                     flash("E-mail ou senha incorretos.", "error")
                     user = None
         if user is not None:
+            session.clear()
             session["empresa_staff_id"] = user.id
             session.modified = True
             nxt = request.args.get("next") or request.form.get("next") or ""
-            if nxt.startswith("/") and not nxt.startswith("//"):
-                return redirect(nxt)
+            try:
+                from app import _safe_internal_redirect
+
+                return redirect(
+                    _safe_internal_redirect(
+                        nxt, url_for("empresa.dashboard"), ("/empresa/entrar",)
+                    )
+                )
+            except Exception:
+                if nxt.startswith("/") and not nxt.startswith("//"):
+                    return redirect(nxt)
             return redirect(url_for("empresa.dashboard"))
     return render_template("empresa/login.html")
 

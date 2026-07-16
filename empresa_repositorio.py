@@ -15,6 +15,19 @@ from werkzeug.utils import secure_filename
 
 from models import EmpresaDocumentoRepositorio, db
 
+
+def _safe_empresa_next(nxt: str | None, default: str) -> str:
+    try:
+        from app import _safe_internal_redirect
+
+        return _safe_internal_redirect(nxt, default, ())
+    except Exception:
+        t = (nxt or "").strip()
+        if t.startswith("/") and not t.startswith("//"):
+            return t
+        return default
+
+
 EXT_OK = frozenset(
     {
         ".pdf",
@@ -97,7 +110,10 @@ def register_repositorio_routes(bp, app) -> None:
     @bp.route("/documentos/upload", methods=["POST"])
     @empresa_login_required
     def documentos_repositorio_upload():
-        nxt = (request.form.get("next") or "").strip() or url_for("empresa.documentos_repositorio_hub")
+        nxt = _safe_empresa_next(
+            request.form.get("next"),
+            url_for("empresa.documentos_repositorio_hub"),
+        )
         titulo = (request.form.get("titulo") or "").strip()
         categoria = (request.form.get("categoria") or "").strip()[:120] or None
         descricao = (request.form.get("descricao") or "").strip() or None
@@ -147,7 +163,10 @@ def register_repositorio_routes(bp, app) -> None:
     @empresa_login_required
     def documentos_repositorio_delete(did: int):
         row = EmpresaDocumentoRepositorio.query.get_or_404(did)
-        nxt = (request.form.get("next") or "").strip() or url_for("empresa.documentos_repositorio_hub")
+        nxt = _safe_empresa_next(
+            request.form.get("next"),
+            url_for("empresa.documentos_repositorio_hub"),
+        )
         try:
             fp = Path(app.root_path) / "static" / row.caminho_relativo.replace("/", os.sep)
             if fp.is_file():

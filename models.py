@@ -448,6 +448,9 @@ class PortalClient(db.Model):
     address_state = db.Column(db.String(2), nullable=True)
     address_zip = db.Column(db.String(10), nullable=True)
     photo_path = db.Column(db.String(256), nullable=True)
+    created_by_sales_rep_id = db.Column(
+        db.Integer, db.ForeignKey("sales_reps.id"), nullable=True, index=True
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False

@@ -153,9 +153,9 @@ chmod +x "$APP_DIR/deploy.sh"
 
 if [[ "$SKIP_SSL" == "0" ]]; then
   echo ">>> HTTPS (Let's Encrypt)..."
-  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$EMAIL" --redirect || {
-    echo "Certbot falhou. Verifique se o DNS ($DOMAIN) aponta para este servidor."
-    echo "Depois rode: certbot --nginx -d $DOMAIN"
+  certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos -m "$EMAIL" --redirect || {
+    echo "Certbot falhou. Verifique se o DNS ($DOMAIN e www.$DOMAIN) aponta para este servidor."
+    echo "Depois rode: certbot --nginx -d $DOMAIN -d www.$DOMAIN --expand"
   }
 fi
 

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   {% if site_settings and site_settings.meta_description %}
   <meta name="description" content="{{ site_settings.meta_description }}">
   {% endif %}
@@ -16,7 +17,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/crm.css') }}?v={{ main_css_v }}">
   {% endif %}
   {% if site_settings and site_settings.custom_css %}
-  <style id="site-custom-css">{{ site_settings.custom_css|safe }}</style>
+  <style id="site-custom-css">{{ site_settings.custom_css|safe_css }}</style>
   {% endif %}
 </head>
 <body class="{% if request.path.startswith('/admin') %}portal-backoffice portal-backoffice--admin{% elif request.path.startswith('/crm') %}portal-backoffice portal-backoffice--crm{% elif request.path.startswith('/comercial') %}portal-backoffice portal-backoffice--comercial{% elif request.path.startswith('/parceiro') %}portal-backoffice{% else %}portal-site{% endif %}{% if request.endpoint in ('admin_login', 'crm.crm_login', 'comercial_login') %} portal-backoffice--login{% endif %}">
@@ -232,5 +233,25 @@
   </script>
   {% endif %}
   <script src="{{ url_for('static', filename='js/br-address-lookup.js') }}" defer></script>
+  <script>
+  (function () {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (!meta || !meta.content) return;
+    var token = meta.content;
+    function inject(form) {
+      if (!form || form.method.toLowerCase() !== 'post') return;
+      if (form.querySelector('input[name="csrf_token"]')) return;
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'csrf_token';
+      input.value = token;
+      form.appendChild(input);
+    }
+    document.querySelectorAll('form').forEach(inject);
+    document.addEventListener('submit', function (ev) {
+      inject(ev.target);
+    }, true);
+  })();
+  </script>
 </body>
 </html>

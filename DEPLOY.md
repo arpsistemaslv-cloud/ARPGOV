@@ -180,6 +180,7 @@ Abra o site e pressione **Ctrl+F5** (recarregar sem cache), principalmente após
 | `dubious ownership` ao usar **root** | Use `su - deploy` e rode o deploy como **deploy**, ou: `git config --global --add safe.directory /var/www/arpgov` |
 | Site não mudou após pull | Rode `bash deploy.sh` e **Ctrl+F5** no navegador |
 | `Connection reset` no SSH | Conecte de novo e repita a partir do `git fetch` |
+| Aviso “conexão não é privada” no celular (`www`) | Certificado cobre só o domínio sem `www`. Como **root**: `certbot --nginx -d arpgov.com -d www.arpgov.com --expand` e confira no DNS o A de `www` apontando para o mesmo IP |
 
 ---
 

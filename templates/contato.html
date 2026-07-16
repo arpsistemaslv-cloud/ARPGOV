@@ -31,7 +31,7 @@
       <div class="contact-sidebar__card">
         <h2 class="contact-sidebar__title">Canais diretos</h2>
         {% if site_settings and site_settings.contact_intro %}
-        <div class="contact-sidebar__intro">{{ site_settings.contact_intro|safe }}</div>
+        <div class="contact-sidebar__intro">{{ site_settings.contact_intro|safe_html }}</div>
         {% else %}
         <p class="meta contact-sidebar__intro">Adesão às atas, orçamentos ou esclarecimentos. Cada envio gera um lead na área comercial.</p>
         {% endif %}

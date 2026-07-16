@@ -708,6 +708,7 @@ def login():
                 email, password, require_crm=True
             )
             if rep:
+                m._rotate_auth_session()
                 session["rep_id"] = rep.id
                 m._grant_staff_sessions_for_rep(rep)
                 session["crm_ok"] = True
@@ -715,9 +716,12 @@ def login():
                 return redirect(m._safe_internal_redirect(
                     request.args.get("next"), url_for("crm.crm_dashboard"), ("/crm/login",)
                 ))
-        if m._password_matches(m._crm_password(), password) or m._portal_master_password_matches(password):
+        if (
+            m._crm_password()
+            and m._password_matches(m._crm_password(), password)
+        ) or m._portal_master_password_matches(password):
+            m._rotate_auth_session()
             session["crm_ok"] = True
-            session["admin_ok"] = True
             session.modified = True
             return redirect(m._safe_internal_redirect(
                 request.args.get("next"), url_for("crm.crm_dashboard"), ("/crm/login",)

@@ -111,15 +111,29 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev-only-change-me")
+_flask_production = _env_bool("FLASK_PRODUCTION", False)
+_secret_key = (os.environ.get("FLASK_SECRET_KEY") or "").strip()
+if _flask_production:
+    if (
+        not _secret_key
+        or _secret_key == "dev-only-change-me"
+        or len(_secret_key) < 32
+    ):
+        raise RuntimeError(
+            "FLASK_SECRET_KEY obrigatória em produção (mín. 32 caracteres, "
+            "diferente do valor de desenvolvimento)."
+        )
+    app.config["SECRET_KEY"] = _secret_key
+else:
+    app.config["SECRET_KEY"] = _secret_key or "dev-only-change-me"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # Chat: vários anexos de até 15 MB (margem para multipart)
 app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024
-if not _env_bool("FLASK_PRODUCTION", False):
+if not _flask_production:
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # Sessão: em produção (HTTPS) use SESSION_COOKIE_SECURE=1; em http://127.0.0.1 deixe desligado.
-_cookie_secure = _env_bool("SESSION_COOKIE_SECURE", False)
+_cookie_secure = _env_bool("SESSION_COOKIE_SECURE", _flask_production)
 app.config["SESSION_COOKIE_SECURE"] = _cookie_secure
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 _ss = (os.environ.get("SESSION_COOKIE_SAMESITE") or "Lax").strip().capitalize()
@@ -128,9 +142,11 @@ if _ss not in ("Lax", "Strict", "None"):
 if _ss == "None" and not _cookie_secure:
     _ss = "Lax"
 app.config["SESSION_COOKIE_SAMESITE"] = _ss
+app.config["WTF_CSRF_TIME_LIMIT"] = None
+app.config["WTF_CSRF_HEADERS"] = ["X-CSRFToken", "X-CSRF-Token"]
 
 # Proxy reverso (Nginx/Caddy): repassa X-Forwarded-Proto/Host para url_for e cookies seguros.
-if _env_bool("TRUST_PROXY"):
+if _env_bool("TRUST_PROXY", _flask_production):
     app.wsgi_app = ProxyFix(
         app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1
     )
@@ -140,6 +156,16 @@ os.makedirs(instance_path, exist_ok=True)
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(instance_path, 'portal.db')}"
 
 db.init_app(app)
+
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+
+csrf = CSRFProtect(app)
+
+
+@app.context_processor
+def _inject_csrf_token():
+    return {"csrf_token": generate_csrf}
+
 
 from crm_v2 import crm_bp
 
@@ -1131,21 +1157,75 @@ def _painel_password() -> str:
     p = _normalize_env_password(os.environ.get("PAINEL_ADMIN_PASSWORD"))
     if not p:
         p = _normalize_env_password(os.environ.get("PORTAL_ADMIN_PASSWORD"))
-    return p or "admin"
+    return p
 
 
 def _crm_password() -> str:
-    p = _normalize_env_password(os.environ.get("CRM_ADMIN_PASSWORD"))
-    if p:
-        return p
-    p = _normalize_env_password(os.environ.get("PAINEL_ADMIN_PASSWORD"))
-    if p:
-        return p
-    return _normalize_env_password(os.environ.get("PORTAL_ADMIN_PASSWORD"))
+    return _normalize_env_password(os.environ.get("CRM_ADMIN_PASSWORD"))
 
 
 def _crm_password_configured() -> bool:
     return bool(_crm_password())
+
+
+def _rotate_auth_session() -> None:
+    """Evita session fixation: limpa a sessão antes de gravar novo login."""
+    session.clear()
+    session.modified = True
+
+
+def _sanitize_public_html(raw: str | None) -> str:
+    """HTML público editável no painel — allowlist (mitiga XSS armazenado)."""
+    import bleach
+
+    allowed_tags = [
+        "a", "abbr", "b", "blockquote", "br", "code", "div", "em", "h1", "h2",
+        "h3", "h4", "hr", "i", "li", "ol", "p", "pre", "span", "strong", "u",
+        "ul", "table", "thead", "tbody", "tr", "th", "td",
+    ]
+    allowed_attrs = {
+        "*": ["class"],
+        "a": ["href", "title", "rel", "target"],
+        "td": ["colspan", "rowspan"],
+        "th": ["colspan", "rowspan"],
+    }
+    return bleach.clean(
+        raw or "",
+        tags=allowed_tags,
+        attributes=allowed_attrs,
+        protocols=["http", "https", "mailto"],
+        strip=True,
+    )
+
+
+def _sanitize_custom_css(raw: str | None) -> str | None:
+    """Remove construções perigosas de CSS injetável no <style> do site."""
+    css = (raw or "").strip()
+    if not css:
+        return None
+    # Quebra fechamento de style / tags / javascript
+    css = re.sub(r"</\s*style", r"<\\/style", css, flags=re.I)
+    css = re.sub(r"<\s*script", "", css, flags=re.I)
+    css = re.sub(r"@import\b", "/*blocked-import*/", css, flags=re.I)
+    css = re.sub(r"expression\s*\(", "/*blocked*/(", css, flags=re.I)
+    css = re.sub(r"url\s*\(\s*['\"]?\s*javascript:", "url(/*blocked*/", css, flags=re.I)
+    css = re.sub(r"-moz-binding\s*:", "/*blocked*/:", css, flags=re.I)
+    css = re.sub(r"behavior\s*:", "/*blocked*/:", css, flags=re.I)
+    return css
+
+
+@app.template_filter("safe_html")
+def _filter_safe_html(value):
+    from markupsafe import Markup
+
+    return Markup(_sanitize_public_html(value))
+
+
+@app.template_filter("safe_css")
+def _filter_safe_css(value):
+    from markupsafe import Markup
+
+    return Markup(_sanitize_custom_css(value) or "")
 
 
 def _portal_master_password() -> str:
@@ -2304,6 +2384,7 @@ def ensure_portal_client_profile_columns():
         ("address_zip", "VARCHAR(10)"),
         ("photo_path", "VARCHAR(256)"),
         ("updated_at", "DATETIME"),
+        ("created_by_sales_rep_id", "INTEGER"),
     ):
         try:
             db.session.execute(text(f"SELECT {col} FROM portal_clients LIMIT 1"))
@@ -4027,7 +4108,10 @@ def api_portal_client_picker():
             }
         )
 
-    pagination = _comercial_portal_clients_query(q).paginate(
+    rep_for_q = None
+    if not (session.get("crm_ok") or session.get("admin_ok")):
+        rep_for_q = _session_sales_rep()
+    pagination = _comercial_portal_clients_query(q, rep=rep_for_q).paginate(
         page=page, per_page=per_page, error_out=False
     )
     return jsonify(
@@ -4874,16 +4958,33 @@ def _is_public_http_url(url: str) -> bool:
         host = (p.hostname or "").lower()
         if not host:
             return False
-        if host in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
+        if host in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata.google.internal"):
             return False
-        if host.endswith(".local"):
+        if host.endswith(".local") or host.endswith(".internal"):
             return False
-        if host.startswith("192.168.") or host.startswith("10."):
+        if host.startswith("192.168.") or host.startswith("10.") or host.startswith("169.254."):
             return False
         if host.startswith("172."):
             parts = host.split(".")
             if len(parts) >= 2 and parts[1].isdigit() and 16 <= int(parts[1]) <= 31:
                 return False
+        # Resolve DNS e bloqueia IPs privados / link-local / loopback
+        try:
+            import ipaddress
+            import socket
+
+            for info in socket.getaddrinfo(host, None):
+                ip = ipaddress.ip_address(info[4][0])
+                if (
+                    ip.is_private
+                    or ip.is_loopback
+                    or ip.is_link_local
+                    or ip.is_reserved
+                    or ip.is_multicast
+                ):
+                    return False
+        except OSError:
+            return False
         return True
     except Exception:
         return False
@@ -5022,6 +5123,8 @@ def _fetch_images_from_manufacturer_url(
             allow_redirects=True,
         )
         body = r.text or ""
+        if not _is_public_http_url(r.url):
+            return [], "A URL redirecionou para um destino não permitido."
         if r.status_code >= 400 and len(body) < 400:
             r.raise_for_status()
     except Exception as exc:
@@ -6121,12 +6224,15 @@ def cliente_cadastro():
         _apply_portal_client_profile_from_form(client)
         db.session.add(client)
         db.session.flush()
-        _retro_link_opportunities_to_client(client)
         db.session.commit()
         session["client_id"] = client.id
         session.modified = True
         _process_pending_cart_slug_after_login()
-        flash("Cadastro concluído. Complete seu perfil quando quiser — seus leads anteriores com este e-mail já foram vinculados.", "ok")
+        flash(
+            "Cadastro concluído. Complete seu perfil quando quiser. "
+            "Leads já existentes só são vinculados pela equipe ARPGOV.",
+            "ok",
+        )
         nxt = _safe_internal_redirect(
             request.args.get("next"),
             url_for("cliente_perfil"),
@@ -6496,6 +6602,7 @@ def comercial_login():
             if not _rep_has_comercial_access(rep):
                 flash("Este usuário não tem acesso à área comercial.", "error")
                 return render_template("comercial/entrar.html")
+        _rotate_auth_session()
         session["rep_id"] = rep.id
         _grant_staff_sessions_for_rep(rep)
         session.modified = True
@@ -7234,8 +7341,24 @@ def comercial_orgao_publico_contato(org_id):
     )
 
 
-def _comercial_portal_clients_query(q: str = ""):
+def _comercial_portal_clients_query(q: str = "", *, rep: SalesRepresentative | None = None):
     query = PortalClient.query
+    if rep is not None and not _rep_is_admin(rep):
+        linked_ids = {
+            row[0]
+            for row in db.session.query(Opportunity.portal_client_id)
+            .filter(
+                Opportunity.sales_rep_id == rep.id,
+                Opportunity.portal_client_id.isnot(None),
+            )
+            .distinct()
+            .all()
+            if row[0]
+        }
+        clauses = [PortalClient.created_by_sales_rep_id == rep.id]
+        if linked_ids:
+            clauses.append(PortalClient.id.in_(linked_ids))
+        query = query.filter(or_(*clauses))
     q = (q or "").strip()
     if q:
         like = f"%{q}%"
@@ -7251,6 +7374,22 @@ def _comercial_portal_clients_query(q: str = ""):
         )
     return query.order_by(PortalClient.name.asc())
 
+
+def _comercial_can_access_portal_client(
+    rep: SalesRepresentative | None, client: PortalClient
+) -> bool:
+    if rep is None:
+        return False
+    if _rep_is_admin(rep):
+        return True
+    if client.created_by_sales_rep_id == rep.id:
+        return True
+    return (
+        Opportunity.query.filter_by(
+            portal_client_id=client.id, sales_rep_id=rep.id
+        ).first()
+        is not None
+    )
 
 def _portal_client_digits_cnpj(cnpj: str | None) -> str:
     return re.sub(r"\D", "", cnpj or "")
@@ -7412,7 +7551,7 @@ def comercial_clients_list():
     if rep is None:
         return redirect(url_for("comercial_login", next=request.path))
     q = (request.args.get("q") or "").strip()
-    clients = _comercial_portal_clients_query(q).all()
+    clients = _comercial_portal_clients_query(q, rep=rep).all()
     return render_template(
         "comercial/clientes_list.html",
         rep=rep,
@@ -7453,10 +7592,12 @@ def comercial_client_new():
             email=email,
             password_hash=generate_password_hash(password),
             name=name,
+            created_by_sales_rep_id=rep.id,
         )
         _apply_portal_client_profile_from_form(client)
         db.session.add(client)
         db.session.commit()
+        # Vínculo retroativo só para staff (não no auto-cadastro público).
         _retro_link_opportunities_to_client(client)
         db.session.commit()
         flash("Cliente cadastrado.", "ok")
@@ -7471,6 +7612,8 @@ def comercial_client_edit(client_id):
     if rep is None:
         return redirect(url_for("comercial_login", next=request.path))
     client = PortalClient.query.get_or_404(client_id)
+    if not _comercial_can_access_portal_client(rep, client):
+        abort(403)
     ctx = {
         "rep": rep,
         "client": client,
@@ -7755,6 +7898,7 @@ def admin_login():
                 email, password, require_painel=True
             )
             if rep:
+                _rotate_auth_session()
                 session["rep_id"] = rep.id
                 _grant_staff_sessions_for_rep(rep)
                 session.modified = True
@@ -7764,11 +7908,12 @@ def admin_login():
                     (PATH_ADMIN_LOGIN,),
                 )
                 return redirect(nxt)
-        if _password_matches(_painel_password(), password) or _portal_master_password_matches(
-            password
-        ):
+        if (
+            _painel_password()
+            and _password_matches(_painel_password(), password)
+        ) or _portal_master_password_matches(password):
+            _rotate_auth_session()
             session["admin_ok"] = True
-            session["crm_ok"] = True
             session.modified = True
             nxt = _safe_internal_redirect(
                 request.args.get("next"),
@@ -8694,12 +8839,14 @@ def admin_site_edit():
         row.footer_note = request.form.get("footer_note", "").strip() or None
         row.site_brand_primary = request.form.get("site_brand_primary", "").strip() or None
         row.site_brand_accent = request.form.get("site_brand_accent", "").strip() or None
-        row.contact_intro = request.form.get("contact_intro", "").strip() or None
+        row.contact_intro = _sanitize_public_html(
+            request.form.get("contact_intro", "").strip() or None
+        ) or None
         row.contact_address = request.form.get("contact_address", "").strip() or None
         row.social_whatsapp = request.form.get("social_whatsapp", "").strip() or None
         row.social_instagram = request.form.get("social_instagram", "").strip() or None
         row.social_tiktok = request.form.get("social_tiktok", "").strip() or None
-        row.custom_css = request.form.get("custom_css", "").strip() or None
+        row.custom_css = _sanitize_custom_css(request.form.get("custom_css", ""))
         row.meta_description = request.form.get("meta_description", "").strip() or None
         db.session.commit()
         flash("Site atualizado.", "ok")
@@ -8733,7 +8880,7 @@ def admin_page_new():
             title=title,
             slug=slug,
             nav_label=(request.form.get("nav_label") or "").strip() or None,
-            body_html=request.form.get("body_html") or "",
+            body_html=_sanitize_public_html(request.form.get("body_html") or ""),
             show_in_nav=request.form.get("show_in_nav") == "1",
             sort_order=sort_order,
             is_published=request.form.get("is_published") == "1",
@@ -8760,7 +8907,7 @@ def admin_page_edit(page_id):
         if base != page.slug:
             page.slug = unique_page_slug(base, exclude_id=page.id)
         page.nav_label = (request.form.get("nav_label") or "").strip() or None
-        page.body_html = request.form.get("body_html") or ""
+        page.body_html = _sanitize_public_html(request.form.get("body_html") or "")
         page.show_in_nav = request.form.get("show_in_nav") == "1"
         try:
             page.sort_order = int((request.form.get("sort_order") or "0").strip() or 0)

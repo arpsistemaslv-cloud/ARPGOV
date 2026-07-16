@@ -13,6 +13,19 @@ from werkzeug.utils import secure_filename
 
 from models import EmpresaAnexo, db
 
+
+def _safe_empresa_next(nxt: str | None, default: str) -> str:
+    try:
+        from app import _safe_internal_redirect
+
+        return _safe_internal_redirect(nxt, default, ())
+    except Exception:
+        t = (nxt or "").strip()
+        if t.startswith("/") and not t.startswith("//"):
+            return t
+        return default
+
+
 # contexto deve coincidir com o usado nos templates
 CONTEXTOS_VALIDOS = frozenset(
     {
@@ -74,14 +87,16 @@ def register_anexos_routes(bp, app) -> None:
     def anexos_upload():
         ctx = (request.form.get("contexto") or "").strip()
         ref_id = request.form.get("ref_id", type=int)
-        nxt = (request.form.get("next") or "").strip()
+        nxt = _safe_empresa_next(
+            request.form.get("next"), url_for("empresa.dashboard")
+        )
         if ctx not in CONTEXTOS_VALIDOS or not ref_id or ref_id < 1:
             flash("Anexo: dados inválidos.", "error")
-            return redirect(nxt or url_for("empresa.dashboard"))
+            return redirect(nxt)
         f = request.files.get("arquivo")
         if not f or not f.filename:
             flash("Selecione um arquivo.", "error")
-            return redirect(nxt or url_for("empresa.dashboard"))
+            return redirect(nxt)
         raw = secure_filename(f.filename)
         if not raw:
             flash("Nome de arquivo inválido.", "error")
@@ -120,7 +135,9 @@ def register_anexos_routes(bp, app) -> None:
     @empresa_login_required
     def anexos_delete(aid: int):
         row = EmpresaAnexo.query.get_or_404(aid)
-        nxt = (request.form.get("next") or "").strip()
+        nxt = _safe_empresa_next(
+            request.form.get("next"), url_for("empresa.dashboard")
+        )
         ctx = row.contexto
         rid = row.ref_id
         try:
@@ -132,7 +149,7 @@ def register_anexos_routes(bp, app) -> None:
         db.session.delete(row)
         db.session.commit()
         flash("Anexo removido.", "ok")
-        return redirect(nxt or url_for("empresa.dashboard"))
+        return redirect(nxt)
 
     @bp.route("/anexos/<int:aid>/download")
     @empresa_login_required
