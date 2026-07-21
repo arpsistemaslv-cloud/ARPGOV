@@ -3,18 +3,20 @@
     return String(value || "").replace(/\D/g, "");
   }
 
-  function setField(id, value) {
+  function setField(id, value, force) {
     if (value == null || value === "") return;
     var el = document.getElementById(id);
-    if (!el || el.value.trim()) return;
+    if (!el) return;
+    if (!force && el.value.trim()) return;
     el.value = value;
     el.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
-  function setSelect(id, value) {
+  function setSelect(id, value, force) {
     if (!value) return;
     var el = document.getElementById(id);
-    if (!el || el.value) return;
+    if (!el) return;
+    if (!force && el.value) return;
     el.value = value;
     el.dispatchEvent(new Event("change", { bubbles: true }));
   }
@@ -26,10 +28,10 @@
     el.style.color = isError ? "var(--danger, #b42318)" : "";
   }
 
-  function applyLookupData(data) {
+  function applyLookupData(data, opts) {
     if (!data) return;
+    var force = !!(opts && opts.forceCompany);
     var map = {
-      cnpj: "cnpj",
       razao_social: "razao_social",
       company_name: "company_name",
       organization: "organization",
@@ -42,10 +44,15 @@
       address_neighborhood: "address_neighborhood",
       address_city: "address_city",
     };
+    var companyKeys = {
+      razao_social: true,
+      company_name: true,
+      organization: true,
+    };
     Object.keys(map).forEach(function (key) {
-      setField(map[key], data[key]);
+      setField(map[key], data[key], force && companyKeys[key]);
     });
-    setSelect("address_state", data.address_state);
+    setSelect("address_state", data.address_state, false);
   }
 
   function fetchCep(cep, statusEl) {
@@ -60,10 +67,10 @@
       })
       .then(function (res) {
         if (!res.ok || !res.body.ok) {
-          showStatus(statusEl, res.body.error || "CEP não encontrado.", true);
+          showStatus(statusEl, (res.body && res.body.error) || "CEP não encontrado.", true);
           return;
         }
-        applyLookupData(res.body.data);
+        applyLookupData(res.body.data, { forceCompany: false });
         showStatus(statusEl, "Endereço preenchido.", false);
       })
       .catch(function () {
@@ -81,37 +88,57 @@
     fetch("/api/lookup/cnpj/" + d)
       .then(function (r) {
         return r.json().then(function (body) {
-          return { ok: r.ok, body: body };
+          return { ok: r.ok, status: r.status, body: body };
         });
       })
       .then(function (res) {
         if (!res.ok || !res.body.ok) {
-          showStatus(statusEl, res.body.error || "CNPJ não encontrado.", true);
+          showStatus(
+            statusEl,
+            (res.body && res.body.error) || "CNPJ não encontrado ou indisponível.",
+            true
+          );
           return;
         }
-        applyLookupData(res.body.data);
+        applyLookupData(res.body.data, { forceCompany: true });
         showStatus(statusEl, "Dados da empresa preenchidos.", false);
       })
       .catch(function () {
-        showStatus(statusEl, "Falha ao consultar CNPJ.", true);
+        showStatus(statusEl, "Falha ao consultar CNPJ. Tente novamente.", true);
       });
+  }
+
+  function findStatusNear(input, attr) {
+    var wrap = input.closest(".br-lookup-inline") || input.parentElement;
+    if (wrap) {
+      var inWrap = wrap.querySelector("[" + attr + "]");
+      if (inWrap) return inWrap;
+      var parent = wrap.parentElement;
+      if (parent) {
+        var sibling = parent.querySelector("[" + attr + "]");
+        if (sibling) return sibling;
+      }
+    }
+    return document.querySelector("[" + attr + "]");
   }
 
   function initBrAddressLookup() {
     document.querySelectorAll("[data-br-cep]").forEach(function (input) {
-      var statusEl =
-        input.parentElement &&
-        input.parentElement.querySelector("[data-br-cep-status]");
+      var statusEl = findStatusNear(input, "data-br-cep-status");
       input.addEventListener("blur", function () {
         fetchCep(input.value, statusEl);
       });
     });
 
     document.querySelectorAll("[data-br-cnpj]").forEach(function (input) {
-      var wrap = input.closest("div");
-      var statusEl = wrap && wrap.querySelector("[data-br-cnpj-status]");
+      var wrap = input.closest(".br-lookup-inline") || input.parentElement;
+      var statusEl = findStatusNear(input, "data-br-cnpj-status");
       var btn = wrap && wrap.querySelector("[data-br-cnpj-btn]");
-      function run() {
+      function run(ev) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
         fetchCnpj(input.value, statusEl);
       }
       input.addEventListener("blur", function () {

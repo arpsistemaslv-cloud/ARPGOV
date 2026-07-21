@@ -3955,11 +3955,22 @@ def api_lookup_cep(cep: str):
 
 @app.route("/api/lookup/cnpj/<cnpj>")
 def api_lookup_cnpj(cnpj: str):
-    from br_lookup import lookup_cnpj
+    from br_lookup import digits_only, lookup_cnpj
 
-    data = lookup_cnpj(cnpj)
+    digits = digits_only(cnpj)
+    if len(digits) != 14:
+        return jsonify({"ok": False, "error": "Informe um CNPJ com 14 dígitos."}), 400
+    data = lookup_cnpj(digits)
     if not data:
-        return jsonify({"ok": False, "error": "CNPJ não encontrado ou indisponível."}), 404
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "CNPJ não encontrado ou serviço de consulta indisponível. Tente de novo em instantes.",
+                }
+            ),
+            404,
+        )
     return jsonify({"ok": True, "data": data})
 
 
@@ -5782,6 +5793,12 @@ def inject_site_settings():
     except OSError:
         loja_cat_js_v = css_v
     try:
+        br_lookup_js_v = int(
+            os.path.getmtime(os.path.join(static_root, "js", "br-address-lookup.js"))
+        )
+    except OSError:
+        br_lookup_js_v = css_v
+    try:
         nav_pages = (
             SitePage.query.filter_by(show_in_nav=True, is_published=True)
             .order_by(SitePage.sort_order.asc(), SitePage.id.asc())
@@ -5803,6 +5820,7 @@ def inject_site_settings():
             "portal_client_picker_js_v": portal_client_picker_js_v,
             "comercial_lead_title_js_v": comercial_lead_title_js_v,
             "loja_cat_js_v": loja_cat_js_v,
+            "br_lookup_js_v": br_lookup_js_v,
             "client_cart_count": _client_cart_count() if session.get("client_id") else 0,
             "format_currency_brl": _format_currency_brl,
             "format_decimal_brl": _format_decimal_brl,
@@ -5825,6 +5843,7 @@ def inject_site_settings():
             "portal_client_picker_js_v": portal_client_picker_js_v,
             "comercial_lead_title_js_v": comercial_lead_title_js_v,
             "loja_cat_js_v": loja_cat_js_v,
+            "br_lookup_js_v": br_lookup_js_v,
             "client_cart_count": _client_cart_count() if session.get("client_id") else 0,
             "format_currency_brl": _format_currency_brl,
             "format_decimal_brl": _format_decimal_brl,

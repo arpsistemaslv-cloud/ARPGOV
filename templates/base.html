@@ -232,7 +232,7 @@
   })();
   </script>
   {% endif %}
-  <script src="{{ url_for('static', filename='js/br-address-lookup.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/br-address-lookup.js') }}?v={{ br_lookup_js_v|default(1) }}" defer></script>
   <script>
   (function () {
     var meta = document.querySelector('meta[name="csrf-token"]');
