@@ -87,6 +87,27 @@
       <p class="meta produto-cta-hint">Interessado em aderir a esta ata? Adicione à solicitação ou envie diretamente — nossa equipe orienta sobre documentação e prazos.</p>
 
       <div class="produto-actions-wrap">
+        <form method="post" action="{{ url_for('carrinho_adicionar', slug=item.slug) }}" class="produto-cart-block">
+          <div class="produto-cart-block__head">
+            <span class="produto-cart-block__title">Adicionar à solicitação</span>
+            <span class="produto-cart-block__hint">Informe a quantidade de adesão desejada</span>
+          </div>
+          <div class="produto-cart-block__controls">
+            <label class="produto-cart-form__qty-label" for="produto-qty">Qtd. adesão</label>
+            <input id="produto-qty" class="produto-cart-form__qty" type="number" name="quantity" min="1" step="1" value="1">
+            <button type="submit" class="btn btn--primary btn--compact" title="Adicionar à solicitação">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Adicionar
+            </button>
+            {% if session.client_id and client_cart_count %}
+            <a class="btn btn--ghost btn--compact" href="{{ url_for('carrinho') }}" title="Ver solicitação em andamento">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              Solicitação ({{ client_cart_count }})
+            </a>
+            {% endif %}
+          </div>
+        </form>
+
         <div class="produto-actions">
           {% if item.technical_description %}
           <button type="button" class="btn btn--ghost btn--compact produto-tech-toggle" id="produto-tech-toggle" aria-expanded="false" aria-controls="produto-tech-panel" title="Ver descrição técnica">
@@ -95,24 +116,10 @@
             <svg class="btn-icon btn-icon--chevron produto-tech-toggle__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           {% endif %}
-          <a class="btn btn--primary btn--compact" href="{{ url_for('contato', produto=item.slug) }}" title="Solicitar adesão a esta ata">
+          <a class="btn btn--ghost btn--compact" href="{{ url_for('contato', produto=item.slug) }}" title="Solicitar adesão a esta ata">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>
             Solicitar
           </a>
-          <form method="post" action="{{ url_for('carrinho_adicionar', slug=item.slug) }}" class="produto-cart-form">
-            <label class="produto-cart-form__qty-label" for="produto-qty">Qtd. adesão</label>
-            <input id="produto-qty" class="produto-cart-form__qty" type="number" name="quantity" min="1" step="1" value="1">
-            <button type="submit" class="btn btn--ghost btn--compact" title="Adicionar à solicitação">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              Adicionar
-            </button>
-          </form>
-          {% if session.client_id and client_cart_count %}
-          <a class="btn btn--ghost btn--compact" href="{{ url_for('carrinho') }}" title="Ver solicitação em andamento">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-            Solicitação ({{ client_cart_count }})
-          </a>
-          {% endif %}
           <a class="btn btn--ghost btn--compact" href="{{ url_for('arps') }}" title="Ver outras atas">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Outras atas
