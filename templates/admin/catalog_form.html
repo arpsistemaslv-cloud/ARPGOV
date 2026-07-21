@@ -313,7 +313,10 @@
     preview.textContent = 'Aguarde… isso pode levar até um minuto.';
     fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: (window.arpgovCsrfHeaders || function (h) { return h; })({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }),
       credentials: 'same-origin',
       body: JSON.stringify({ title: title })
     })
@@ -400,23 +403,36 @@
     grid.innerHTML = '';
     form.querySelectorAll('input[name="prefetch_image"][data-import-path]').forEach(function (n) { n.remove(); });
 
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 90000) : null;
     fetch(importApiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: (window.arpgovCsrfHeaders || function (h) { return h; })({
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }),
       credentials: 'same-origin',
+      signal: ctrl ? ctrl.signal : undefined,
       body: JSON.stringify({ url: url })
     })
       .then(function (r) {
         var ct = (r.headers.get('content-type') || '').toLowerCase();
+        if (r.status === 400 && ct.indexOf('application/json') === -1) {
+          return Promise.reject({ msg: 'Sessão/CSRF inválido. Recarregue a página (Ctrl+F5) e tente de novo.' });
+        }
         if (ct.indexOf('application/json') === -1) {
           return r.text().then(function (t) {
             return Promise.reject({ msg: 'Resposta inesperada do servidor.' });
           });
         }
-        return r.json();
+        return r.json().then(function (body) {
+          return { okHttp: r.ok, body: body };
+        });
       })
-      .then(function (data) {
+      .then(function (res) {
+        if (timer) clearTimeout(timer);
         btn.disabled = false;
+        var data = res.body;
         if (!data || !data.ok) {
           if (statusEl) statusEl.textContent = '';
           alert((data && data.error) ? data.error : 'Não foi possível buscar imagens.');
@@ -449,10 +465,14 @@
           grid.appendChild(label);
         });
       })
-      .catch(function () {
+      .catch(function (err) {
+        if (timer) clearTimeout(timer);
         btn.disabled = false;
         if (statusEl) statusEl.textContent = '';
-        alert('Erro de rede ao buscar imagens. Verifique o link e tente de novo.');
+        var aborted = err && (err.name === 'AbortError' || (err.message || '').indexOf('abort') >= 0);
+        alert(aborted
+          ? 'A busca demorou demais e foi cancelada. Tente de novo ou envie as fotos manualmente.'
+          : ((err && err.msg) ? err.msg : 'Erro de rede ao buscar imagens. Verifique o link e tente de novo.'));
       });
   });
 })();

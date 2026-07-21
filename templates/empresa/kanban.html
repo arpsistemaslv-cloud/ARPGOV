@@ -81,7 +81,10 @@
     });
     fetch(syncUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: (window.arpgovCsrfHeaders || function (h) { return h; })({
+        'Content-Type': 'application/json'
+      }),
+      credentials: 'same-origin',
       body: JSON.stringify({ columns: columns })
     }).catch(function(){});
   }

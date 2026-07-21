@@ -5016,6 +5016,8 @@ def _normalize_product_image_candidate(url: str) -> str | None:
     name = path.rsplit("/", 1)[-1]
     if any(tok in name for tok in ("logo", "icon", "sprite", "favicon", "avatar", "pixel", "spinner")):
         return None
+    if name.startswith("menu_") or "menu_" in name:
+        return None
     if any(tok in path for tok in ("/flags/", "/plugins/polylang/", "/header/", "/footer/")):
         return None
     if any(tok in path for tok in ("/shareresource/", "/processor", "/badge/", "/metodo-de-pago/")):
@@ -5024,6 +5026,20 @@ def _normalize_product_image_candidate(url: str) -> str | None:
         return None
     return u
 
+
+def _product_image_sort_key(url: str) -> tuple:
+    """Prioriza fotos de produto (og / uploads) e rebaixa chrome de menu/logo."""
+    low = (url or "").lower()
+    score = 0
+    if "wp-content/uploads" in low or "/uploads/" in low:
+        score += 20
+    if re.search(r"/\d+-\d+\.(?:png|jpe?g|webp)", low):
+        score += 15
+    if any(tok in low for tok in ("product", "produto", "gallery", "galeria")):
+        score += 10
+    if any(tok in low for tok in ("menu_", "logo", "icon", "banner", "box.png")):
+        score -= 40
+    return (-score, low)
 
 def _coerce_remote_image_url(raw: str, page_url: str) -> str | None:
     u = (raw or "").strip().strip("'\"")
@@ -5077,6 +5093,22 @@ def _extract_embedded_json_images(html: str, page_url: str) -> list[str]:
     return coerced
 
 
+def _extract_og_image_urls(html: str, page_url: str) -> list[str]:
+    out: list[str] = []
+    patterns = (
+        r'<meta[^>]+property=["\']og:image(?::secure_url)?["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image(?::secure_url)?["\']',
+        r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<link[^>]+rel=["\']image_src["\'][^>]+href=["\']([^"\']+)["\']',
+    )
+    for pat in patterns:
+        for m in re.finditer(pat, html or "", flags=re.I):
+            u = _coerce_remote_image_url(m.group(1), page_url)
+            if u:
+                out.append(u)
+    return out
+
+
 def _extract_image_urls_from_product_page(html: str, page_url: str) -> list[str]:
     parser = _ProductPageImageParser(page_url)
     try:
@@ -5085,39 +5117,36 @@ def _extract_image_urls_from_product_page(html: str, page_url: str) -> list[str]
         pass
     seen: set[str] = set()
     out: list[str] = []
-    for raw in parser.urls:
+
+    def _add(raw: str) -> None:
         nu = _normalize_product_image_candidate(raw)
         if not nu or nu in seen:
-            continue
+            return
         if not _is_public_http_url(nu):
-            continue
+            return
         seen.add(nu)
         out.append(nu)
+
+    for raw in _extract_og_image_urls(html, page_url):
+        _add(raw)
+    for raw in parser.urls:
+        _add(raw)
     for m in re.finditer(
         r'"(?:image|contentUrl|thumbnailUrl)"\s*:\s*"(https?://[^"]+)"',
         html or "",
         flags=re.I,
     ):
-        nu = _normalize_product_image_candidate(m.group(1))
-        if nu and nu not in seen and _is_public_http_url(nu):
-            seen.add(nu)
-            out.append(nu)
+        _add(m.group(1))
     for m in re.finditer(
         r"url\(\s*['\"]?(https?://[^)'\"]+)['\"]?\s*\)",
         html or "",
         flags=re.I,
     ):
-        nu = _normalize_product_image_candidate(m.group(1))
-        if nu and nu not in seen and _is_public_http_url(nu):
-            seen.add(nu)
-            out.append(nu)
+        _add(m.group(1))
     for raw in _extract_embedded_json_images(html, page_url):
-        nu = _normalize_product_image_candidate(raw)
-        if nu and nu not in seen and _is_public_http_url(nu):
-            seen.add(nu)
-            out.append(nu)
+        _add(raw)
+    out.sort(key=_product_image_sort_key)
     return out
-
 
 def _fetch_images_from_manufacturer_url(
     page_url: str, limit: int = MANUFACTURER_IMG_FETCH_MAX

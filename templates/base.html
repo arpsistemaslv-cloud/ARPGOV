@@ -236,11 +236,19 @@
   <script>
   (function () {
     var meta = document.querySelector('meta[name="csrf-token"]');
-    if (!meta || !meta.content) return;
-    var token = meta.content;
+    var token = meta && meta.content ? meta.content : '';
+    window.arpgovCsrfToken = token;
+    window.arpgovCsrfHeaders = function (extra) {
+      var h = Object.assign({}, extra || {});
+      if (token) {
+        h['X-CSRFToken'] = token;
+      }
+      return h;
+    };
     function inject(form) {
       if (!form || form.method.toLowerCase() !== 'post') return;
       if (form.querySelector('input[name="csrf_token"]')) return;
+      if (!token) return;
       var input = document.createElement('input');
       input.type = 'hidden';
       input.name = 'csrf_token';
