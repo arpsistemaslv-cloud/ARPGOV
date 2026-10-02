@@ -9,6 +9,7 @@ from sqlalchemy import extract, func
 from commission_service import (
     SOCIO_CASHFLOW_RESERVE_PERCENT,
     active_stakeholders,
+    amounts_from_splits,
     compute_split_rows_for_project,
 )
 
@@ -113,6 +114,15 @@ def monthly_goal_from_period_total(goal) -> Decimal | None:
 
 
 def tier_simulation_totals(tier, value_brl: Decimal | None) -> dict:
+    if tier is None:
+        value = _d(value_brl)
+        return {
+            "value_brl": value,
+            "total_commission_brl": Decimal("0.00"),
+            "company_share_brl": Decimal("0.00"),
+            "seller_share_brl": Decimal("0.00"),
+            "splits": [],
+        }
     splits = amounts_from_splits(list(tier.splits), value_brl)
     total_commission = Decimal("0")
     company_share = Decimal("0")
