@@ -684,12 +684,17 @@ def _apply_sales_rep(opp: Opportunity) -> None:
 
 
 def _external_sellers_for_form(opp: Opportunity | None = None) -> list[ExternalSeller]:
-    sellers = (
-        ExternalSeller.query.filter_by(is_active=True)
-        .order_by(ExternalSeller.name.asc())
-        .all()
-    )
-    current = opp.external_seller if opp and opp.external_seller_id else None
+    try:
+        _main().ensure_external_sellers()
+        sellers = (
+            ExternalSeller.query.filter_by(is_active=True)
+            .order_by(ExternalSeller.name.asc())
+            .all()
+        )
+    except Exception:
+        db.session.rollback()
+        return []
+    current = opp.external_seller if opp and getattr(opp, "external_seller_id", None) else None
     if current and all(s.id != current.id for s in sellers):
         sellers.append(current)
         sellers.sort(key=lambda s: (s.name or "").casefold())
@@ -769,6 +774,10 @@ def logout():
 @crm_login_required
 def dashboard():
     stage = request.args.get("stage", "").strip()
+    try:
+        _main().ensure_external_sellers()
+    except Exception:
+        db.session.rollback()
     q = Opportunity.query
     if stage:
         q = q.filter_by(stage=stage)
@@ -1222,6 +1231,10 @@ def product_delete(item_id: int):
 @crm_bp.route("/leads/nova", methods=["GET", "POST"], endpoint="crm_op_new")
 @crm_login_required
 def lead_new():
+    try:
+        _main().ensure_external_sellers()
+    except Exception:
+        db.session.rollback()
     if request.method == "POST":
         client_id, partner_id, link_err = _validate_lead_links(
             request.form.get("portal_client_id"),
@@ -1314,6 +1327,10 @@ def lead_pdf(opp_id: int):
 @crm_bp.route("/oportunidade/<int:opp_id>", methods=["GET", "POST"])
 @crm_login_required
 def lead_edit(opp_id):
+    try:
+        _main().ensure_external_sellers()
+    except Exception:
+        db.session.rollback()
     opp = (
         Opportunity.query.options(
             selectinload(Opportunity.catalog_lines),

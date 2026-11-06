@@ -2009,7 +2009,31 @@ def ensure_opportunity_rep_commission_columns():
 
 
 def ensure_external_sellers():
+    """Cria a tabela de vendedores externos e a coluna no lead, se ainda não existirem."""
     db.create_all()
+    try:
+        db.session.execute(text("SELECT id FROM external_sellers LIMIT 1"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        try:
+            with db.engine.begin() as conn:
+                conn.exec_driver_sql(
+                    """
+                    CREATE TABLE IF NOT EXISTS external_sellers (
+                        id INTEGER PRIMARY KEY,
+                        name VARCHAR(160) NOT NULL,
+                        company_name VARCHAR(200),
+                        phone VARCHAR(40),
+                        email VARCHAR(120),
+                        notes TEXT,
+                        is_active BOOLEAN NOT NULL DEFAULT 1,
+                        created_at DATETIME
+                    )
+                    """
+                )
+        except Exception:
+            pass
     try:
         db.session.execute(text("SELECT external_seller_id FROM opportunities LIMIT 1"))
         db.session.commit()
@@ -10135,11 +10159,17 @@ def cli_create_admin_rep(email: str, name: str, password: str | None, reset_pass
 def _internal_server_error(_e):
     import traceback
 
+    tb = traceback.format_exc()
     traceback.print_exc()
     app.logger.exception("Erro 500 em %s %s", request.method, request.path)
+    extra = ""
+    if (request.path or "").startswith("/crm"):
+        safe = (tb or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        extra = f"<pre style='white-space:pre-wrap;font-size:12px'>{safe[-5000:]}</pre>"
     return (
         "<h1>Erro interno</h1><p>O servidor encontrou um erro. No terminal onde o <code>app.py</code> "
-        "está rodando deve aparecer o detalhe (traceback).</p>",
+        "está rodando deve aparecer o detalhe (traceback).</p>"
+        + extra,
         500,
     )
 
