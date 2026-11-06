@@ -551,6 +551,24 @@ def amounts_from_splits(
     return out
 
 
+def external_seller_commission_label(opp: Opportunity) -> str | None:
+    """Nome exibido no rateio, no mesmo formato do select do lead."""
+    seller_id = getattr(opp, "external_seller_id", None)
+    if not seller_id:
+        return None
+    from models import ExternalSeller, db
+
+    seller = db.session.get(ExternalSeller, seller_id)
+    if seller is None:
+        return None
+    name = (seller.name or "").strip()
+    if not name:
+        return None
+    company = (seller.company_name or "").strip()
+    label = f"{name} — {company}" if company else name
+    return label[:160]
+
+
 def apply_tier_to_opportunity(
     opp: Opportunity,
     tier: CommissionProjectTier | None,
@@ -577,15 +595,20 @@ def apply_tier_to_opportunity(
 
     seller_amount: Decimal | None = None
     seller_pct: Decimal | None = None
+    seller_name = external_seller_commission_label(opp)
     for split in tier.splits:
         pct = Decimal(str(split.share_percent))
         amount = None
         if opp.value_brl is not None:
             amount = _q2(Decimal(str(opp.value_brl)) * pct / Decimal(100))
+        label = split.label
         if split.recipient_kind == "seller":
             seller_amount = amount
             seller_pct = pct
-        status_key = (split.recipient_kind, split.stakeholder_id, split.label)
+            if seller_name:
+                label = seller_name
+        status_key = (split.recipient_kind, split.stakeholder_id, label)
+        fallback_key = (split.recipient_kind, split.stakeholder_id, split.label)
         db.session.add(
             OpportunityCommissionSplit(
                 opportunity_id=opp.id,
@@ -593,10 +616,10 @@ def apply_tier_to_opportunity(
                 recipient_kind=split.recipient_kind,
                 stakeholder_id=split.stakeholder_id,
                 sales_rep_id=opp.sales_rep_id if split.recipient_kind == "seller" else None,
-                recipient_name=split.label,
+                recipient_name=label,
                 share_percent=pct,
                 amount_brl=amount,
-                payout_status=old_status.get(status_key, "pendente"),
+                payout_status=old_status.get(status_key, old_status.get(fallback_key, "pendente")),
             )
         )
 
@@ -604,8 +627,9 @@ def apply_tier_to_opportunity(
     if has_seller and seller_amount is not None:
         opp.rep_commission_brl = seller_amount
         pct_txt = f"{seller_pct:.4f}".rstrip("0").rstrip(".").replace(".", ",") if seller_pct else ""
+        who = seller_name or "o vendedor"
         opp.rep_commission_note = (
-            f"Faixa {tier_label(tier)} — R$ {seller_amount} para o vendedor ({pct_txt}% da operação)."
+            f"Faixa {tier_label(tier)} — R$ {seller_amount} para {who} ({pct_txt}% da operação)."
         )
     elif not has_seller:
         opp.rep_commission_brl = None

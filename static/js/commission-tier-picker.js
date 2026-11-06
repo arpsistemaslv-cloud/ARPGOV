@@ -80,6 +80,30 @@
       return null;
     }
 
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function selectedExternalSellerName() {
+      var sel = document.getElementById("external_seller_id");
+      if (!sel || !sel.value) return "";
+      var opt = sel.options[sel.selectedIndex];
+      if (!opt) return "";
+      return String(opt.textContent || "").replace(/\s*\(inativo\)\s*$/, "").trim();
+    }
+
+    function splitLabel(split) {
+      if (split.recipient_kind === "seller") {
+        var name = selectedExternalSellerName();
+        if (name) return name;
+      }
+      return split.label;
+    }
+
     function updateRateio() {
       var tier = selectedTier();
       var base = parseMoney(valueInput && valueInput.value);
@@ -105,7 +129,7 @@
           var tr = document.createElement("tr");
           tr.innerHTML =
             "<td>" +
-            s.label +
+            escapeHtml(splitLabel(s)) +
             "</td><td>" +
             fmtPct(s.share_percent) +
             "</td><td>" +
@@ -127,12 +151,15 @@
       if (noteField) {
         if (tier.with_seller && seller && base !== null) {
           var sellerAmt = ((base * seller.share_percent) / 100).toFixed(2);
+          var who = selectedExternalSellerName() || "o vendedor";
           noteField.value =
             "Faixa " +
             tierLabel(tier) +
             " — R$ " +
             sellerAmt +
-            " para o vendedor (" +
+            " para " +
+            who +
+            " (" +
             fmtPctPlain(seller.share_percent) +
             "% da operação).";
         } else if (!tier.with_seller) {
@@ -165,6 +192,8 @@
     });
     if (valueInput) valueInput.addEventListener("input", updateRateio);
     tierSel.addEventListener("change", updateRateio);
+    var externalSellerSel = document.getElementById("external_seller_id");
+    if (externalSellerSel) externalSellerSel.addEventListener("change", updateRateio);
 
     if (projectSel.value) {
       rebuildTiers();

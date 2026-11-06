@@ -365,7 +365,7 @@
 <script src="{{ url_for('static', filename='js/catalog-product-picker.js') }}?v={{ catalog_picker_js_v }}" defer></script>
 {% if commission_projects_json is defined %}
 <script type="application/json" id="commission_projects_json">{{ commission_projects_json|tojson }}</script>
-<script src="{{ url_for('static', filename='js/commission-tier-picker.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/commission-tier-picker.js') }}?v=2" defer></script>
 {% endif %}
 {% if pipeline_stage_field_defs is defined %}
 <script src="{{ url_for('static', filename='js/lead-pipeline-stages.js') }}?v=4" defer></script>
