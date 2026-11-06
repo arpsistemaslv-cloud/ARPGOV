@@ -41,19 +41,9 @@
               <td>
                 {% set arps = partner_arps.get(p.id, []) %}
                 {% if arps %}
-                <ul class="partner-arp-list">
-                  {% for it in arps[:8] %}
-                  <li>
-                    <a href="{{ url_for('produto', slug=it.slug) }}" target="_blank" rel="noopener">{{ it.title }}</a>
-                    <span class="meta">{{ it.sphere }}{% if it.valid_until %} · até {{ it.valid_until.strftime('%d/%m/%Y') }}{% endif %}</span>
-                  </li>
-                  {% endfor %}
-                  {% if arps|length > 8 %}
-                  <li class="meta">+ {{ arps|length - 8 }} outra(s) — <a href="{{ url_for('crm.crm_partner_edit', partner_id=p.id) }}">ver todas</a></li>
-                  {% endif %}
-                </ul>
+                <a class="btn btn--ghost partner-arps-btn" href="{{ url_for('crm.crm_partner_arps', partner_id=p.id) }}">Ver ARPs ({{ arps|length }})</a>
                 {% else %}
-                <span class="meta">Nenhuma ARP</span>
+                <span class="meta">Nenhuma</span>
                 {% endif %}
               </td>
               <td class="meta">{{ p.cnpj or '—' }}</td>

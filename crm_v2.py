@@ -1006,6 +1006,14 @@ def partner_new():
     return render_template("crm/fornecedor_form.html", **ctx)
 
 
+@crm_bp.route("/fornecedores/<int:partner_id>/arps", endpoint="crm_partner_arps")
+@crm_login_required
+def partner_arps(partner_id: int):
+    partner = Partner.query.get_or_404(partner_id)
+    arps = _catalog_arps_by_partner([partner]).get(partner.id, [])
+    return render_template("crm/fornecedor_arps.html", partner=partner, arps=arps)
+
+
 @crm_bp.route("/fornecedores/<int:partner_id>", methods=["GET", "POST"], endpoint="crm_partner_edit")
 @crm_login_required
 def partner_edit(partner_id: int):
@@ -1014,7 +1022,6 @@ def partner_edit(partner_id: int):
     ctx = {
         "partner": partner,
         "br_ufs": m.BR_UFS,
-        "partner_arps": _catalog_arps_by_partner([partner]).get(partner.id, []),
     }
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
@@ -1055,7 +1062,6 @@ def partner_edit(partner_id: int):
         stage_label_fn=pipeline_stage_label,
         br_ufs=m.BR_UFS,
         partner=partner,
-        partner_arps=ctx["partner_arps"],
     )
 
 

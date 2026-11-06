@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}CRM — ARPs de {{ partner.company_name or partner.name }}{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;justify-content:space-between">
+      <div>
+        <h1 style="margin-top:0">ARPs — {{ partner.company_name or partner.razao_social or partner.name }}</h1>
+        <p class="meta">{{ arps|length }} ata(s) em que esta empresa é a dona do cadastro.</p>
+      </div>
+      <a class="btn btn--ghost" href="{{ url_for('crm.crm_partners_list') }}">Voltar aos fornecedores</a>
+    </div>
+    <div class="crm-table-card" style="margin-top:1rem">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Produto / ARP</th>
+              <th>Esfera</th>
+              <th>Seção</th>
+              <th>Validade</th>
+              <th>Preço</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for it in arps %}
+            <tr>
+              <td><strong>{{ it.title }}</strong></td>
+              <td class="meta">{{ it.sphere }}</td>
+              <td class="meta">{{ it.section }}</td>
+              <td class="meta">{% if it.valid_until %}{{ it.valid_until.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</td>
+              <td class="meta">{{ it.unit_price|brl }}</td>
+              <td><a href="{{ url_for('produto', slug=it.slug) }}" target="_blank" rel="noopener">Ver no site</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="meta">Nenhuma ARP cadastrada para este fornecedor.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
