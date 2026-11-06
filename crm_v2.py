@@ -44,6 +44,7 @@ from models import (
     OpportunityCatalogLine,
     OpportunityCommissionSplit,
     Partner,
+    PartnerProduct,
     PortalClient,
     RepFinancialEntry,
     SalesRepresentative,
@@ -886,6 +887,63 @@ def client_edit(client_id):
     return render_template("crm/cliente_form.html", leads=leads, **ctx)
 
 
+def _partner_owner_keys(partner: Partner) -> set[str]:
+    """Nomes usados no catálogo como empresa dona da ata."""
+    keys: set[str] = set()
+    display = (partner.company_name or "").strip() or (partner.name or "").strip()
+    for raw in (partner.company_name, partner.razao_social, partner.name, display):
+        key = (raw or "").strip().casefold()
+        if key:
+            keys.add(key)
+    return keys
+
+
+def _catalog_arps_by_partner(partners: list[Partner]) -> dict[int, list[CatalogItem]]:
+    """ARPs (produtos do catálogo) de cada fornecedor exclusivo."""
+    if not partners:
+        return {}
+    items = (
+        CatalogItem.query.filter(CatalogItem.ata_owner_company.isnot(None))
+        .filter(CatalogItem.ata_owner_company != "")
+        .order_by(CatalogItem.title.asc())
+        .all()
+    )
+    by_owner: dict[str, list[CatalogItem]] = {}
+    for item in items:
+        key = (item.ata_owner_company or "").strip().casefold()
+        if key:
+            by_owner.setdefault(key, []).append(item)
+
+    partner_ids = [p.id for p in partners]
+    extra_by_partner: dict[int, list[CatalogItem]] = {pid: [] for pid in partner_ids}
+    products = (
+        PartnerProduct.query.options(selectinload(PartnerProduct.catalog_item))
+        .filter(PartnerProduct.partner_id.in_(partner_ids))
+        .filter(PartnerProduct.catalog_item_id.isnot(None))
+        .all()
+    )
+    for product in products:
+        if product.catalog_item is not None:
+            extra_by_partner.setdefault(product.partner_id, []).append(product.catalog_item)
+
+    out: dict[int, list[CatalogItem]] = {}
+    for partner in partners:
+        seen: set[int] = set()
+        rows: list[CatalogItem] = []
+        for key in _partner_owner_keys(partner):
+            for item in by_owner.get(key, []):
+                if item.id not in seen:
+                    seen.add(item.id)
+                    rows.append(item)
+        for item in extra_by_partner.get(partner.id, []):
+            if item.id not in seen:
+                seen.add(item.id)
+                rows.append(item)
+        rows.sort(key=lambda it: (it.title or "").casefold())
+        out[partner.id] = rows
+    return out
+
+
 @crm_bp.route("/fornecedores", endpoint="crm_partners_list")
 @crm_login_required
 def partners_list():
@@ -904,7 +962,12 @@ def partners_list():
             )
         )
     partners = query.order_by(Partner.company_name.asc().nulls_last(), Partner.name.asc()).all()
-    return render_template("crm/fornecedores_list.html", partners=partners, q=q)
+    return render_template(
+        "crm/fornecedores_list.html",
+        partners=partners,
+        q=q,
+        partner_arps=_catalog_arps_by_partner(partners),
+    )
 
 
 @crm_bp.route("/fornecedores/novo", methods=["GET", "POST"], endpoint="crm_partner_new")
@@ -948,7 +1011,11 @@ def partner_new():
 def partner_edit(partner_id: int):
     m = _main()
     partner = Partner.query.get_or_404(partner_id)
-    ctx = {"partner": partner, "br_ufs": m.BR_UFS}
+    ctx = {
+        "partner": partner,
+        "br_ufs": m.BR_UFS,
+        "partner_arps": _catalog_arps_by_partner([partner]).get(partner.id, []),
+    }
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         email = m._normalize_rep_email(request.form.get("email"))
@@ -988,6 +1055,7 @@ def partner_edit(partner_id: int):
         stage_label_fn=pipeline_stage_label,
         br_ufs=m.BR_UFS,
         partner=partner,
+        partner_arps=ctx["partner_arps"],
     )
 
 

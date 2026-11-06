@@ -22,6 +22,41 @@
       </div>
     </form>
 
+    {% if partner and partner_arps is defined %}
+    <section class="crm-table-card" style="margin-top:2rem">
+      <header style="padding:1rem 1.1rem 0">
+        <h2 style="font-size:1.05rem;margin:0">ARPs deste fornecedor</h2>
+        <p class="meta" style="margin:0.35rem 0 0">Produtos do catálogo em que esta empresa é a dona da ata.</p>
+      </header>
+      <div class="table-wrap" style="padding:0.75rem 1.1rem 1.1rem">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Produto / ARP</th>
+              <th>Esfera</th>
+              <th>Validade</th>
+              <th>Preço</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for it in partner_arps %}
+            <tr>
+              <td><strong>{{ it.title }}</strong></td>
+              <td class="meta">{{ it.sphere }}</td>
+              <td class="meta">{% if it.valid_until %}{{ it.valid_until.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</td>
+              <td class="meta">{{ it.unit_price|brl }}</td>
+              <td><a href="{{ url_for('produto', slug=it.slug) }}" target="_blank" rel="noopener">Ver no site</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="meta">Nenhuma ARP cadastrada para este fornecedor.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
     {% if partner and leads %}
     <section class="crm-table-card" style="margin-top:2rem">
       <header style="padding:1rem 1.1rem 0">
