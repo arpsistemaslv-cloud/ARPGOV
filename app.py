@@ -2034,6 +2034,26 @@ def ensure_external_sellers():
                 )
         except Exception:
             pass
+    for col, ddl in (
+        ("company_name", "VARCHAR(200)"),
+        ("phone", "VARCHAR(40)"),
+        ("email", "VARCHAR(120)"),
+        ("notes", "TEXT"),
+        ("is_active", "BOOLEAN NOT NULL DEFAULT 1"),
+        ("created_at", "DATETIME"),
+    ):
+        try:
+            db.session.execute(text(f"SELECT {col} FROM external_sellers LIMIT 1"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            try:
+                with db.engine.begin() as conn:
+                    conn.exec_driver_sql(
+                        f"ALTER TABLE external_sellers ADD COLUMN {col} {ddl}"
+                    )
+            except Exception:
+                pass
     try:
         db.session.execute(text("SELECT external_seller_id FROM opportunities LIMIT 1"))
         db.session.commit()

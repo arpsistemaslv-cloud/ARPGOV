@@ -1107,6 +1107,10 @@ def partner_edit(partner_id: int):
 @crm_bp.route("/vendedores", endpoint="crm_external_sellers_list")
 @crm_login_required
 def external_sellers_list():
+    try:
+        _main().ensure_external_sellers()
+    except Exception:
+        db.session.rollback()
     q = (request.args.get("q") or "").strip()
     query = ExternalSeller.query
     if q:
@@ -1143,6 +1147,10 @@ def _seller_from_form(seller: ExternalSeller | None) -> tuple[ExternalSeller | N
 @crm_bp.route("/vendedores/novo", methods=["GET", "POST"], endpoint="crm_external_sellers_new")
 @crm_login_required
 def external_seller_new():
+    try:
+        _main().ensure_external_sellers()
+    except Exception:
+        db.session.rollback()
     if request.method == "POST":
         seller, err = _seller_from_form(None)
         if err:
@@ -1157,6 +1165,10 @@ def external_seller_new():
 @crm_bp.route("/vendedores/<int:seller_id>", methods=["GET", "POST"], endpoint="crm_external_sellers_edit")
 @crm_login_required
 def external_seller_edit(seller_id: int):
+    try:
+        _main().ensure_external_sellers()
+    except Exception:
+        db.session.rollback()
     seller = ExternalSeller.query.get_or_404(seller_id)
     if request.method == "POST":
         seller, err = _seller_from_form(seller)
