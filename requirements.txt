@@ -7,3 +7,4 @@ requests>=2.31.0
 feedparser>=6.0.11
 gunicorn>=22.0.0
 Pillow>=10.0.0
+reportlab>=4.0.0

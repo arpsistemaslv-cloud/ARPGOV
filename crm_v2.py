@@ -5,6 +5,7 @@ Substitui o CRM legado (Athenas) mantendo as tabelas existentes.
 
 from __future__ import annotations
 
+import io
 import os
 import json
 import uuid
@@ -21,6 +22,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
@@ -81,6 +83,7 @@ from pipeline_stages import (
     stage_label as pipeline_stage_label,
     stages_with_fields_up_to,
 )
+from lead_pdf import build_lead_pdf, lead_pdf_filename
 
 crm_bp = Blueprint("crm", __name__, url_prefix="/crm")
 
@@ -1185,6 +1188,31 @@ def lead_new():
     return render_template(
         "crm/op_form.html",
         **_op_form_base_ctx(None),
+    )
+
+
+@crm_bp.route("/leads/<int:opp_id>/pdf", endpoint="crm_op_pdf")
+@crm_login_required
+def lead_pdf(opp_id: int):
+    opp = (
+        Opportunity.query.options(
+            selectinload(Opportunity.catalog_lines).selectinload(OpportunityCatalogLine.catalog_item),
+            selectinload(Opportunity.commission_splits),
+            selectinload(Opportunity.commission_tier),
+            selectinload(Opportunity.commission_project),
+            selectinload(Opportunity.sales_rep),
+            selectinload(Opportunity.portal_client),
+            selectinload(Opportunity.partner),
+        )
+        .filter_by(id=opp_id)
+        .first_or_404()
+    )
+    pdf = build_lead_pdf(opp)
+    return send_file(
+        io.BytesIO(pdf),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=lead_pdf_filename(opp),
     )
 
 

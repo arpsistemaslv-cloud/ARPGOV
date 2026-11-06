@@ -109,7 +109,11 @@
                   </form>
                 </td>
                 <td class="meta">{% if o.sales_rep %}{{ o.sales_rep.name }}{% else %}—{% endif %}</td>
-                <td><a href="{{ url_for('crm.crm_op_edit', opp_id=o.id) }}">Editar</a></td>
+                <td class="crm-row-actions">
+                  <a href="{{ url_for('crm.crm_op_edit', opp_id=o.id) }}">Editar</a>
+                  <span class="meta">·</span>
+                  <a href="{{ url_for('crm.crm_op_pdf', opp_id=o.id) }}">PDF</a>
+                </td>
               </tr>
               {% else %}
               <tr><td colspan="9" class="meta">Nenhum lead. <a href="{{ url_for('crm.crm_op_new') }}">Criar o primeiro</a>.</td></tr>

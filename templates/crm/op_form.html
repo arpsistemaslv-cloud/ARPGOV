@@ -37,6 +37,9 @@
             <input type="hidden" id="value_brl" form="lead-main-form" value="{% if opp and opp.value_brl is not none %}{{ opp.value_brl|brl_decimal }}{% endif %}">
           </div>
           <button type="submit" class="btn btn--primary lead-form-header__save" form="lead-main-form">Salvar</button>
+          {% if opp and not comercial_subnav %}
+          <a class="btn btn--ghost lead-form-header__save" href="{{ url_for('crm.crm_op_pdf', opp_id=opp.id) }}">Gerar PDF</a>
+          {% endif %}
         </div>
       </div>
     </div>
