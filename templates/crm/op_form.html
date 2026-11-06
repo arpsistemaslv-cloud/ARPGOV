@@ -164,6 +164,20 @@
             </select>
           </div>
           {% endif %}
+          {% if external_sellers is defined %}
+          <div class="lead-form-field">
+            <label for="external_seller_id">Vendedor externo</label>
+            <select id="external_seller_id" name="external_seller_id">
+              <option value="">Nenhum</option>
+              {% for s in external_sellers %}
+              <option value="{{ s.id }}" {% if opp and opp.external_seller_id == s.id %}selected{% endif %}>{{ s.name }}{% if s.company_name %} — {{ s.company_name }}{% endif %}{% if not s.is_active %} (inativo){% endif %}</option>
+              {% endfor %}
+            </select>
+            {% if not comercial_subnav %}
+            <p class="meta" style="margin:0.35rem 0 0"><a href="{{ url_for('crm.crm_external_sellers_new') }}" target="_blank">+ Cadastrar vendedor</a></p>
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
 
         <p class="lead-form-card__desc meta" id="pipeline-fields-hint" hidden>Altere o estágio acima para preencher os dados desta etapa.</p>

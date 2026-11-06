@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}CRM — {% if seller %}Editar{% else %}Novo{% endif %} vendedor{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <h1 style="margin-top:0">{% if seller %}Editar vendedor{% else %}Novo vendedor externo{% endif %}</h1>
+    <p class="meta">Esse cadastro não cria login. Serve para escolher o nome do vendedor no lead.</p>
+    <form method="post" class="form-grid form-grid--wide" style="margin-top:1rem">
+      <div>
+        <label for="name">Nome *</label>
+        <input id="name" name="name" required maxlength="160" value="{{ seller.name if seller else '' }}">
+      </div>
+      <div>
+        <label for="company_name">Empresa</label>
+        <input id="company_name" name="company_name" maxlength="200" value="{{ seller.company_name or '' if seller else '' }}">
+      </div>
+      <div>
+        <label for="phone">Telefone</label>
+        <input id="phone" name="phone" maxlength="40" value="{{ seller.phone or '' if seller else '' }}">
+      </div>
+      <div>
+        <label for="email">E-mail</label>
+        <input id="email" name="email" maxlength="120" value="{{ seller.email or '' if seller else '' }}">
+      </div>
+      <div class="form-grid__full">
+        <label for="notes">Observações</label>
+        <textarea id="notes" name="notes" rows="3">{{ seller.notes or '' if seller else '' }}</textarea>
+      </div>
+      {% if seller %}
+      <div>
+        <label><input type="checkbox" name="is_active" value="1" {% if seller.is_active %}checked{% endif %}> Ativo</label>
+      </div>
+      {% endif %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Salvar</button>
+        <a class="btn btn--ghost" href="{{ url_for('crm.crm_external_sellers_list') }}">Voltar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

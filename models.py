@@ -423,6 +423,23 @@ class SalesRepresentative(db.Model):
     )
 
 
+class ExternalSeller(db.Model):
+    """Vendedor externo — cadastro de nome, sem login no sistema."""
+
+    __tablename__ = "external_sellers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    company_name = db.Column(db.String(200), nullable=True)
+    phone = db.Column(db.String(40), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    opportunities = db.relationship("Opportunity", back_populates="external_seller")
+
+
 class PortalClient(db.Model):
     """Cliente cadastrado no site — acessa seus leads (oportunidades vinculadas)."""
 
@@ -521,6 +538,9 @@ class Opportunity(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     sales_rep_id = db.Column(db.Integer, db.ForeignKey("sales_reps.id"), nullable=True, index=True)
+    external_seller_id = db.Column(
+        db.Integer, db.ForeignKey("external_sellers.id"), nullable=True, index=True
+    )
     portal_client_id = db.Column(db.Integer, db.ForeignKey("portal_clients.id"), nullable=True, index=True)
     partner_id = db.Column(db.Integer, db.ForeignKey("partners.id"), nullable=True, index=True)
     title = db.Column(db.String(200), nullable=False)
@@ -556,6 +576,7 @@ class Opportunity(db.Model):
         lazy="selectin",
     )
     sales_rep = db.relationship("SalesRepresentative", back_populates="opportunities")
+    external_seller = db.relationship("ExternalSeller", back_populates="opportunities")
     portal_client = db.relationship("PortalClient", back_populates="opportunities")
     partner = db.relationship("Partner", foreign_keys=[partner_id])
     lead_messages = db.relationship(

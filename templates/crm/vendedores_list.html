@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}CRM — Vendedores{% endblock %}
+{% block body %}
+<div class="crm-shell">
+  <div class="crm-shell__inner">
+    {% include "crm/_subnav.html" %}
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;justify-content:space-between">
+      <div>
+        <h1 style="margin-top:0">Vendedores externos</h1>
+        <p class="meta">Cadastre quem vende fora da equipe interna. O nome aparece no lead quando for selecionado.</p>
+      </div>
+      <a class="btn btn--primary" href="{{ url_for('crm.crm_external_sellers_new') }}">Novo vendedor</a>
+    </div>
+    <form method="get" action="{{ url_for('crm.crm_external_sellers_list') }}" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <label for="q">Buscar</label>
+        <input id="q" name="q" value="{{ q or '' }}" placeholder="Nome, empresa, e-mail…">
+      </div>
+      <button type="submit" class="btn btn--ghost">Filtrar</button>
+      {% if q %}<a href="{{ url_for('crm.crm_external_sellers_list') }}" class="btn btn--ghost">Limpar</a>{% endif %}
+    </form>
+    <div class="crm-table-card">
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Empresa</th>
+              <th>Telefone</th>
+              <th>E-mail</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in sellers %}
+            <tr>
+              <td><strong>{{ s.name }}</strong></td>
+              <td class="meta">{{ s.company_name or '—' }}</td>
+              <td class="meta">{{ s.phone or '—' }}</td>
+              <td class="meta">{{ s.email or '—' }}</td>
+              <td class="meta">{% if s.is_active %}Ativo{% else %}Inativo{% endif %}</td>
+              <td><a href="{{ url_for('crm.crm_external_sellers_edit', seller_id=s.id) }}">Editar</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="meta">Nenhum vendedor. <a href="{{ url_for('crm.crm_external_sellers_new') }}">Cadastre o primeiro</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

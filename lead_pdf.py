@@ -210,6 +210,10 @@ def build_lead_pdf(opp) -> bytes:
                 "Representante",
                 _txt(opp.sales_rep.name if opp.sales_rep else None),
             ),
+            (
+                "Vendedor externo",
+                _txt(opp.external_seller.name if opp.external_seller else None),
+            ),
             ("Criado em", _dt_br(opp.created_at)),
         ]
     )

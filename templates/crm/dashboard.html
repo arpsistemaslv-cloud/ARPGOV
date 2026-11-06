@@ -87,6 +87,7 @@
                 <th>Comissão</th>
                 <th>Estágio</th>
                 <th>Representante</th>
+                <th>Vendedor</th>
                 <th></th>
               </tr>
             </thead>
@@ -109,6 +110,7 @@
                   </form>
                 </td>
                 <td class="meta">{% if o.sales_rep %}{{ o.sales_rep.name }}{% else %}—{% endif %}</td>
+                <td class="meta">{% if o.external_seller %}{{ o.external_seller.name }}{% else %}—{% endif %}</td>
                 <td class="crm-row-actions">
                   <a href="{{ url_for('crm.crm_op_edit', opp_id=o.id) }}">Editar</a>
                   <span class="meta">·</span>
@@ -116,7 +118,7 @@
                 </td>
               </tr>
               {% else %}
-              <tr><td colspan="9" class="meta">Nenhum lead. <a href="{{ url_for('crm.crm_op_new') }}">Criar o primeiro</a>.</td></tr>
+              <tr><td colspan="10" class="meta">Nenhum lead. <a href="{{ url_for('crm.crm_op_new') }}">Criar o primeiro</a>.</td></tr>
               {% endfor %}
             </tbody>
           </table>

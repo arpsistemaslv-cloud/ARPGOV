@@ -1910,6 +1910,7 @@ def init_schema():
         ensure_opportunity_portal_client_id_column()
         ensure_opportunity_partner_id_column()
         ensure_opportunity_sales_rep_id_column()
+        ensure_external_sellers()
         ensure_opportunity_rep_commission_columns()
         ensure_opportunity_commission_project_columns()
         ensure_opportunity_catalog_lines_table()
@@ -2005,6 +2006,22 @@ def ensure_opportunity_rep_commission_columns():
                     )
             except Exception:
                 pass
+
+
+def ensure_external_sellers():
+    db.create_all()
+    try:
+        db.session.execute(text("SELECT external_seller_id FROM opportunities LIMIT 1"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        try:
+            with db.engine.begin() as conn:
+                conn.exec_driver_sql(
+                    "ALTER TABLE opportunities ADD COLUMN external_seller_id INTEGER"
+                )
+        except Exception:
+            pass
 
 
 def ensure_opportunity_partner_id_column():

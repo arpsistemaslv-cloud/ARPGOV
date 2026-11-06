@@ -45,6 +45,7 @@ from models import (
     Opportunity,
     OpportunityCatalogLine,
     OpportunityCommissionSplit,
+    ExternalSeller,
     Partner,
     PartnerProduct,
     PortalClient,
@@ -426,6 +427,7 @@ def _op_form_base_ctx(opp: Opportunity | None = None) -> dict:
         "stages": STAGES,
         "catalog_choices": _main()._crm_catalog_choices(),
         "sales_reps": _main()._crm_active_sales_reps(),
+        "external_sellers": _external_sellers_for_form(opp),
         "clients": PortalClient.query.order_by(PortalClient.name.asc()).all(),
         "partners": _partners_for_form(),
         "commission_projects": projects,
@@ -681,6 +683,30 @@ def _apply_sales_rep(opp: Opportunity) -> None:
     opp.sales_rep_id = rep.id if rep and rep.is_active else None
 
 
+def _external_sellers_for_form(opp: Opportunity | None = None) -> list[ExternalSeller]:
+    sellers = (
+        ExternalSeller.query.filter_by(is_active=True)
+        .order_by(ExternalSeller.name.asc())
+        .all()
+    )
+    current = opp.external_seller if opp and opp.external_seller_id else None
+    if current and all(s.id != current.id for s in sellers):
+        sellers.append(current)
+        sellers.sort(key=lambda s: (s.name or "").casefold())
+    return sellers
+
+
+def _apply_external_seller(opp: Opportunity) -> None:
+    raw = (request.form.get("external_seller_id") or "").strip()
+    if not raw or not raw.isdigit():
+        opp.external_seller_id = None
+        return
+    seller = db.session.get(ExternalSeller, int(raw))
+    opp.external_seller_id = seller.id if seller and seller.is_active else (
+        opp.external_seller_id if seller and opp.external_seller_id == seller.id else None
+    )
+
+
 def _delete_lead_ok(raw: str | None) -> bool:
     s = unicodedata.normalize("NFKC", (raw or "").strip())
     return "".join(s.split()).upper() == "EXCLUIR"
@@ -751,6 +777,7 @@ def dashboard():
             selectinload(Opportunity.catalog_lines),
             selectinload(Opportunity.portal_client),
             selectinload(Opportunity.sales_rep),
+            selectinload(Opportunity.external_seller),
         )
         .order_by(Opportunity.updated_at.desc())
         .limit(200)
@@ -1068,6 +1095,71 @@ def partner_edit(partner_id: int):
     )
 
 
+@crm_bp.route("/vendedores", endpoint="crm_external_sellers_list")
+@crm_login_required
+def external_sellers_list():
+    q = (request.args.get("q") or "").strip()
+    query = ExternalSeller.query
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                ExternalSeller.name.ilike(like),
+                ExternalSeller.company_name.ilike(like),
+                ExternalSeller.email.ilike(like),
+                ExternalSeller.phone.ilike(like),
+            )
+        )
+    sellers = query.order_by(ExternalSeller.name.asc()).all()
+    return render_template("crm/vendedores_list.html", sellers=sellers, q=q)
+
+
+def _seller_from_form(seller: ExternalSeller | None) -> tuple[ExternalSeller | None, str | None]:
+    name = (request.form.get("name") or "").strip()
+    if not name:
+        return seller, "Informe o nome do vendedor."
+    if seller is None:
+        seller = ExternalSeller(name=name[:160], is_active=True)
+        db.session.add(seller)
+    else:
+        seller.name = name[:160]
+        seller.is_active = request.form.get("is_active") == "1"
+    seller.company_name = (request.form.get("company_name") or "").strip()[:200] or None
+    seller.phone = (request.form.get("phone") or "").strip()[:40] or None
+    seller.email = (request.form.get("email") or "").strip()[:120] or None
+    seller.notes = (request.form.get("notes") or "").strip() or None
+    return seller, None
+
+
+@crm_bp.route("/vendedores/novo", methods=["GET", "POST"], endpoint="crm_external_sellers_new")
+@crm_login_required
+def external_seller_new():
+    if request.method == "POST":
+        seller, err = _seller_from_form(None)
+        if err:
+            flash(err, "error")
+            return render_template("crm/vendedor_form.html", seller=None)
+        db.session.commit()
+        flash("Vendedor cadastrado.", "ok")
+        return redirect(url_for("crm.crm_external_sellers_list"))
+    return render_template("crm/vendedor_form.html", seller=None)
+
+
+@crm_bp.route("/vendedores/<int:seller_id>", methods=["GET", "POST"], endpoint="crm_external_sellers_edit")
+@crm_login_required
+def external_seller_edit(seller_id: int):
+    seller = ExternalSeller.query.get_or_404(seller_id)
+    if request.method == "POST":
+        seller, err = _seller_from_form(seller)
+        if err:
+            flash(err, "error")
+            return render_template("crm/vendedor_form.html", seller=seller)
+        db.session.commit()
+        flash("Vendedor atualizado.", "ok")
+        return redirect(url_for("crm.crm_external_sellers_list"))
+    return render_template("crm/vendedor_form.html", seller=seller)
+
+
 @crm_bp.route("/produtos", endpoint="crm_products_list")
 @crm_login_required
 def products_list():
@@ -1177,6 +1269,7 @@ def lead_new():
             if cnpj_raw:
                 opp.cnpj = cnpj_raw
         _apply_sales_rep(opp)
+        _apply_external_seller(opp)
         db.session.add(opp)
         db.session.flush()
         _sync_catalog(opp, catalog_lines)
@@ -1201,6 +1294,7 @@ def lead_pdf(opp_id: int):
             selectinload(Opportunity.commission_tier),
             selectinload(Opportunity.commission_project),
             selectinload(Opportunity.sales_rep),
+            selectinload(Opportunity.external_seller),
             selectinload(Opportunity.portal_client),
             selectinload(Opportunity.partner),
         )
@@ -1226,6 +1320,7 @@ def lead_edit(opp_id):
             selectinload(Opportunity.commission_splits),
             selectinload(Opportunity.commission_tier),
             selectinload(Opportunity.sales_rep),
+            selectinload(Opportunity.external_seller),
         )
         .filter_by(id=opp_id)
         .first_or_404()
@@ -1267,6 +1362,7 @@ def lead_edit(opp_id):
         opp.source = (request.form.get("source") or "").strip() or None
         catalog_lines = _parse_catalog_lines()
         _apply_sales_rep(opp)
+        _apply_external_seller(opp)
         _sync_catalog(opp, catalog_lines)
         _sync_pipeline(opp)
         _apply_commission(opp)
