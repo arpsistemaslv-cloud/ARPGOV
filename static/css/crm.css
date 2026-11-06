@@ -893,6 +893,28 @@
   font-size: 0.82rem;
 }
 
+.crm-row-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.crm-row-actions form {
+  margin: 0;
+}
+
+.crm-link-danger {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #b42318;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .crm-filters {
   display: flex;
   flex-wrap: wrap;

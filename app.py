@@ -4425,6 +4425,36 @@ def _delete_partner_product_draft_files(pp: PartnerProduct) -> None:
         _delete_ata_company_doc_file(p)
 
 
+def delete_catalog_item(item: CatalogItem) -> None:
+    """Remove o produto do catálogo e desvincula atas, leads e comissões."""
+    cid = item.id
+    _unlink_opportunities_for_catalog_ids([cid])
+    PartnerProductArpCommission.query.filter_by(catalog_item_id=cid).delete(
+        synchronize_session=False
+    )
+    PartnerProduct.query.filter_by(catalog_item_id=cid).update(
+        {PartnerProduct.catalog_item_id: None}, synchronize_session=False
+    )
+    ContratosGovScanResult.query.filter_by(catalog_item_id=cid).update(
+        {ContratosGovScanResult.catalog_item_id: None}, synchronize_session=False
+    )
+    ArpAnalysis.query.filter_by(catalog_item_id=cid).update(
+        {ArpAnalysis.catalog_item_id: None}, synchronize_session=False
+    )
+    LicitacaoWatch.query.filter_by(catalog_item_id=cid).update(
+        {LicitacaoWatch.catalog_item_id: None}, synchronize_session=False
+    )
+    db.session.execute(
+        text(
+            "UPDATE commission_projects SET catalog_item_id = NULL "
+            "WHERE catalog_item_id = :cid"
+        ),
+        {"cid": cid},
+    )
+    _delete_catalog_item_disk_files(item)
+    db.session.delete(item)
+
+
 def _unlink_opportunities_for_catalog_ids(catalog_ids: list[int]) -> None:
     if not catalog_ids:
         return
@@ -8613,11 +8643,8 @@ def admin_catalog_delete_all():
         flash("Digite exatamente EXCLUIR TODOS para confirmar.", "error")
         return redirect(url_for("admin_catalog_delete_all"))
     items = CatalogItem.query.all()
-    ids = [i.id for i in items]
-    _unlink_opportunities_for_catalog_ids(ids)
     for it in items:
-        _delete_catalog_item_disk_files(it)
-        db.session.delete(it)
+        delete_catalog_item(it)
     db.session.commit()
     flash(f"Removidos {len(items)} produtos do catálogo.", "ok")
     return redirect(url_for("admin_catalog_list"))
@@ -8627,9 +8654,7 @@ def admin_catalog_delete_all():
 @admin_login_required
 def admin_catalog_delete(item_id):
     item = CatalogItem.query.get_or_404(item_id)
-    _unlink_opportunities_for_catalog_ids([item.id])
-    _delete_catalog_item_disk_files(item)
-    db.session.delete(item)
+    delete_catalog_item(item)
     db.session.commit()
     flash("Produto removido do site.", "ok")
     return redirect(url_for("admin_catalog_list"))

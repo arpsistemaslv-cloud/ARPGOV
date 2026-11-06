@@ -50,9 +50,14 @@
               <td class="meta">{{ p.manufacturer or '—' }}</td>
               <td>{% if p.unit_price is not none %}{{ p.unit_price|brl }}{% else %}—{% endif %}</td>
               <td class="meta">{{ p.ata_owner_company or '—' }}</td>
-              <td>
+              <td class="crm-row-actions">
                 <a href="{{ url_for('crm.crm_product_edit', item_id=p.id) }}">Editar</a>
-                · <a href="{{ url_for('produto', slug=p.slug) }}" target="_blank" rel="noopener">Loja</a>
+                <span class="meta">·</span>
+                <a href="{{ url_for('produto', slug=p.slug) }}" target="_blank" rel="noopener">Loja</a>
+                <span class="meta">·</span>
+                <form method="post" action="{{ url_for('crm.crm_product_delete', item_id=p.id) }}" onsubmit="return confirm('Excluir este produto? Ele será removido do catálogo e da loja.');">
+                  <button type="submit" class="crm-link-danger">Excluir</button>
+                </form>
               </td>
             </tr>
             {% else %}

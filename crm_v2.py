@@ -1112,6 +1112,18 @@ def product_edit(item_id):
     )
 
 
+@crm_bp.route("/produtos/<int:item_id>/excluir", methods=["POST"], endpoint="crm_product_delete")
+@crm_login_required
+def product_delete(item_id: int):
+    m = _main()
+    item = CatalogItem.query.get_or_404(item_id)
+    title = item.title
+    m.delete_catalog_item(item)
+    db.session.commit()
+    flash(f"Produto “{title}” excluído do catálogo.", "ok")
+    return redirect(url_for("crm.crm_products_list"))
+
+
 @crm_bp.route("/leads/nova", methods=["GET", "POST"], endpoint="crm_op_new")
 @crm_login_required
 def lead_new():
