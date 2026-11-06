@@ -1141,6 +1141,10 @@ def _seller_from_form(seller: ExternalSeller | None) -> tuple[ExternalSeller | N
     seller.phone = (request.form.get("phone") or "").strip()[:40] or None
     seller.email = (request.form.get("email") or "").strip()[:120] or None
     seller.notes = (request.form.get("notes") or "").strip() or None
+    if seller.created_at is None:
+        seller.created_at = datetime.utcnow()
+    if seller.is_active is None:
+        seller.is_active = True
     return seller, None
 
 
@@ -1149,14 +1153,35 @@ def _seller_from_form(seller: ExternalSeller | None) -> tuple[ExternalSeller | N
 def external_seller_new():
     try:
         _main().ensure_external_sellers()
-    except Exception:
+    except Exception as exc:
         db.session.rollback()
+        if request.method == "POST":
+            flash(f"Não foi possível preparar o cadastro: {exc}", "error")
+            return render_template("crm/vendedor_form.html", seller=None)
     if request.method == "POST":
         seller, err = _seller_from_form(None)
         if err:
             flash(err, "error")
             return render_template("crm/vendedor_form.html", seller=None)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            try:
+                _main().ensure_external_sellers(force=True)
+            except Exception as exc:
+                flash(f"Não foi possível preparar o cadastro: {exc}", "error")
+                return render_template("crm/vendedor_form.html", seller=None)
+            seller, err = _seller_from_form(None)
+            if err:
+                flash(err, "error")
+                return render_template("crm/vendedor_form.html", seller=None)
+            try:
+                db.session.commit()
+            except Exception as exc:
+                db.session.rollback()
+                flash(f"Não foi possível salvar o vendedor: {exc}", "error")
+                return render_template("crm/vendedor_form.html", seller=None)
         flash("Vendedor cadastrado.", "ok")
         return redirect(url_for("crm.crm_external_sellers_list"))
     return render_template("crm/vendedor_form.html", seller=None)
@@ -1175,7 +1200,12 @@ def external_seller_edit(seller_id: int):
         if err:
             flash(err, "error")
             return render_template("crm/vendedor_form.html", seller=seller)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            flash(f"Não foi possível salvar o vendedor: {exc}", "error")
+            return render_template("crm/vendedor_form.html", seller=seller)
         flash("Vendedor atualizado.", "ok")
         return redirect(url_for("crm.crm_external_sellers_list"))
     return render_template("crm/vendedor_form.html", seller=seller)

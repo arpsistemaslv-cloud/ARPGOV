@@ -2008,64 +2008,88 @@ def ensure_opportunity_rep_commission_columns():
                 pass
 
 
-def ensure_external_sellers():
-    """Cria a tabela de vendedores externos e a coluna no lead, se ainda não existirem."""
+_EXTERNAL_SELLER_COLUMNS = (
+    "id",
+    "name",
+    "company_name",
+    "phone",
+    "email",
+    "notes",
+    "is_active",
+    "created_at",
+)
+
+_EXTERNAL_SELLER_DDL = """
+CREATE TABLE external_sellers (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(160) NOT NULL,
+    company_name VARCHAR(200),
+    phone VARCHAR(40),
+    email VARCHAR(120),
+    notes TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at DATETIME
+)
+"""
+
+
+def ensure_external_sellers(force: bool = False):
+    """Garante a tabela de vendedores e a coluna no lead.
+
+    CREATE TABLE IF NOT EXISTS não completa uma tabela antiga. Se faltar
+    coluna (o caso de ``notes``), a tabela é recriada e os nomes já salvos
+    são copiados.
+    """
     db.create_all()
+    changed = False
+    raw = db.engine.raw_connection()
     try:
-        db.session.execute(text("SELECT id FROM external_sellers LIMIT 1"))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+        cur = raw.cursor()
+        cur.execute("PRAGMA foreign_keys=OFF")
+        cur.execute("BEGIN")
         try:
-            with db.engine.begin() as conn:
-                conn.exec_driver_sql(
-                    """
-                    CREATE TABLE IF NOT EXISTS external_sellers (
-                        id INTEGER PRIMARY KEY,
-                        name VARCHAR(160) NOT NULL,
-                        company_name VARCHAR(200),
-                        phone VARCHAR(40),
-                        email VARCHAR(120),
-                        notes TEXT,
-                        is_active BOOLEAN NOT NULL DEFAULT 1,
-                        created_at DATETIME
-                    )
-                    """
-                )
+            cur.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='external_sellers'"
+            )
+            exists = cur.fetchone()
+            if not exists:
+                cur.execute(_EXTERNAL_SELLER_DDL)
+                changed = True
+            else:
+                cur.execute("PRAGMA table_info(external_sellers)")
+                have = {row[1] for row in cur.fetchall()}
+                if force or set(_EXTERNAL_SELLER_COLUMNS) != have:
+                    copy_cols = [col for col in _EXTERNAL_SELLER_COLUMNS if col in have]
+                    cur.execute("DROP TABLE IF EXISTS external_sellers__old")
+                    cur.execute("ALTER TABLE external_sellers RENAME TO external_sellers__old")
+                    cur.execute(_EXTERNAL_SELLER_DDL)
+                    if "name" in have and copy_cols:
+                        dest = ", ".join(copy_cols)
+                        src = ", ".join(
+                            "COALESCE(is_active, 1)" if col == "is_active" else col
+                            for col in copy_cols
+                        )
+                        cur.execute(
+                            f"INSERT INTO external_sellers ({dest}) "
+                            f"SELECT {src} FROM external_sellers__old "
+                            "WHERE name IS NOT NULL AND TRIM(name) != ''"
+                        )
+                    cur.execute("DROP TABLE external_sellers__old")
+                    changed = True
+            cur.execute("PRAGMA table_info(opportunities)")
+            opp_cols = {row[1] for row in cur.fetchall()}
+            if opp_cols and "external_seller_id" not in opp_cols:
+                cur.execute("ALTER TABLE opportunities ADD COLUMN external_seller_id INTEGER")
+                changed = True
+            cur.execute("COMMIT")
         except Exception:
-            pass
-    for col, ddl in (
-        ("company_name", "VARCHAR(200)"),
-        ("phone", "VARCHAR(40)"),
-        ("email", "VARCHAR(120)"),
-        ("notes", "TEXT"),
-        ("is_active", "BOOLEAN NOT NULL DEFAULT 1"),
-        ("created_at", "DATETIME"),
-    ):
-        try:
-            db.session.execute(text(f"SELECT {col} FROM external_sellers LIMIT 1"))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            try:
-                with db.engine.begin() as conn:
-                    conn.exec_driver_sql(
-                        f"ALTER TABLE external_sellers ADD COLUMN {col} {ddl}"
-                    )
-            except Exception:
-                pass
-    try:
-        db.session.execute(text("SELECT external_seller_id FROM opportunities LIMIT 1"))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        try:
-            with db.engine.begin() as conn:
-                conn.exec_driver_sql(
-                    "ALTER TABLE opportunities ADD COLUMN external_seller_id INTEGER"
-                )
-        except Exception:
-            pass
+            cur.execute("ROLLBACK")
+            raise
+    finally:
+        raw.close()
+    if changed:
+        db.session.remove()
+        db.engine.dispose()
 
 
 def ensure_opportunity_partner_id_column():
@@ -10184,8 +10208,16 @@ def _internal_server_error(_e):
     app.logger.exception("Erro 500 em %s %s", request.method, request.path)
     extra = ""
     if (request.path or "").startswith("/crm"):
+        last = ""
+        for line in (tb or "").splitlines():
+            if line.strip():
+                last = line.strip()
+        safe_last = last.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         safe = (tb or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        extra = f"<pre style='white-space:pre-wrap;font-size:12px'>{safe[-5000:]}</pre>"
+        extra = (
+            f"<p><strong>{safe_last}</strong></p>"
+            f"<pre style='white-space:pre-wrap;font-size:12px'>{safe[-5000:]}</pre>"
+        )
     return (
         "<h1>Erro interno</h1><p>O servidor encontrou um erro. No terminal onde o <code>app.py</code> "
         "está rodando deve aparecer o detalhe (traceback).</p>"
